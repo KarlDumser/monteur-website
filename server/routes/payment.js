@@ -1,7 +1,7 @@
 import express from 'express';
 import Stripe from 'stripe';
 import Booking from '../models/Booking.js';
-import { sendBookingConfirmation } from '../utils/emailService.js';
+import { sendBookingConfirmation } from '../services/emailService.js';
 
 const router = express.Router();
 

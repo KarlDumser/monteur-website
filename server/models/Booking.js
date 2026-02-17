@@ -6,6 +6,12 @@ const bookingSchema = new mongoose.Schema({
   email: { type: String, required: true },
   phone: { type: String, required: true },
   
+  // Firmendaten (für Rechnung)
+  company: { type: String, required: true },
+  street: { type: String, required: true },
+  zip: { type: String, required: true },
+  city: { type: String, required: true },
+  
   // Buchungsdetails
   wohnung: { type: String, required: true, enum: ['neubau', 'hackerberg'] },
   startDate: { type: Date, required: true },
