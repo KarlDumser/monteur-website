@@ -91,9 +91,18 @@ router.post('/confirm-payment', async (req, res) => {
       return res.status(400).json({ error: 'Zahlung nicht erfolgreich' });
     }
     
+    // Konvertiere deutsche Datumsstrings (DD.MM.YYYY) zu Date Objects
+    const parseGermanDate = (dateStr) => {
+      if (!dateStr) return null;
+      const [day, month, year] = dateStr.split('.');
+      return new Date(year, month - 1, day); // Month ist 0-indexed
+    };
+    
     // Erstelle Buchung in Datenbank
     const booking = new Booking({
       ...bookingData,
+      startDate: parseGermanDate(bookingData.startDate),
+      endDate: parseGermanDate(bookingData.endDate),
       paymentStatus: 'paid',
       stripePaymentIntentId: paymentIntentId,
       stripePaymentId: paymentIntent.id,
