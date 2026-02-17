@@ -32,7 +32,7 @@ function CheckoutForm({ bookingInfo }) {
       // Zahlung erfolgreich - Buchung in DB speichern
       try {
         const apiUrl = getApiUrl();
-        const response = await fetch(`${apiUrl}/api/payment/confirm-payment`, {
+        const response = await fetch(`${apiUrl}/payment/confirm-payment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -95,7 +95,7 @@ export default function Payment() {
 
     // Payment Intent erstellen
     const apiUrl = getApiUrl();
-    fetch(`${apiUrl}/api/payment/create-payment-intent`, {
+    fetch(`${apiUrl}/payment/create-payment-intent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
