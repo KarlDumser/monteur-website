@@ -1,7 +1,5 @@
-import nodemailerModule from 'nodemailer';
 import { generateInvoice } from './invoiceGenerator.js';
-
-const nodemailer = nodemailerModule.default || nodemailerModule;
+import nodemailer from 'nodemailer';
 
 /**
  * Sendet Buchungsbestätigung mit Rechnung als PDF-Anhang
@@ -10,26 +8,33 @@ const nodemailer = nodemailerModule.default || nodemailerModule;
 export async function sendBookingConfirmation(booking) {
   try {
     // Prüfe ob SMTP konfiguriert ist
-    if (!process.env.SMTP_PASSWORD) {
-      console.warn('⚠️ SMTP nicht konfiguriert - Email wird übersprungen');
-      return null;
+    const smtpPassword = process.env.SMTP_PASSWORD;
+    if (!smtpPassword) {
+      console.log('ℹ️ SMTP nicht konfiguriert - Email wird übersprungen');
+      return { skipped: true };
     }
 
     console.log('📧 Erstelle Buchungsbestätigungs-Email...');
     
+    // Prüfe ob nodemailer verfügbar ist
+    if (!nodemailer || !nodemailer.createTransporter) {
+      console.warn('⚠️ nodemailer nicht verfügbar - Emails deaktiviert');
+      return { skipped: true };
+    }
+
     // Generiere PDF-Rechnung
     console.log('📄 Generiere PDF-Rechnung...');
     const invoicePDF = await generateInvoice(booking);
     console.log('✅ PDF-Rechnung erstellt');
 
-    // Erstelle Transporter
+    // Erstelle Transporter mit Konfiguration
     const transporter = nodemailer.createTransporter({
       host: process.env.SMTP_HOST || 'smtp.ionos.de',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
       auth: {
         user: process.env.SMTP_USER || 'monteur-wohnung@dumser.net',
-        pass: process.env.SMTP_PASSWORD
+        pass: smtpPassword
       },
       tls: {
         rejectUnauthorized: false
@@ -139,8 +144,9 @@ export async function sendBookingConfirmation(booking) {
     
     return info;
   } catch (error) {
-    console.error('❌ Email-Versand fehlgeschlagen:', error.message);
-    throw error;
+    console.error('❌ Email-Versand fehlgeschlagen:', error.message || error);
+    // Nicht werfen - Email-Fehler sollten die Buchung nicht blockieren
+    return { error: error.message, failed: true };
   }
 }
 
