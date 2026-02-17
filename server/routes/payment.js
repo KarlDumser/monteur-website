@@ -95,14 +95,23 @@ router.post('/confirm-payment', async (req, res) => {
     const parseGermanDate = (dateStr) => {
       if (!dateStr) return null;
       const [day, month, year] = dateStr.split('.');
-      return new Date(year, month - 1, day); // Month ist 0-indexed
+      const dateObj = new Date(year, month - 1, day); // Month ist 0-indexed
+      console.log('🗓️ Parse Date:', dateStr, '→', dateObj);
+      return dateObj;
     };
+    
+    console.log('📦 Booking Data received:', JSON.stringify(bookingData, null, 2));
+    
+    const parsedStartDate = parseGermanDate(bookingData.startDate);
+    const parsedEndDate = parseGermanDate(bookingData.endDate);
+    
+    console.log('✅ Parsed dates:', { startDate: parsedStartDate, endDate: parsedEndDate });
     
     // Erstelle Buchung in Datenbank
     const booking = new Booking({
       ...bookingData,
-      startDate: parseGermanDate(bookingData.startDate),
-      endDate: parseGermanDate(bookingData.endDate),
+      startDate: parsedStartDate,
+      endDate: parsedEndDate,
       paymentStatus: 'paid',
       stripePaymentIntentId: paymentIntentId,
       stripePaymentId: paymentIntent.id,
