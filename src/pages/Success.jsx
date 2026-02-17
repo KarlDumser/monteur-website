@@ -1,6 +1,16 @@
-import { Link } from 'react-router-dom';
+import { Link, useEffect, useState } from 'react-router-dom';
 
 export default function Success() {
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    // Hole die Email aus der Buchungs-Info (wurde vom Payment-Prozess gespeichert)
+    const bookingInfo = localStorage.getItem('bookingInfo');
+    if (bookingInfo) {
+      const booking = JSON.parse(bookingInfo);
+      setEmail(booking.email);
+    }
+  }, []);
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="bg-white rounded-2xl shadow-lg p-12 text-center max-w-md">
@@ -13,13 +23,13 @@ export default function Success() {
         <h1 className="text-4xl font-bold text-green-600 mb-4">Zahlung erfolgreich!</h1>
         
         <p className="text-gray-600 text-lg mb-6">
-          Vielen Dank für Ihre Buchung. Wir haben eine Bestätigungsemail an Sie gesendet.
+          Vielen Dank für Ihre Buchung. Wir haben eine Bestätigungsemail an <span className="font-semibold text-gray-800">{email || 'Ihre E-Mail-Adresse'}</span> gesendet.
         </p>
         
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-left">
           <p className="text-sm text-gray-700">
             <strong>Nächste Schritte:</strong><br/>
-            Sie erhalten in Kürze eine E-Mail mit allen weiteren Informationen zu Ihrer Buchung.
+            Sie erhalten in Kürze eine E-Mail mit allen weiteren Informationen und der bezahlten Rechnung zu Ihrer Buchung.
           </p>
         </div>
 
