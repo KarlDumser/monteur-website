@@ -41,6 +41,25 @@ export async function sendBookingConfirmation(booking) {
       }
     });
 
+    // DEBUG: Teste SMTP-Verbindung
+    console.log('🔍 DEBUG SMTP-Konfiguration:');
+    console.log('  Host:', process.env.SMTP_HOST || 'smtp.ionos.de');
+    console.log('  Port:', process.env.SMTP_PORT || '587');
+    console.log('  User:', process.env.SMTP_USER || 'monteur-wohnung@dumser.net');
+    console.log('  Password vorhanden:', !!smtpPassword, `(${smtpPassword?.length} zeichen)`);
+    
+    // Teste Verbindung
+    try {
+      console.log('📡 Teste SMTP-Verbindung...');
+      await transporter.verify();
+      console.log('✅ SMTP-Verbindung erfolgreich!');
+    } catch (verifyError) {
+      console.error('❌ SMTP-Verbindungsfehler:', verifyError.message);
+      console.error('   Code:', verifyError.code);
+      console.error('   Response:', verifyError.response);
+      throw verifyError;
+    }
+
     // Email Optionen
     const wohnungName = booking.wohnung === 'neubau' ? 'Neubau – Frühlingstraße' : 'Hackerberg';
     const startDate = formatGermanDate(booking.startDate);
