@@ -121,20 +121,17 @@ router.post('/confirm-payment', async (req, res) => {
     await booking.save();
     console.log('✅ Buchung gespeichert:', booking._id);
     
-    // Sende Bestätigungs-E-Mail mit Rechnung (optional - schlägt nicht fehl wenn Email nicht konfiguriert)
-    try {
-      await sendBookingConfirmation(booking);
-      console.log('📧 Bestätigungs-E-Mail gesendet');
-    } catch (emailError) {
-      console.warn('⚠️ Email konnte nicht gesendet werden:', emailError.message);
-      console.warn('⚠️ Buchung wurde trotzdem gespeichert');
-    }
-    
+    // Sende Response SOFORT ans Frontend
     res.json({ 
       success: true, 
       booking,
       message: 'Buchung erfolgreich erstellt' 
     });
+    
+    // Sende E-Mail im Hintergrund (nicht warten, nicht blockieren)
+    sendBookingConfirmation(booking)
+      .then(() => console.log('📧 Bestätigungs-E-Mail gesendet'))
+      .catch(emailError => console.warn('⚠️ Email konnte nicht gesendet werden:', emailError.message));
   } catch (error) {
     console.error('❌ Payment confirmation error:', error);
     res.status(500).json({ error: error.message });
