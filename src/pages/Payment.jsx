@@ -81,6 +81,7 @@ export default function Payment() {
   const [bookingInfo, setBookingInfo] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const info = localStorage.getItem('bookingInfo');
@@ -102,21 +103,57 @@ export default function Payment() {
         bookingData: booking
       })
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Server Fehler: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
-        setClientSecret(data.clientSecret);
+        if (data.error) {
+          setError(`Fehler: ${data.error}`);
+          console.error('Payment Intent Error:', data.error);
+        } else {
+          setClientSecret(data.clientSecret);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error('Error creating payment intent:', err);
+        setError(`Fehler beim Laden der Zahlungsmethode: ${err.message}`);
         setLoading(false);
       });
   }, []);
 
-  if (loading || !bookingInfo) {
+  if (loading) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <p className="text-gray-600">Zahlung wird vorbereitet...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <div className="bg-red-50 border-2 border-red-200 text-red-700 px-6 py-4 rounded-lg">
+          <h2 className="text-xl font-bold mb-2">⚠️ Fehler beim Laden der Zahlungsmethode</h2>
+          <p className="mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.href = '/booking'}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Zurück zur Buchung
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!bookingInfo) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <p className="text-gray-600">Fehler: Buchungsdaten nicht gefunden</p>
       </div>
     );
   }

@@ -16,7 +16,14 @@ if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== 'sk_test_
 // Create Payment Intent
 router.post('/create-payment-intent', async (req, res) => {
   try {
+    if (!stripe) {
+      console.error('❌ Stripe nicht konfiguriert - Secret Key:', process.env.STRIPE_SECRET_KEY ? 'existiert' : 'FEHLT');
+      return res.status(500).json({ error: 'Stripe nicht konfiguriert. Bitte Secret Key in Umgebungsvariablen setzen.' });
+    }
+    
     const { amount, bookingData } = req.body;
+    
+    console.log('💳 Erstelle Payment Intent:', { amount, wohnung: bookingData.wohnung });
     
     // Erstelle Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
@@ -34,11 +41,14 @@ router.post('/create-payment-intent', async (req, res) => {
       }
     });
     
+    console.log('✅ Payment Intent erstellt:', paymentIntent.id);
+    
     res.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id
     });
   } catch (error) {
+    console.error('❌ Payment Intent Fehler:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -46,12 +56,19 @@ router.post('/create-payment-intent', async (req, res) => {
 // Confirm Payment
 router.post('/confirm-payment', async (req, res) => {
   try {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe nicht konfiguriert' });
+    }
+    
     const { paymentIntentId, bookingData } = req.body;
+    
+    console.log('✔️ Verifiziere Payment Intent:', paymentIntentId);
     
     // Verifiziere Payment Intent
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     
     if (paymentIntent.status !== 'succeeded') {
+      console.error('❌ Zahlung nicht erfolgreich:', paymentIntent.status);
       return res.status(400).json({ error: 'Zahlung nicht erfolgreich' });
     }
     
@@ -65,9 +82,11 @@ router.post('/confirm-payment', async (req, res) => {
     });
     
     await booking.save();
+    console.log('✅ Buchung gespeichert:', booking._id);
     
     // Sende Bestätigungs-E-Mail mit Rechnung
     await sendBookingConfirmation(booking);
+    console.log('📧 Bestätigungs-E-Mail gesendet');
     
     res.json({ 
       success: true, 
@@ -75,7 +94,7 @@ router.post('/confirm-payment', async (req, res) => {
       message: 'Buchung erfolgreich erstellt' 
     });
   } catch (error) {
-    console.error('Payment confirmation error:', error);
+    console.error('❌ Payment confirmation error:', error);
     res.status(500).json({ error: error.message });
   }
 });
