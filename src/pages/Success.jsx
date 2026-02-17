@@ -1,4 +1,5 @@
-import { Link, useEffect, useState } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 
 export default function Success() {
   const [email, setEmail] = useState('');
