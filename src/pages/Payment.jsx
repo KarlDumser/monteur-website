@@ -3,7 +3,30 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getApiUrl } from '../utils/api.js';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_key_here');
+let stripePromise = null;
+
+// Load Stripe Public Key from backend
+const loadStripeKey = async () => {
+  try {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/payment/config`);
+    const data = await response.json();
+    
+    if (data.stripePublishableKey) {
+      stripePromise = loadStripe(data.stripePublishableKey);
+      console.log('✅ Stripe Key loaded from backend');
+    } else {
+      throw new Error('No stripe key from backend');
+    }
+  } catch (err) {
+    console.error('❌ Failed to load Stripe key:', err);
+    // Fallback (wird normalerweise nicht benutzt)
+    stripePromise = loadStripe('pk_test_51RUCUYR3yx6JeUyEVGnkFwDjOpyyjR6ZgV9zlS1Yi5HYfkACWz0jgC3KdXkBt0gsyW1RiiEornsAe9vLvNCIPYTF00Ijw31Wzh');
+  }
+};
+
+// Initialisiere Stripe Key sofort
+loadStripeKey();
 
 function CheckoutForm({ bookingInfo }) {
   const stripe = useStripe();
@@ -82,6 +105,25 @@ export default function Payment() {
   const [clientSecret, setClientSecret] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [stripeReady, setStripeReady] = useState(false);
+
+  useEffect(() => {
+    // Warte bis Stripe geladen ist
+    const checkStripe = async () => {
+      if (stripePromise) {
+        try {
+          await stripePromise;
+          setStripeReady(true);
+        } catch (err) {
+          console.error('Stripe loading error:', err);
+          setError('Stripe konnte nicht geladen werden');
+          setLoading(false);
+        }
+      }
+    };
+
+    checkStripe();
+  }, []);
 
   useEffect(() => {
     const info = localStorage.getItem('bookingInfo');
@@ -260,12 +302,12 @@ export default function Payment() {
             <div>
               <h2 className="text-xl font-bold text-gray-800 mb-4">Zahlungsmethode</h2>
               
-              {clientSecret ? (
+              {clientSecret && stripeReady ? (
                 <Elements stripe={stripePromise} options={options}>
                   <CheckoutForm bookingInfo={bookingInfo} />
                 </Elements>
               ) : (
-                <p className="text-gray-600">Laden...</p>
+                <p className="text-gray-600">⏳ Zahlung wird vorbereitet...</p>
               )}
             </div>
 

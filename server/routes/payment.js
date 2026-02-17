@@ -13,6 +13,19 @@ if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== 'sk_test_
   console.warn('⚠️  Stripe nicht konfiguriert - Payment-Endpoints funktionieren nicht');
 }
 
+// Get Stripe Public Key (für Frontend)
+router.get('/config', (req, res) => {
+  const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || 'pk_test_51RUCUYR3yx6JeUyEVGnkFwDjOpyyjR6ZgV9zlS1Yi5HYfkACWz0jgC3KdXkBt0gsyW1RiiEornsAe9vLvNCIPYTF00Ijw31Wzh';
+  
+  if (!publishableKey || publishableKey === 'pk_test_PLACEHOLDER') {
+    return res.status(500).json({ error: 'Stripe Publishable Key nicht konfiguriert' });
+  }
+  
+  res.json({ 
+    stripePublishableKey: publishableKey 
+  });
+});
+
 // Create Payment Intent
 router.post('/create-payment-intent', async (req, res) => {
   try {
