@@ -25,17 +25,17 @@ export default function Admin() {
     try {
       const apiUrl = getApiUrl();
       // Buchungen laden
-      const bookingsRes = await fetch(`${apiUrl}/api/admin/bookings`);
+      const bookingsRes = await fetch(`${apiUrl}/admin/bookings`);
       const bookingsData = await bookingsRes.json();
       setBookings(bookingsData);
 
       // Blockierte Zeiten laden
-      const blockedRes = await fetch(`${apiUrl}/api/admin/blocked-dates`);
+      const blockedRes = await fetch(`${apiUrl}/admin/blocked-dates`);
       const blockedData = await blockedRes.json();
       setBlockedDates(blockedData);
 
       // Statistiken laden
-      const statsRes = await fetch(`${apiUrl}/api/admin/statistics`);
+      const statsRes = await fetch(`${apiUrl}/admin/statistics`);
       const statsData = await statsRes.json();
       setStats(statsData);
 
@@ -51,7 +51,7 @@ export default function Admin() {
     
     try {
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/api/admin/block-dates`, {
+      const response = await fetch(`${apiUrl}/admin/block-dates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(blockForm)
@@ -75,7 +75,7 @@ export default function Admin() {
 
     try {
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/api/admin/blocked-dates/${id}`, {
+      const response = await fetch(`${apiUrl}/admin/blocked-dates/${id}`, {
         method: 'DELETE'
       });
 
