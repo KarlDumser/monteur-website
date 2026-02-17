@@ -1,18 +1,21 @@
 // API Config - dynamisch je nach Environment
 
 export const getApiUrl = () => {
-  // Development: Verwende Umgebungsvariable
+  // Development: Verwende Umgebungsvariable falls gesetzt
   if (import.meta.env.VITE_API_URL) {
+    console.log('📡 API URL from env:', import.meta.env.VITE_API_URL);
     return import.meta.env.VITE_API_URL;
   }
   
-  // Production: Verwende gleichen Server (relative URL)
-  if (import.meta.env.PROD) {
-    return '/api';
+  // Runtime check: Bin ich auf localhost? → local, sonst → production
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    console.log('🏠 Lokale Umgebung erkannt - nutze localhost:3001');
+    return 'http://localhost:3001';
   }
   
-  // Default (Development): localhost:3001
-  return 'http://localhost:3001';
+  // Production: Nutze relative URL zur gleichen Domain
+  console.log('🚀 Production Umgebung erkannt - nutze /api');
+  return '/api';
 };
 
 export const apiCall = async (endpoint, options = {}) => {
