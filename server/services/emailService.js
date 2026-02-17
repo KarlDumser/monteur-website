@@ -1,24 +1,7 @@
-import nodemailer from 'nodemailer';
+import nodemailerModule from 'nodemailer';
 import { generateInvoice } from './invoiceGenerator.js';
 
-/**
- * Erstellt SMTP Transporter für Email-Versand
- */
-function createTransporter() {
-  // SMTP Konfiguration aus Environment Variables
-  return nodemailer.createTransporter({
-    host: process.env.SMTP_HOST || 'smtp.ionos.de', // IONOS SMTP für @dumser.net
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false, // true für Port 465, false für Port 587
-    auth: {
-      user: process.env.SMTP_USER || 'monteur-wohnung@dumser.net',
-      pass: process.env.SMTP_PASSWORD || ''
-    },
-    tls: {
-      rejectUnauthorized: false // Nur für Development
-    }
-  });
-}
+const nodemailer = nodemailerModule.default || nodemailerModule;
 
 /**
  * Sendet Buchungsbestätigung mit Rechnung als PDF-Anhang
@@ -26,6 +9,12 @@ function createTransporter() {
  */
 export async function sendBookingConfirmation(booking) {
   try {
+    // Prüfe ob SMTP konfiguriert ist
+    if (!process.env.SMTP_PASSWORD) {
+      console.warn('⚠️ SMTP nicht konfiguriert - Email wird übersprungen');
+      return null;
+    }
+
     console.log('📧 Erstelle Buchungsbestätigungs-Email...');
     
     // Generiere PDF-Rechnung
@@ -34,7 +23,18 @@ export async function sendBookingConfirmation(booking) {
     console.log('✅ PDF-Rechnung erstellt');
 
     // Erstelle Transporter
-    const transporter = createTransporter();
+    const transporter = nodemailer.createTransporter({
+      host: process.env.SMTP_HOST || 'smtp.ionos.de',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER || 'monteur-wohnung@dumser.net',
+        pass: process.env.SMTP_PASSWORD
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
 
     // Email Optionen
     const wohnungName = booking.wohnung === 'neubau' ? 'Neubau – Frühlingstraße' : 'Hackerberg';
