@@ -17,10 +17,16 @@ if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== 'sk_test_
 router.get('/config', (req, res) => {
   const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || 'pk_test_51RUCUYR3yx6JeUyEVGnkFwDjOpyyjR6ZgV9zlS1Yi5HYfkACWz0jgC3KdXkBt0gsyW1RiiEornsAe9vLvNCIPYTF00Ijw31Wzh';
   
+  console.log('📋 /config aufgerufen');
+  console.log('🔑 STRIPE_PUBLISHABLE_KEY env:', process.env.STRIPE_PUBLISHABLE_KEY ? 'exists' : 'MISSING');
+  console.log('🔑 Key verwendet:', publishableKey.substring(0, 20) + '...');
+  
   if (!publishableKey || publishableKey === 'pk_test_PLACEHOLDER') {
+    console.error('❌ Publishable Key Problem!');
     return res.status(500).json({ error: 'Stripe Publishable Key nicht konfiguriert' });
   }
   
+  console.log('✅ Sende Publishable Key ans Frontend');
   res.json({ 
     stripePublishableKey: publishableKey 
   });

@@ -3,31 +3,6 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getApiUrl } from '../utils/api.js';
 
-let stripePromise = null;
-
-// Load Stripe Public Key from backend
-const loadStripeKey = async () => {
-  try {
-    const apiUrl = getApiUrl();
-    const response = await fetch(`${apiUrl}/payment/config`);
-    const data = await response.json();
-    
-    if (data.stripePublishableKey) {
-      stripePromise = loadStripe(data.stripePublishableKey);
-      console.log('✅ Stripe Key loaded from backend');
-    } else {
-      throw new Error('No stripe key from backend');
-    }
-  } catch (err) {
-    console.error('❌ Failed to load Stripe key:', err);
-    // Fallback (wird normalerweise nicht benutzt)
-    stripePromise = loadStripe('pk_test_51RUCUYR3yx6JeUyEVGnkFwDjOpyyjR6ZgV9zlS1Yi5HYfkACWz0jgC3KdXkBt0gsyW1RiiEornsAe9vLvNCIPYTF00Ijw31Wzh');
-  }
-};
-
-// Initialisiere Stripe Key sofort
-loadStripeKey();
-
 function CheckoutForm({ bookingInfo }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -103,28 +78,11 @@ function CheckoutForm({ bookingInfo }) {
 export default function Payment() {
   const [bookingInfo, setBookingInfo] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
+  const [stripePromise, setStripePromise] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [stripeReady, setStripeReady] = useState(false);
 
-  useEffect(() => {
-    // Warte bis Stripe geladen ist
-    const checkStripe = async () => {
-      if (stripePromise) {
-        try {
-          await stripePromise;
-          setStripeReady(true);
-        } catch (err) {
-          console.error('Stripe loading error:', err);
-          setError('Stripe konnte nicht geladen werden');
-          setLoading(false);
-        }
-      }
-    };
-
-    checkStripe();
-  }, []);
-
+  // Lade Stripe Key vom Backend UND Payment Intent - beide gleichzeitig
   useEffect(() => {
     const info = localStorage.getItem('bookingInfo');
     if (!info) {
@@ -135,34 +93,49 @@ export default function Payment() {
     const booking = JSON.parse(info);
     setBookingInfo(booking);
 
-    // Payment Intent erstellen
     const apiUrl = getApiUrl();
-    fetch(`${apiUrl}/payment/create-payment-intent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: booking.total,
-        bookingData: booking
+
+    // Parallel: Lade Stripe Key + erstelle Payment Intent
+    Promise.all([
+      // 1. Lade Stripe Public Key vom Backend
+      fetch(`${apiUrl}/payment/config`)
+        .then(res => {
+          if (!res.ok) throw new Error(`Config Error: ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          console.log('📦 Stripe config erhalten:', data.stripePublishableKey ? '✅' : '❌');
+          if (!data.stripePublishableKey) {
+            throw new Error('Keine Stripe Publishable Key vom Backend');
+          }
+          return loadStripe(data.stripePublishableKey);
+        }),
+      
+      // 2. Erstelle Payment Intent
+      fetch(`${apiUrl}/payment/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: booking.total,
+          bookingData: booking
+        })
       })
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`Server Fehler: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (data.error) {
-          setError(`Fehler: ${data.error}`);
-          console.error('Payment Intent Error:', data.error);
-        } else {
-          setClientSecret(data.clientSecret);
-        }
+        .then(res => {
+          if (!res.ok) throw new Error(`Payment Intent Error: ${res.status}`);
+          return res.json();
+        })
+    ])
+      .then(([stripe, paymentData]) => {
+        console.log('✅ Stripe Setup erfolgreich', stripe ? '✓' : '✗');
+        console.log('✅ Payment Intent erstellt:', paymentData.clientSecret ? '✓' : '✗');
+        
+        setStripePromise(stripe);
+        setClientSecret(paymentData.clientSecret);
         setLoading(false);
       })
       .catch(err => {
-        console.error('Error creating payment intent:', err);
-        setError(`Fehler beim Laden der Zahlungsmethode: ${err.message}`);
+        console.error('❌ Error:', err);
+        setError(`Fehler beim Laden: ${err.message}`);
         setLoading(false);
       });
   }, []);
@@ -302,12 +275,15 @@ export default function Payment() {
             <div>
               <h2 className="text-xl font-bold text-gray-800 mb-4">Zahlungsmethode</h2>
               
-              {clientSecret && stripeReady ? (
+              {clientSecret && stripePromise ? (
                 <Elements stripe={stripePromise} options={options}>
                   <CheckoutForm bookingInfo={bookingInfo} />
                 </Elements>
               ) : (
-                <p className="text-gray-600">⏳ Zahlung wird vorbereitet...</p>
+                <div className="text-center py-8">
+                  <p className="text-gray-600">⏳ Zahlung wird vorbereitet...</p>
+                  <p className="text-sm text-gray-400 mt-2">Stripe lädt...</p>
+                </div>
               )}
             </div>
 
