@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { getApiUrl } from '../utils/api.js';
 
@@ -12,6 +12,8 @@ export default function Admin() {
   const [auth, setAuth] = useState(() => sessionStorage.getItem('adminAuth') || '');
   const [authError, setAuthError] = useState('');
   const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [actionMessage, setActionMessage] = useState(null);
+  const messageTimeoutRef = useRef(null);
   
   // Form für Zeitblockierung
   const [blockForm, setBlockForm] = useState({
@@ -20,6 +22,22 @@ export default function Admin() {
     endDate: '',
     reason: ''
   });
+
+  useEffect(() => {
+    return () => {
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showActionMessage = (type, text) => {
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+    }
+    setActionMessage({ type, text });
+    messageTimeoutRef.current = setTimeout(() => setActionMessage(null), 3000);
+  };
 
   useEffect(() => {
     if (auth) {
@@ -224,6 +242,18 @@ export default function Admin() {
           </button>
         </div>
 
+        {actionMessage && (
+          <div
+            className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
+              actionMessage.type === 'success'
+                ? 'border-green-200 bg-green-50 text-green-800'
+                : 'border-red-200 bg-red-50 text-red-800'
+            }`}
+          >
+            {actionMessage.text}
+          </div>
+        )}
+
         {/* Statistiken */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -379,10 +409,10 @@ export default function Admin() {
                       {booking.total}€
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <button
+                          type="button"
                           onClick={async () => {
-                            if (!confirm('Buchung wiederherstellen?')) return;
                             try {
                               const apiUrl = getApiUrl();
                               const response = await fetch(`${apiUrl}/admin/deleted-bookings/${booking._id}/restore`, {
@@ -390,23 +420,23 @@ export default function Admin() {
                                 headers: { Authorization: `Basic ${auth}` }
                               });
                               if (response.ok) {
-                                alert('Buchung wiederhergestellt');
+                                showActionMessage('success', 'Buchung wiederhergestellt');
                                 loadData();
                               } else {
-                                alert('Wiederherstellen fehlgeschlagen');
+                                showActionMessage('error', 'Wiederherstellen fehlgeschlagen');
                               }
                             } catch (error) {
                               console.error('Error restoring booking:', error);
-                              alert('Wiederherstellen fehlgeschlagen');
+                              showActionMessage('error', 'Wiederherstellen fehlgeschlagen');
                             }
                           }}
-                          className="text-blue-600 hover:text-blue-800"
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
                         >
                           Wiederherstellen
                         </button>
                         <button
+                          type="button"
                           onClick={async () => {
-                            if (!confirm('Buchung permanent loeschen?')) return;
                             try {
                               const apiUrl = getApiUrl();
                               const response = await fetch(`${apiUrl}/admin/deleted-bookings/${booking._id}`, {
@@ -414,16 +444,17 @@ export default function Admin() {
                                 headers: { Authorization: `Basic ${auth}` }
                               });
                               if (response.ok) {
+                                showActionMessage('success', 'Buchung permanent geloescht');
                                 loadData();
                               } else {
-                                alert('Permanent loeschen fehlgeschlagen');
+                                showActionMessage('error', 'Permanent loeschen fehlgeschlagen');
                               }
                             } catch (error) {
                               console.error('Error deleting booking:', error);
-                              alert('Permanent loeschen fehlgeschlagen');
+                              showActionMessage('error', 'Permanent loeschen fehlgeschlagen');
                             }
                           }}
-                          className="text-red-600 hover:text-red-800"
+                          className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
                         >
                           Permanent loeschen
                         </button>
