@@ -2,9 +2,10 @@ export default function Impressum() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold mb-8">Impressum</h1>
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-4xl font-bold mb-8">Impressum</h1>
 
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-3xl mx-auto space-y-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 space-y-8">
           
           <section>
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Angaben gemäß § 5 E-Commerce-Gesetz</h2>
@@ -63,6 +64,7 @@ export default function Impressum() {
             </p>
           </div>
 
+          </div>
         </div>
       </div>
     </div>
