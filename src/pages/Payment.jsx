@@ -35,13 +35,17 @@ function CheckoutForm({ bookingInfo }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paymentIntentId: paymentIntent.id,
-            bookingData: bookingInfo
+            bookingData: bookingInfo,
+            debugEmail: true
           })
         });
 
         const data = await response.json();
         
         if (data.success) {
+          if (data.emailStatus) {
+            console.log('📧 Email debug:', data.emailStatus);
+          }
           // Speichere die Booking-Info NOCHMAL (mit Response-Daten) vor dem Redirect
           console.log('💾 Speichere Booking-Info vor Redirect...');
           const bookingResponse = {

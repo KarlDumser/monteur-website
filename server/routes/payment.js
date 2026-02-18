@@ -79,7 +79,7 @@ router.post('/confirm-payment', async (req, res) => {
       return res.status(500).json({ error: 'Stripe nicht konfiguriert' });
     }
     
-    const { paymentIntentId, bookingData } = req.body;
+    const { paymentIntentId, bookingData, debugEmail } = req.body;
     
     console.log('✔️ Verifiziere Payment Intent:', paymentIntentId);
     
@@ -121,17 +121,27 @@ router.post('/confirm-payment', async (req, res) => {
     await booking.save();
     console.log('✅ Buchung gespeichert:', booking._id);
     
-    // Sende Response SOFORT ans Frontend
-    res.json({ 
-      success: true, 
-      booking,
-      message: 'Buchung erfolgreich erstellt' 
-    });
-    
-    // Sende E-Mail im Hintergrund (nicht warten, nicht blockieren)
-    sendBookingConfirmation(booking)
-      .then(() => console.log('📧 Bestätigungs-E-Mail gesendet'))
-      .catch(emailError => console.warn('⚠️ Email konnte nicht gesendet werden:', emailError.message));
+    if (debugEmail) {
+      const emailStatus = await sendBookingConfirmation(booking);
+      res.json({ 
+        success: true, 
+        booking,
+        message: 'Buchung erfolgreich erstellt',
+        emailStatus
+      });
+    } else {
+      // Sende Response SOFORT ans Frontend
+      res.json({ 
+        success: true, 
+        booking,
+        message: 'Buchung erfolgreich erstellt' 
+      });
+      
+      // Sende E-Mail im Hintergrund (nicht warten, nicht blockieren)
+      sendBookingConfirmation(booking)
+        .then(() => console.log('📧 Bestätigungs-E-Mail gesendet'))
+        .catch(emailError => console.warn('⚠️ Email konnte nicht gesendet werden:', emailError.message));
+    }
   } catch (error) {
     console.error('❌ Payment confirmation error:', error);
     res.status(500).json({ error: error.message });

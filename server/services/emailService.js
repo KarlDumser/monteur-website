@@ -10,7 +10,7 @@ export async function sendBookingConfirmation(booking) {
     const smtpPassword = process.env.SMTP_PASSWORD;
     if (!smtpPassword) {
       console.log('ℹ️ SMTP nicht konfiguriert - Email wird übersprungen');
-      return { skipped: true };
+      return { status: 'skipped', reason: 'SMTP_PASSWORD missing' };
     }
 
     console.log('📧 Erstelle Buchungsbestätigungs-Email...');
@@ -24,12 +24,12 @@ export async function sendBookingConfirmation(booking) {
     } catch (importError) {
       console.error('❌ nodemailer Import fehlgeschlagen:', importError.message);
       console.warn('⚠️ Emails deaktiviert');
-      return { skipped: true };
+      return { status: 'skipped', reason: 'nodemailer import failed', error: importError.message };
     }
     
     if (!nodemailer || !nodemailer.createTransport) {
       console.warn('⚠️ nodemailer.createTransport nicht verfügbar');
-      return { skipped: true };
+      return { status: 'skipped', reason: 'nodemailer createTransport missing' };
     }
 
     // Generiere PDF-Rechnung
@@ -58,6 +58,8 @@ export async function sendBookingConfirmation(booking) {
     console.log('  User:', process.env.SMTP_USER || 'monteur-wohnung@dumser.net');
     console.log('  Password vorhanden:', !!smtpPassword, `(${smtpPassword?.length} zeichen)`);
     
+    let verifyWarning = null;
+
     // Teste Verbindung (nicht-blockierend)
     console.log('📡 Teste SMTP-Verbindung...');
     try {
@@ -67,6 +69,11 @@ export async function sendBookingConfirmation(booking) {
       console.warn('⚠️ SMTP-Verbindungstest fehlgeschlagen:', verifyError.message);
       console.warn('   Code:', verifyError.code);
       console.warn('   Versuche trotzdem zu senden...');
+      verifyWarning = {
+        message: verifyError.message,
+        code: verifyError.code,
+        response: verifyError.response
+      };
       // Nicht werfen - versuche trotzdem zu senden
     }
 
@@ -171,11 +178,16 @@ export async function sendBookingConfirmation(booking) {
     const info = await transporter.sendMail(mailOptions);
     console.log('✅ Email gesendet:', info.messageId);
     
-    return info;
+    return { status: 'sent', messageId: info.messageId, verifyWarning };
   } catch (error) {
     console.error('❌ Email-Versand fehlgeschlagen:', error.message || error);
     // Nicht werfen - Email-Fehler sollten die Buchung nicht blockieren
-    return { error: error.message, failed: true };
+    return {
+      status: 'failed',
+      error: error.message,
+      code: error.code,
+      response: error.response
+    };
   }
 }
 
