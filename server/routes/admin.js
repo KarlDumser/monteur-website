@@ -95,6 +95,23 @@ router.delete('/deleted-bookings/:id', async (req, res) => {
   }
 });
 
+// Archivierte Buchung wiederherstellen
+router.patch('/deleted-bookings/:id/restore', async (req, res) => {
+  try {
+    const booking = await Booking.findOneAndUpdate(
+      { _id: req.params.id, deletedAt: { $ne: null } },
+      { $set: { deletedAt: null }, $unset: { deletedBy: '' } },
+      { new: true }
+    );
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+    res.json({ message: 'Buchung wiederhergestellt' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Blockierte Zeiten abrufen
 router.get('/blocked-dates', async (req, res) => {
   try {

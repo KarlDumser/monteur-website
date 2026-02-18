@@ -379,29 +379,54 @@ export default function Admin() {
                       {booking.total}€
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={async () => {
-                          if (!confirm('Buchung permanent loeschen?')) return;
-                          try {
-                            const apiUrl = getApiUrl();
-                            const response = await fetch(`${apiUrl}/admin/deleted-bookings/${booking._id}`, {
-                              method: 'DELETE',
-                              headers: { Authorization: `Basic ${auth}` }
-                            });
-                            if (response.ok) {
-                              loadData();
-                            } else {
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Buchung wiederherstellen?')) return;
+                            try {
+                              const apiUrl = getApiUrl();
+                              const response = await fetch(`${apiUrl}/admin/deleted-bookings/${booking._id}/restore`, {
+                                method: 'PATCH',
+                                headers: { Authorization: `Basic ${auth}` }
+                              });
+                              if (response.ok) {
+                                loadData();
+                              } else {
+                                alert('Wiederherstellen fehlgeschlagen');
+                              }
+                            } catch (error) {
+                              console.error('Error restoring booking:', error);
+                              alert('Wiederherstellen fehlgeschlagen');
+                            }
+                          }}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          Wiederherstellen
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Buchung permanent loeschen?')) return;
+                            try {
+                              const apiUrl = getApiUrl();
+                              const response = await fetch(`${apiUrl}/admin/deleted-bookings/${booking._id}`, {
+                                method: 'DELETE',
+                                headers: { Authorization: `Basic ${auth}` }
+                              });
+                              if (response.ok) {
+                                loadData();
+                              } else {
+                                alert('Permanent loeschen fehlgeschlagen');
+                              }
+                            } catch (error) {
+                              console.error('Error deleting booking:', error);
                               alert('Permanent loeschen fehlgeschlagen');
                             }
-                          } catch (error) {
-                            console.error('Error deleting booking:', error);
-                            alert('Permanent loeschen fehlgeschlagen');
-                          }
-                        }}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Permanent loeschen
-                      </button>
+                          }}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Permanent loeschen
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
