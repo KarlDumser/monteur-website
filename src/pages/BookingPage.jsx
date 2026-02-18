@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { format, addMonths } from "date-fns";
+import { APP_VERSION } from "../config";
 import { DateRange } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
@@ -361,7 +362,7 @@ export default function BookingPage() {
                               onClick={() => setSelectedImage({ image, folder: wohnung.folder, titel: wohnung.titel })}
                             >
                               <img
-                                src={`/${wohnung.folder}/${image}`}
+                                src={`/${wohnung.folder}/${image}?v=${APP_VERSION}`}
                                 alt={`${wohnung.titel} ${index + 1}`}
                                 className="w-full h-full object-cover"
                               />
@@ -460,7 +461,7 @@ export default function BookingPage() {
               </button>
             </div>
             <img
-              src={`/${selectedImage.folder}/${selectedImage.image}`}
+              src={`/${selectedImage.folder}/${selectedImage.image}?v=${APP_VERSION}`}
               alt={selectedImage.titel}
               className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
             />

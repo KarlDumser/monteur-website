@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { APP_VERSION } from '../config';
 
 export default function Home() {
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -27,7 +28,7 @@ export default function Home() {
   ];
 
   const hackerbergImages = [
-    ".Wohnzimmer.JPG",
+    "Wohnzimmer.JPG",
     "Bad.JPG",
     "Balkon.JPG",
     "Eingangsbereich.JPG",
@@ -37,7 +38,7 @@ export default function Home() {
   ];
 
   const fruehlingImages = [
-    ".Zimmer-1.JPG",
+    "Zimmer-1.JPG",
     "Bad.JPG",
     "Balkonfenster-Zimmer-1.JPG",
     "Flur-Treppe.JPG",
@@ -84,7 +85,7 @@ export default function Home() {
               {/* Image Gallery */}
               <div className="bg-gray-200 h-72 overflow-hidden relative">
                 <img
-                  src={`/${property.folder}/${getImages(property.folder)[0]}`}
+                  src={`/${property.folder}/${getImages(property.folder)[0]}?v=${APP_VERSION}`}
                   alt={property.titel}
                   className="w-full h-full object-cover"
                 />
