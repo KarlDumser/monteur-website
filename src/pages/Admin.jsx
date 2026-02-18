@@ -29,6 +29,26 @@ export default function Admin() {
     }
   }, [auth]);
 
+  useEffect(() => {
+    const syncAuth = () => {
+      setAuth(sessionStorage.getItem('adminAuth') || '');
+    };
+
+    window.addEventListener('admin-auth-changed', syncAuth);
+    window.addEventListener('storage', syncAuth);
+
+    return () => {
+      window.removeEventListener('admin-auth-changed', syncAuth);
+      window.removeEventListener('storage', syncAuth);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('adminAuth');
+    setAuth('');
+    window.dispatchEvent(new Event('admin-auth-changed'));
+  };
+
   const loadData = async () => {
     try {
       const apiUrl = getApiUrl();
@@ -39,6 +59,7 @@ export default function Admin() {
         sessionStorage.removeItem('adminAuth');
         setAuth('');
         setAuthError('Zugriff verweigert. Bitte erneut anmelden.');
+        window.dispatchEvent(new Event('admin-auth-changed'));
         setLoading(false);
         return;
       }
@@ -150,6 +171,7 @@ export default function Admin() {
                 sessionStorage.setItem('adminAuth', token);
                 setAuth(token);
                 setAuthError('');
+                window.dispatchEvent(new Event('admin-auth-changed'));
               } catch (error) {
                 setAuthError('Login fehlgeschlagen.');
               }
@@ -191,7 +213,16 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="text-sm text-gray-600 hover:text-gray-900 border border-gray-200 px-3 py-2 rounded-lg"
+          >
+            Logout
+          </button>
+        </div>
 
         {/* Statistiken */}
         {stats && (
