@@ -33,9 +33,14 @@ export default function Anfahrt() {
               </div>
             </div>
 
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+            <a
+              className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition"
+              href="https://www.google.com/maps/search/?api=1&query=Hackerberg%204%2C%2082152%20Krailling"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Route in Google Maps öffnen
-            </button>
+            </a>
           </div>
 
           {/* Wohnung Frühlingstrasse */}
@@ -45,7 +50,7 @@ export default function Anfahrt() {
             <div className="space-y-4 mb-6">
               <div>
                 <h3 className="font-semibold text-gray-700">Adresse</h3>
-                <p className="text-gray-600">Frühlingstrasse 8</p>
+                <p className="text-gray-600">Frühlingstraße 8</p>
                 <p className="text-gray-600">82152 Krailling</p>
                 <p className="text-gray-600">Deutschland</p>
               </div>
@@ -66,9 +71,14 @@ export default function Anfahrt() {
               </div>
             </div>
 
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+            <a
+              className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition"
+              href="https://www.google.com/maps/search/?api=1&query=Fr%C3%BChlingstra%C3%9Fe%208%2C%2082152%20Krailling"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Route in Google Maps öffnen
-            </button>
+            </a>
           </div>
         </div>
       </div>
