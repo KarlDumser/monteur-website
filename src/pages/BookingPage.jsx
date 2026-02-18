@@ -120,7 +120,7 @@ export default function BookingPage() {
       galerie:
         "https://www.monteurzimmer.de/gaestezimmer/82152-krailling-1422811f39",
       images: [
-        ".Zimmer-1.JPG",
+        "Zimmer-1.JPG",
         "Bad.JPG",
         "Balkonfenster-Zimmer-1.JPG",
         "Flur-Treppe.JPG",
@@ -140,7 +140,7 @@ export default function BookingPage() {
       galerie:
         "https://www.monteurzimmer.de/gaestezimmer/82152-krailling-1422811f39",
       images: [
-        ".Wohnzimmer.JPG",
+        "Wohnzimmer.JPG",
         "Bad.JPG",
         "Balkon.JPG",
         "Eingangsbereich.JPG",
@@ -227,7 +227,7 @@ export default function BookingPage() {
                       value={company}
                       onChange={(e) => setCompany(e.target.value)}
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      placeholder="z.B. MSB ebau GmbH"
+                      placeholder="z.B. Müller Haustechnik GmbH"
                       required
                     />
                   </div>
@@ -238,7 +238,7 @@ export default function BookingPage() {
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      placeholder="z.B. Oskar-Messter-Str. 15"
+                      placeholder="z.B. Ottostraße 8"
                       required
                     />
                   </div>
@@ -249,7 +249,7 @@ export default function BookingPage() {
                       value={zip}
                       onChange={(e) => setZip(e.target.value)}
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      placeholder="z.B. 85737"
+                      placeholder="z.B. 83521"
                       required
                     />
                   </div>
@@ -260,7 +260,7 @@ export default function BookingPage() {
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      placeholder="z.B. Ismaning"
+                      placeholder="z.B. Berghausen"
                       required
                     />
                   </div>
