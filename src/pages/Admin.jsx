@@ -390,6 +390,7 @@ export default function Admin() {
                                 headers: { Authorization: `Basic ${auth}` }
                               });
                               if (response.ok) {
+                                alert('Buchung wiederhergestellt');
                                 loadData();
                               } else {
                                 alert('Wiederherstellen fehlgeschlagen');
