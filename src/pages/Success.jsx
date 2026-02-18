@@ -3,13 +3,23 @@ import { useEffect, useState } from 'react';
 
 export default function Success() {
   const [email, setEmail] = useState('');
+  const [bookingId, setBookingId] = useState('');
 
   useEffect(() => {
     // Hole die Email aus der Buchungs-Info (wurde vom Payment-Prozess gespeichert)
-    const bookingInfo = localStorage.getItem('bookingInfo');
-    if (bookingInfo) {
-      const booking = JSON.parse(bookingInfo);
-      setEmail(booking.email);
+    try {
+      const bookingInfo = localStorage.getItem('bookingInfo');
+      console.log('📦 Booking Info aus localStorage:', bookingInfo);
+      if (bookingInfo) {
+        const booking = JSON.parse(bookingInfo);
+        console.log('✅ Parsed booking:', booking);
+        setEmail(booking.email);
+        setBookingId(booking._id);
+      } else {
+        console.warn('⚠️ Keine booking-Info im localStorage found');
+      }
+    } catch (error) {
+      console.error('❌ Fehler beim Laden von booking info:', error);
     }
   }, []);
   return (

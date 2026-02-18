@@ -1,5 +1,4 @@
 import { generateInvoice } from './invoiceGenerator.js';
-import nodemailer from 'nodemailer';
 
 /**
  * Sendet Buchungsbestätigung mit Rechnung als PDF-Anhang
@@ -16,9 +15,20 @@ export async function sendBookingConfirmation(booking) {
 
     console.log('📧 Erstelle Buchungsbestätigungs-Email...');
     
-    // Prüfe ob nodemailer verfügbar ist
+    // Lade nodemailer dynamisch
+    let nodemailer;
+    try {
+      const mod = await import('nodemailer');
+      nodemailer = mod.default;
+      console.log('✅ nodemailer geladen');
+    } catch (importError) {
+      console.error('❌ nodemailer Import fehlgeschlagen:', importError.message);
+      console.warn('⚠️ Emails deaktiviert');
+      return { skipped: true };
+    }
+    
     if (!nodemailer || !nodemailer.createTransporter) {
-      console.warn('⚠️ nodemailer nicht verfügbar - Emails deaktiviert');
+      console.warn('⚠️ nodemailer.createTransporter nicht verfügbar');
       return { skipped: true };
     }
 
