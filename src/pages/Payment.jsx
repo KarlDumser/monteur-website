@@ -212,7 +212,7 @@ export default function Payment() {
               <div className="space-y-3 text-gray-700">
                 <div className="flex justify-between">
                   <span>Wohnung:</span>
-                  <strong>{bookingInfo.wohnung === 'hackerberg' ? 'Hackerberg – Penthouse' : 'Neubau – Frühligstraße'}</strong>
+                  <strong>{bookingInfo.wohnungLabel || bookingInfo.wohnung}</strong>
                 </div>
                 <div className="flex justify-between">
                   <span>Zeitraum:</span>
@@ -258,7 +258,7 @@ export default function Payment() {
                 </div>
                 <div className="flex justify-between">
                   <span>Endreinigung:</span>
-                  <span>90€</span>
+                  <span>{bookingInfo.cleaningFee ?? 90}€</span>
                 </div>
                 
                 <div className="border-t pt-3 flex justify-between text-lg">

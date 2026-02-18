@@ -14,6 +14,16 @@ router.get('/bookings', async (req, res) => {
   }
 });
 
+// Alle Buchungen loeschen
+router.delete('/bookings', async (req, res) => {
+  try {
+    const result = await Booking.deleteMany({});
+    res.json({ deletedCount: result.deletedCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Blockierte Zeiten abrufen
 router.get('/blocked-dates', async (req, res) => {
   try {

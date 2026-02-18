@@ -72,7 +72,11 @@ export async function generateInvoice(booking) {
       doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
 
       // Zeile 1: Ferienwohnung
-      const wohnungName = booking.wohnung === 'neubau' ? 'HA' : 'HB';
+         const wohnungName = booking.wohnung === 'neubau'
+            ? 'FS'
+            : booking.wohnung === 'kombi'
+               ? 'HB + FS'
+               : 'HB';
       const startDateStr = formatGermanDate(booking.startDate);
       const endDateStr = formatGermanDate(booking.endDate);
       
@@ -86,11 +90,12 @@ export async function generateInvoice(booking) {
 
       // Zeile 2: Reinigung
       const cleaningRow = tableTop + 70;
+      const cleaningFee = Number(booking.cleaningFee ?? 90);
       doc.text('', 50, cleaningRow)
          .text('Reinigung ' + wohnungName, 100, cleaningRow)
          .text('1', 350, cleaningRow)
-         .text('100.00', 410, cleaningRow)
-         .text('100.00', 490, cleaningRow);
+         .text(cleaningFee.toFixed(2), 410, cleaningRow)
+         .text(cleaningFee.toFixed(2), 490, cleaningRow);
 
       // Trennlinie vor Summen
       const sumTop = cleaningRow + 40;
@@ -130,9 +135,11 @@ export async function generateInvoice(booking) {
          .text('BYLADEM1KMS', 150, sumTop + 146);
 
       // Adresse der Wohnung
-      const wohnungAdresse = booking.wohnung === 'neubau' 
-        ? 'Frühlingstraße 8, D-82152 Krailling'
-        : 'Hackerbergstraße 8, D-82152 Krailling';
+         const wohnungAdresse = booking.wohnung === 'kombi'
+            ? 'Frühlingstraße 8 und Hackerbergstraße 8, D-82152 Krailling'
+            : booking.wohnung === 'neubau'
+               ? 'Frühlingstraße 8, D-82152 Krailling'
+               : 'Hackerbergstraße 8, D-82152 Krailling';
       
       doc.fontSize(10)
          .font('Helvetica')

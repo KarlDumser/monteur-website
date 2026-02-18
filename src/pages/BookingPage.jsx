@@ -22,8 +22,12 @@ export default function BookingPage() {
   const [zip, setZip] = useState("");
   const [city, setCity] = useState("");
   const [step, setStep] = useState("form");
-  const [available, setAvailable] = useState([]);
+  const [availability, setAvailability] = useState({ keys: [], status: {} });
   const [selectedImage, setSelectedImage] = useState(null);
+
+  const MAX_PEOPLE_HACKERBERG = 5;
+  const MAX_PEOPLE_FRUEHLING = 6;
+  const MAX_PEOPLE = 11;
 
   const belegteZeiten = {
     neubau: ["2025-06-01", "2025-06-30"],
@@ -31,11 +35,16 @@ export default function BookingPage() {
   };
 
   // Berechne Preis basierend auf Anzahl der Mitarbeiter
-  const getPricePerNight = () => {
-    const numPeople = parseInt(people);
+  const getBasePricePerNight = () => {
+    const numPeople = parseInt(people, 10);
     if (numPeople <= 4) return 100;
     if (numPeople === 5) return 105;
     return 110;
+  };
+
+  const getPricePerNight = (wohnungKey) => {
+    const base = getBasePricePerNight();
+    return wohnungKey === "kombi" ? base * 2 : base;
   };
 
   // Prüfe ob Frühbucherabatt aktiv ist (mindestens 2 Monate vorher)
@@ -51,6 +60,7 @@ export default function BookingPage() {
   };
 
   const checkAvailability = () => {
+    const numPeople = parseInt(people, 10);
     const start = format(range[0].startDate, "yyyy-MM-dd");
     const end = format(range[0].endDate, "yyyy-MM-dd");
     const dateRange = [start, end];
@@ -58,29 +68,47 @@ export default function BookingPage() {
     const isBelegt = (range, belegung) =>
       range[0] <= belegung[1] && range[1] >= belegung[0];
 
-    const frei = [];
-    if (!isBelegt(dateRange, belegteZeiten.neubau)) frei.push("neubau");
-    if (!isBelegt(dateRange, belegteZeiten.hackerberg)) frei.push("hackerberg");
+    const hackerbergFrei = !isBelegt(dateRange, belegteZeiten.hackerberg);
+    const fruehlingFrei = !isBelegt(dateRange, belegteZeiten.neubau);
 
-    return frei;
+    const status = {
+      hackerberg: hackerbergFrei,
+      neubau: fruehlingFrei,
+      kombi: hackerbergFrei && fruehlingFrei
+    };
+
+    if (numPeople >= 7 && numPeople <= MAX_PEOPLE) {
+      return { keys: status.kombi ? ["kombi"] : [], status };
+    }
+
+    if (numPeople === MAX_PEOPLE_FRUEHLING) {
+      return { keys: fruehlingFrei ? ["neubau"] : [], status };
+    }
+
+    const frei = [];
+    if (hackerbergFrei) frei.push("hackerberg");
+    if (fruehlingFrei) frei.push("neubau");
+    return { keys: frei, status };
   };
 
   const handleBooking = (e) => {
     e.preventDefault();
-    const verfügbar = checkAvailability();
-    setAvailable(verfügbar);
+    const ergebnis = checkAvailability();
+    setAvailability(ergebnis);
     setStep("select");
   };
 
   const handleSelectWohnung = (wohnungKey) => {
     // Redirect to payment page with booking details
     const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
-    const pricePerNight = getPricePerNight();
-    const subtotal = nights * pricePerNight + 90;
+    const pricePerNight = getPricePerNight(wohnungKey);
+    const cleaningFee = wohnungKey === "kombi" ? 180 : 90;
+    const subtotal = nights * pricePerNight + cleaningFee;
     const discount = getEarlyBookingDiscount();
     const subtotalAfterDiscount = subtotal * (1 - discount);
     const vat = subtotalAfterDiscount * 0.19;
     const total = Math.round(subtotalAfterDiscount + vat);
+    const wohnungLabel = wohnungen[wohnungKey]?.titel || wohnungKey;
     
     // Store booking info and redirect to payment
     const bookingInfo = {
@@ -97,6 +125,8 @@ export default function BookingPage() {
       zip,
       city,
       pricePerNight,
+      cleaningFee,
+      wohnungLabel,
       subtotal,
       discount,
       vat: Math.round(vat),
@@ -112,7 +142,7 @@ export default function BookingPage() {
 
   const wohnungen = {
     neubau: {
-      titel: "Neubau – Frühligstraße",
+      titel: "Frühlingstraße – Neubau",
       beschreibung:
         "2-Zimmerwohnung mit moderner Ausstattung, Küche, Bad, Garten mit Grillplatz. Ideal für handwerkliche Fachkräfte und Monteure.",
       internet: "WLAN 150 Mbit/s",
@@ -151,6 +181,42 @@ export default function BookingPage() {
       ],
       folder: "Wohnung-Hackerberg"
     },
+    kombi: {
+      titel: "Kombi-Paket: Hackerberg + Frühlingstraße",
+      beschreibung:
+        "Beide Wohnungen zusammen. Ideal für größere Teams mit 7–11 Personen.",
+      internet: "WLAN 100–150 Mbit/s",
+      extras: "Zwei Wohnungen, zwei Küchen, zwei Bäder",
+      preis: "Kombi-Paket",
+      galleries: [
+        {
+          titel: "Frühlingstraße",
+          folder: "Wohnung-Fruehlingstrasse",
+          images: [
+            "Zimmer-1.JPG",
+            "Bad.JPG",
+            "Balkonfenster-Zimmer-1.JPG",
+            "Flur-Treppe.JPG",
+            "Kueche-Fenster.JPG",
+            "Kueche.JPG",
+            "Zimmer-2.JPG"
+          ]
+        },
+        {
+          titel: "Hackerberg",
+          folder: "Wohnung-Hackerberg",
+          images: [
+            "Wohnzimmer.JPG",
+            "Bad.JPG",
+            "Balkon.JPG",
+            "Eingangsbereich.JPG",
+            "Kueche.JPG",
+            "Zimmer-1.JPG",
+            "Zimmer-2.JPG"
+          ]
+        }
+      ]
+    }
   };
 
   return (
@@ -209,12 +275,16 @@ export default function BookingPage() {
               <input
                 type="number"
                 min={1}
-                max={8}
+                max={MAX_PEOPLE}
                 value={people}
                 onChange={(e) => setPeople(e.target.value)}
                 className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                 required
               />
+              <p className="mt-2 text-xs text-gray-500">
+                Hackerberg bis {MAX_PEOPLE_HACKERBERG} Personen, Frühlingstraße bis {MAX_PEOPLE_FRUEHLING} Personen,
+                Kombi-Paket für 7–{MAX_PEOPLE} Personen.
+              </p>
             </div>
 
             <div className="space-y-4">
@@ -324,20 +394,52 @@ export default function BookingPage() {
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Verfügbare Wohnungen</h1>
           <p className="text-gray-600 mb-8">Schritt 2: Wählen Sie eine Wohnung</p>
 
-          {available.length > 0 ? (
+          {(() => {
+            const numPeople = parseInt(people, 10);
+            const displayKeys = numPeople >= 7
+              ? ["kombi"]
+              : numPeople === MAX_PEOPLE_FRUEHLING
+                ? ["neubau"]
+                : ["hackerberg", "neubau"];
+            const hasAnyAvailable = displayKeys.some((key) => availability.status?.[key]);
+
+            return (
             <div className="space-y-6">
-              {available.map((key) => {
+              {!hasAnyAvailable && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 text-center">
+                  <h3 className="text-xl font-bold text-red-800 mb-2">Keine Verfuegbarkeit</h3>
+                  <p className="text-red-700">Fuer den gewaehlten Zeitraum ist aktuell keine passende Wohnung verfuegbar.</p>
+                </div>
+              )}
+              {displayKeys.map((key) => {
                 const wohnung = wohnungen[key];
+                const nights = Math.max(
+                  0,
+                  Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))
+                );
+                const pricePerNight = getPricePerNight(key);
+                const cleaningFee = key === "kombi" ? 180 : 90;
+                const baseSum = nights * pricePerNight + cleaningFee;
+                const isAvailable = Boolean(availability.status?.[key]);
                 return (
                   <div
                     key={key}
-                    className="border-2 border-blue-200 rounded-2xl p-8 shadow-lg bg-white hover:shadow-xl transition"
+                    className={`border-2 rounded-2xl p-8 shadow-lg bg-white transition ${
+                      isAvailable
+                        ? "border-blue-200 hover:shadow-xl"
+                        : "border-red-200 opacity-70"
+                    }`}
                   >
                     <div className="grid grid-cols-1 gap-8">
                       {/* Title and Description */}
                       <div>
                         <h2 className="text-3xl font-bold mb-3 text-gray-800">{wohnung.titel}</h2>
                         <p className="text-gray-700 mb-4 leading-relaxed">{wohnung.beschreibung}</p>
+                        {!isAvailable && (
+                          <span className="inline-block mb-4 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                            Ausgebucht
+                          </span>
+                        )}
                         
                         <div className="space-y-2 text-sm text-gray-700 mb-4">
                           <div className="flex items-center gap-2">
@@ -354,57 +456,84 @@ export default function BookingPage() {
                       {/* Image Gallery */}
                       <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-3 text-gray-800">📸 Bildergalerie</h3>
-                        <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
-                          {wohnung.images.map((image, index) => (
-                            <div
-                              key={index}
-                              className="bg-gray-200 rounded-lg overflow-hidden h-24 hover:opacity-75 transition cursor-pointer"
-                              onClick={() => setSelectedImage({ image, folder: wohnung.folder, titel: wohnung.titel })}
-                            >
-                              <img
-                                src={`/${wohnung.folder}/${image}?v=${APP_VERSION}`}
-                                alt={`${wohnung.titel} ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ))}
-                        </div>
+                        {wohnung.galleries ? (
+                          <div className="space-y-4">
+                            {wohnung.galleries.map((gallery) => (
+                              <div key={gallery.titel}>
+                                <p className="text-sm font-semibold text-gray-700 mb-2">{gallery.titel}</p>
+                                <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+                                  {gallery.images.map((image, index) => (
+                                    <div
+                                      key={`${gallery.titel}-${index}`}
+                                      className="bg-gray-200 rounded-lg overflow-hidden h-24 hover:opacity-75 transition cursor-pointer"
+                                      onClick={() =>
+                                        setSelectedImage({
+                                          image,
+                                          folder: gallery.folder,
+                                          titel: `${wohnung.titel} – ${gallery.titel}`
+                                        })
+                                      }
+                                    >
+                                      <img
+                                        src={`/${gallery.folder}/${image}?v=${APP_VERSION}`}
+                                        alt={`${gallery.titel} ${index + 1}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+                            {wohnung.images.map((image, index) => (
+                              <div
+                                key={index}
+                                className="bg-gray-200 rounded-lg overflow-hidden h-24 hover:opacity-75 transition cursor-pointer"
+                                onClick={() => setSelectedImage({ image, folder: wohnung.folder, titel: wohnung.titel })}
+                              >
+                                <img
+                                  src={`/${wohnung.folder}/${image}?v=${APP_VERSION}`}
+                                  alt={`${wohnung.titel} ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Price Box */}
                       <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
                         <div>
                           <p className="text-gray-600 text-sm mb-2">Preis pro Nacht</p>
-                          <p className="text-4xl font-bold text-blue-600 mb-4">{getPricePerNight()}€</p>
+                          <p className="text-4xl font-bold text-blue-600 mb-4">{pricePerNight}€</p>
                           <p className="text-xs text-gray-500 mb-4">(für {people} {parseInt(people) === 1 ? 'Person' : 'Personen'})</p>
                           <div className="space-y-2 text-sm text-gray-700">
-                            <p>+ 90€ Endreinigung</p>
+                            <p>+ {cleaningFee}€ Endreinigung</p>
                             
                             {getEarlyBookingDiscount() > 0 ? (
                               <>
                                 <div className="pt-2 border-t border-blue-200">
-                                  <p className="font-semibold">Summe: {Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))) * getPricePerNight() + 90}€</p>
-                                  <p className="text-green-700">- 10% Rabatt: {Math.round((Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))) * getPricePerNight() + 90) * 0.10)}€</p>
-                                  <p className="font-semibold">Zwischensumme: {Math.round((Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))) * getPricePerNight() + 90) * 0.90)}€</p>
-                                  <p>+ 19% MwSt.: {Math.round((Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))) * getPricePerNight() + 90) * 0.90 * 0.19)}€</p>
+                                  <p className="font-semibold">Summe: {baseSum}€</p>
+                                  <p className="text-green-700">- 10% Rabatt: {Math.round(baseSum * 0.10)}€</p>
+                                  <p className="font-semibold">Zwischensumme: {Math.round(baseSum * 0.90)}€</p>
+                                  <p>+ 19% MwSt.: {Math.round(baseSum * 0.90 * 0.19)}€</p>
                                   <p className="pt-2 border-t border-green-300">
                                     <strong className="text-green-800 text-lg">
-                                      Total: {Math.round((Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))) * getPricePerNight() + 90) * 0.90 * 1.19)}€
+                                      Total: {Math.round(baseSum * 0.90 * 1.19)}€
                                     </strong>
                                   </p>
                                 </div>
                               </>
                             ) : (
                               <>
-                                <p className="pt-2 border-t border-blue-200 font-semibold">
-                                  Summe: {Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))) * getPricePerNight() + 90}€
-                                </p>
-                                <p>
-                                  + 19% MwSt.: {Math.round((Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))) * getPricePerNight() + 90) * 0.19)}€
-                                </p>
+                                <p className="pt-2 border-t border-blue-200 font-semibold">Summe: {baseSum}€</p>
+                                <p>+ 19% MwSt.: {Math.round(baseSum * 0.19)}€</p>
                                 <p className="pt-2 border-t border-blue-300">
                                   <strong className="text-lg">
-                                    Total: {Math.round((Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))) * getPricePerNight() + 90) * 1.19)}€
+                                    Total: {Math.round(baseSum * 1.19)}€
                                   </strong>
                                 </p>
                               </>
@@ -414,33 +543,29 @@ export default function BookingPage() {
 
                         <button 
                           onClick={() => handleSelectWohnung(key)}
-                          className="mt-6 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-green-700 transition shadow-lg"
+                          disabled={!isAvailable}
+                          className={`mt-6 w-full font-bold py-3 px-4 rounded-xl transition shadow-lg ${
+                            isAvailable
+                              ? "bg-green-600 text-white hover:bg-green-700"
+                              : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                          }`}
                         >
-                          ✓ Diese Wohnung buchen
+                          {isAvailable ? "✓ Diese Wohnung buchen" : "Ausgebucht"}
                         </button>
                       </div>
                     </div>
                   </div>
                 );
               })}
-            </div>
-          ) : (
-            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 text-center">
-              <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
-              </svg>
-              <h3 className="text-2xl font-bold text-red-800 mb-2">Keine Verfügbarkeit</h3>
-              <p className="text-red-700 mb-4">
-                Leider ist für den gewählten Zeitraum keine Wohnung verfügbar. Bitte wählen Sie einen anderen Zeitraum.
-              </p>
               <button
                 onClick={() => setStep("form")}
                 className="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition"
               >
-                ← Zurück zur Datumsauswahl
+                ← Zurueck zur Datumsauswahl
               </button>
             </div>
-          )}
+          );
+          })()}
         </div>
       )}
 

@@ -78,7 +78,12 @@ export async function sendBookingConfirmation(booking) {
     }
 
     // Email Optionen
-    const wohnungName = booking.wohnung === 'neubau' ? 'Neubau – Frühlingstraße' : 'Hackerberg';
+    const wohnungName = booking.wohnungLabel
+      || (booking.wohnung === 'neubau'
+        ? 'Neubau – Frühlingstraße'
+        : booking.wohnung === 'kombi'
+          ? 'Kombi-Paket: Hackerberg + Frühlingstraße'
+          : 'Hackerberg');
     const startDate = formatGermanDate(booking.startDate);
     const endDate = formatGermanDate(booking.endDate);
     const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
@@ -135,10 +140,11 @@ export async function sendBookingConfirmation(booking) {
           
           <div style="margin: 30px 0;">
             <h3 style="color: #374151;">Adresse der Wohnung:</h3>
-            <p style="margin: 5px 0;">
-              ${booking.wohnung === 'neubau' ? 'Frühlingstraße 8' : 'Hackerbergstraße 8'}<br>
-              82152 Krailling b. München
-            </p>
+            ${booking.wohnung === 'kombi'
+              ? `<p style="margin: 5px 0;">Frühlingstraße 8<br>82152 Krailling b. München</p>
+                 <p style="margin: 5px 0;">Hackerbergstraße 8<br>82152 Krailling b. München</p>`
+              : `<p style="margin: 5px 0;">${booking.wohnung === 'neubau' ? 'Frühlingstraße 8' : 'Hackerbergstraße 8'}<br>82152 Krailling b. München</p>`
+            }
           </div>
           
           <div style="margin: 30px 0;">
