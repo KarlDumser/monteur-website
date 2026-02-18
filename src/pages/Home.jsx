@@ -11,7 +11,7 @@ export default function Home() {
       id: 1,
       titel: "Wohnung Hackerberg",
       beschreibung: "Gemütliche Wohnung mit modernen Einrichtungen",
-      preis: "ab 90€ pro Nacht!",
+      preis: "ab 18€ pro Person/Nacht!",
       zimmer: "2 Zimmer",
       flaeche: "65 m²",
       folder: "Wohnung-Hackerberg"
@@ -20,7 +20,7 @@ export default function Home() {
       id: 2,
       titel: "Wohnung Frühlingstraße",
       beschreibung: "Schöne Wohnung in zentraler Lage",
-      preis: "ab 90€ pro Nacht!",
+      preis: "ab 18€ pro Person/Nacht!",
       zimmer: "3 Zimmer",
       flaeche: "85 m²",
       folder: "Wohnung-Fruehlingstrasse"
