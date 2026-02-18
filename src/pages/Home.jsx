@@ -65,12 +65,6 @@ export default function Home() {
             >
               Jetzt Buchen
             </Link>
-            <Link
-              to="/admin"
-              className="inline-block border border-white/60 text-white font-semibold py-3 px-6 rounded-lg hover:bg-white/10 transition text-sm"
-            >
-              Admin-Login
-            </Link>
           </div>
         </div>
       </div>

@@ -27,6 +27,12 @@ export default function Header() {
             <Link to="/impressum" className="text-white hover:bg-blue-500 px-3 py-2 rounded-lg transition">
               Impressum
             </Link>
+            <Link
+              to="/admin"
+              className="text-white/70 hover:text-white text-xs px-2 py-1 rounded-md transition"
+            >
+              Admin-Login
+            </Link>
             <span className="text-xs bg-white text-blue-600 px-2 py-1 rounded font-semibold ml-4">
               v{APP_VERSION}
             </span>
