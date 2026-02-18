@@ -42,7 +42,17 @@ function CheckoutForm({ bookingInfo }) {
         const data = await response.json();
         
         if (data.success) {
-          localStorage.removeItem('bookingInfo');
+          // Speichere die Booking-Info NOCHMAL (mit Response-Daten) vor dem Redirect
+          console.log('💾 Speichere Booking-Info vor Redirect...');
+          const bookingResponse = {
+            ...bookingInfo,
+            _id: data.booking?._id,
+            email: bookingInfo.email
+          };
+          localStorage.setItem('bookingInfo', JSON.stringify(bookingResponse));
+          console.log('✅ Booking-Info gespeichert:', bookingResponse);
+          
+          // Redirect zur Erfolgsseite
           window.location.href = '/erfolg';
         } else {
           setMessage('Fehler beim Speichern der Buchung');
