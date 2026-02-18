@@ -43,8 +43,13 @@ export default function BookingPage() {
   };
 
   const getPricePerNight = (wohnungKey) => {
+    const numPeople = parseInt(people, 10);
     const base = getBasePricePerNight();
-    return wohnungKey === "kombi" ? base * 2 : base;
+    if (wohnungKey !== "kombi") return base;
+
+    if (numPeople <= 8) return 200;
+    if (numPeople <= 10) return 210;
+    return 215;
   };
 
   // Prüfe ob Frühbucherabatt aktiv ist (mindestens 2 Monate vorher)

@@ -4,6 +4,33 @@ import BlockedDate from '../models/BlockedDate.js';
 
 const router = express.Router();
 
+const requireAdminAuth = (req, res, next) => {
+  const expectedUser = process.env.ADMIN_USER;
+  const expectedPass = process.env.ADMIN_PASS;
+
+  if (!expectedUser || !expectedPass) {
+    return res.status(500).json({ error: 'Admin auth not configured' });
+  }
+
+  const authHeader = req.headers.authorization || '';
+  if (!authHeader.startsWith('Basic ')) {
+    res.set('WWW-Authenticate', 'Basic realm="Admin"');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const encoded = authHeader.slice('Basic '.length);
+  const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+  const [user, pass] = decoded.split(':');
+
+  if (user !== expectedUser || pass !== expectedPass) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  return next();
+};
+
+router.use(requireAdminAuth);
+
 // Alle Buchungen abrufen
 router.get('/bookings', async (req, res) => {
   try {
@@ -19,6 +46,19 @@ router.delete('/bookings', async (req, res) => {
   try {
     const result = await Booking.deleteMany({});
     res.json({ deletedCount: result.deletedCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Einzelne Buchung loeschen
+router.delete('/bookings/:id', async (req, res) => {
+  try {
+    const booking = await Booking.findByIdAndDelete(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+    res.json({ message: 'Buchung geloescht' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

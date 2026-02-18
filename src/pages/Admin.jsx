@@ -8,6 +8,9 @@ export default function Admin() {
   const [stats, setStats] = useState(null);
   const [activeTab, setActiveTab] = useState('bookings');
   const [loading, setLoading] = useState(true);
+  const [auth, setAuth] = useState(() => sessionStorage.getItem('adminAuth') || '');
+  const [authError, setAuthError] = useState('');
+  const [credentials, setCredentials] = useState({ username: '', password: '' });
   
   // Form für Zeitblockierung
   const [blockForm, setBlockForm] = useState({
@@ -18,24 +21,36 @@ export default function Admin() {
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (auth) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [auth]);
 
   const loadData = async () => {
     try {
       const apiUrl = getApiUrl();
+      const headers = auth ? { Authorization: `Basic ${auth}` } : {};
       // Buchungen laden
-      const bookingsRes = await fetch(`${apiUrl}/admin/bookings`);
+      const bookingsRes = await fetch(`${apiUrl}/admin/bookings`, { headers });
+      if (bookingsRes.status === 401) {
+        sessionStorage.removeItem('adminAuth');
+        setAuth('');
+        setAuthError('Zugriff verweigert. Bitte erneut anmelden.');
+        setLoading(false);
+        return;
+      }
       const bookingsData = await bookingsRes.json();
       setBookings(bookingsData);
 
       // Blockierte Zeiten laden
-      const blockedRes = await fetch(`${apiUrl}/admin/blocked-dates`);
+      const blockedRes = await fetch(`${apiUrl}/admin/blocked-dates`, { headers });
       const blockedData = await blockedRes.json();
       setBlockedDates(blockedData);
 
       // Statistiken laden
-      const statsRes = await fetch(`${apiUrl}/admin/statistics`);
+      const statsRes = await fetch(`${apiUrl}/admin/statistics`, { headers });
       const statsData = await statsRes.json();
       setStats(statsData);
 
@@ -53,7 +68,10 @@ export default function Admin() {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/admin/block-dates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${auth}`
+        },
         body: JSON.stringify(blockForm)
       });
 
@@ -76,7 +94,8 @@ export default function Admin() {
     try {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/admin/blocked-dates/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { Authorization: `Basic ${auth}` }
       });
 
       if (response.ok) {
@@ -92,6 +111,73 @@ export default function Admin() {
     return (
       <div className="container mx-auto px-4 py-12">
         <p className="text-center text-gray-600">Lade Daten...</p>
+      </div>
+    );
+  }
+
+  if (!auth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
+          <h1 className="text-2xl font-bold mb-2">Admin Login</h1>
+          <p className="text-sm text-gray-600 mb-6">Bitte melden Sie sich an.</p>
+
+          {authError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-4">
+              {authError}
+            </div>
+          )}
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const token = btoa(`${credentials.username}:${credentials.password}`);
+              try {
+                const apiUrl = getApiUrl();
+                const res = await fetch(`${apiUrl}/admin/statistics`, {
+                  headers: { Authorization: `Basic ${token}` }
+                });
+                if (!res.ok) {
+                  setAuthError('Benutzername oder Passwort falsch.');
+                  return;
+                }
+                sessionStorage.setItem('adminAuth', token);
+                setAuth(token);
+                setAuthError('');
+              } catch (error) {
+                setAuthError('Login fehlgeschlagen.');
+              }
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="block text-sm font-semibold mb-2">Benutzername</label>
+              <input
+                type="email"
+                value={credentials.username}
+                onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2">Passwort</label>
+              <input
+                type="password"
+                value={credentials.password}
+                onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg"
+            >
+              Einloggen
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -153,6 +239,7 @@ export default function Admin() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zeitraum</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Betrag</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -166,7 +253,7 @@ export default function Admin() {
                       <div className="text-sm text-gray-500">{booking.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {booking.wohnung === 'hackerberg' ? 'Hackerberg' : 'Frühlingstr.'}
+                      {booking.wohnungLabel || (booking.wohnung === 'hackerberg' ? 'Hackerberg' : booking.wohnung === 'neubau' ? 'Fruehlingstr.' : 'Kombi')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {new Date(booking.startDate).toLocaleDateString('de-DE')} - {new Date(booking.endDate).toLocaleDateString('de-DE')}
@@ -181,6 +268,31 @@ export default function Admin() {
                       }`}>
                         {booking.paymentStatus === 'paid' ? '✓ Bezahlt' : 'Ausstehend'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={async () => {
+                          if (!confirm('Buchung wirklich loeschen?')) return;
+                          try {
+                            const apiUrl = getApiUrl();
+                            const response = await fetch(`${apiUrl}/admin/bookings/${booking._id}`, {
+                              method: 'DELETE',
+                              headers: { Authorization: `Basic ${auth}` }
+                            });
+                            if (response.ok) {
+                              loadData();
+                            } else {
+                              alert('Loeschen fehlgeschlagen');
+                            }
+                          } catch (error) {
+                            console.error('Error deleting booking:', error);
+                            alert('Loeschen fehlgeschlagen');
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Loeschen
+                      </button>
                     </td>
                   </tr>
                 ))}
