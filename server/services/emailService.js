@@ -19,7 +19,7 @@ export async function sendBookingConfirmation(booking) {
     let nodemailer;
     try {
       const mod = await import('nodemailer');
-      nodemailer = mod.default;
+      nodemailer = mod.default || mod;
       console.log('✅ nodemailer geladen');
     } catch (importError) {
       console.error('❌ nodemailer Import fehlgeschlagen:', importError.message);
@@ -27,8 +27,8 @@ export async function sendBookingConfirmation(booking) {
       return { skipped: true };
     }
     
-    if (!nodemailer || !nodemailer.createTransporter) {
-      console.warn('⚠️ nodemailer.createTransporter nicht verfügbar');
+    if (!nodemailer || !nodemailer.createTransport) {
+      console.warn('⚠️ nodemailer.createTransport nicht verfügbar');
       return { skipped: true };
     }
 
@@ -38,7 +38,7 @@ export async function sendBookingConfirmation(booking) {
     console.log('✅ PDF-Rechnung erstellt');
 
     // Erstelle Transporter mit Konfiguration
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.ionos.de',
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
@@ -58,16 +58,16 @@ export async function sendBookingConfirmation(booking) {
     console.log('  User:', process.env.SMTP_USER || 'monteur-wohnung@dumser.net');
     console.log('  Password vorhanden:', !!smtpPassword, `(${smtpPassword?.length} zeichen)`);
     
-    // Teste Verbindung
+    // Teste Verbindung (nicht-blockierend)
+    console.log('📡 Teste SMTP-Verbindung...');
     try {
-      console.log('📡 Teste SMTP-Verbindung...');
       await transporter.verify();
       console.log('✅ SMTP-Verbindung erfolgreich!');
     } catch (verifyError) {
-      console.error('❌ SMTP-Verbindungsfehler:', verifyError.message);
-      console.error('   Code:', verifyError.code);
-      console.error('   Response:', verifyError.response);
-      throw verifyError;
+      console.warn('⚠️ SMTP-Verbindungstest fehlgeschlagen:', verifyError.message);
+      console.warn('   Code:', verifyError.code);
+      console.warn('   Versuche trotzdem zu senden...');
+      // Nicht werfen - versuche trotzdem zu senden
     }
 
     // Email Optionen
