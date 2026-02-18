@@ -4,6 +4,7 @@ import { getApiUrl } from '../utils/api.js';
 
 export default function Admin() {
   const [bookings, setBookings] = useState([]);
+  const [deletedBookings, setDeletedBookings] = useState([]);
   const [blockedDates, setBlockedDates] = useState([]);
   const [stats, setStats] = useState(null);
   const [activeTab, setActiveTab] = useState('bookings');
@@ -43,6 +44,11 @@ export default function Admin() {
       }
       const bookingsData = await bookingsRes.json();
       setBookings(bookingsData);
+
+      // Archivierte Buchungen laden
+      const deletedRes = await fetch(`${apiUrl}/admin/deleted-bookings`, { headers });
+      const deletedData = await deletedRes.json();
+      setDeletedBookings(deletedData);
 
       // Blockierte Zeiten laden
       const blockedRes = await fetch(`${apiUrl}/admin/blocked-dates`, { headers });
@@ -220,6 +226,12 @@ export default function Admin() {
             Blockierte Zeiten ({blockedDates.length})
           </button>
           <button
+            onClick={() => setActiveTab('deleted')}
+            className={`px-6 py-3 font-semibold ${activeTab === 'deleted' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+          >
+            Geloeschte Buchungen ({deletedBookings.length})
+          </button>
+          <button
             onClick={() => setActiveTab('block-new')}
             className={`px-6 py-3 font-semibold ${activeTab === 'block-new' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
           >
@@ -272,7 +284,7 @@ export default function Admin() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={async () => {
-                          if (!confirm('Buchung wirklich loeschen?')) return;
+                          if (!confirm('Buchung wirklich archivieren?')) return;
                           try {
                             const apiUrl = getApiUrl();
                             const response = await fetch(`${apiUrl}/admin/bookings/${booking._id}`, {
@@ -282,16 +294,82 @@ export default function Admin() {
                             if (response.ok) {
                               loadData();
                             } else {
-                              alert('Loeschen fehlgeschlagen');
+                              alert('Archivieren fehlgeschlagen');
                             }
                           } catch (error) {
                             console.error('Error deleting booking:', error);
-                            alert('Loeschen fehlgeschlagen');
+                            alert('Archivieren fehlgeschlagen');
                           }
                         }}
                         className="text-red-600 hover:text-red-800"
                       >
-                        Loeschen
+                        Archivieren
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Geloeschte Buchungen */}
+        {activeTab === 'deleted' && (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Geloescht am</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wohnung</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zeitraum</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Betrag</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {deletedBookings.map((booking) => (
+                  <tr key={booking._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {booking.deletedAt ? new Date(booking.deletedAt).toLocaleDateString('de-DE') : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium">{booking.name}</div>
+                      <div className="text-sm text-gray-500">{booking.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {booking.wohnungLabel || (booking.wohnung === 'hackerberg' ? 'Hackerberg' : booking.wohnung === 'neubau' ? 'Fruehlingstr.' : 'Kombi')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {new Date(booking.startDate).toLocaleDateString('de-DE')} - {new Date(booking.endDate).toLocaleDateString('de-DE')}
+                      <div className="text-gray-500">{booking.nights} Naechte</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {booking.total}€
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={async () => {
+                          if (!confirm('Buchung permanent loeschen?')) return;
+                          try {
+                            const apiUrl = getApiUrl();
+                            const response = await fetch(`${apiUrl}/admin/deleted-bookings/${booking._id}`, {
+                              method: 'DELETE',
+                              headers: { Authorization: `Basic ${auth}` }
+                            });
+                            if (response.ok) {
+                              loadData();
+                            } else {
+                              alert('Permanent loeschen fehlgeschlagen');
+                            }
+                          } catch (error) {
+                            console.error('Error deleting booking:', error);
+                            alert('Permanent loeschen fehlgeschlagen');
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Permanent loeschen
                       </button>
                     </td>
                   </tr>

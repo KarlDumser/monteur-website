@@ -26,6 +26,7 @@ const requireAdminAuth = (req, res, next) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  req.adminUser = user;
   return next();
 };
 
@@ -34,31 +35,61 @@ router.use(requireAdminAuth);
 // Alle Buchungen abrufen
 router.get('/bookings', async (req, res) => {
   try {
-    const bookings = await Booking.find().sort({ createdAt: -1 });
+    const bookings = await Booking.find({ deletedAt: null }).sort({ createdAt: -1 });
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Alle Buchungen loeschen
+// Alle Buchungen archivieren
 router.delete('/bookings', async (req, res) => {
   try {
-    const result = await Booking.deleteMany({});
-    res.json({ deletedCount: result.deletedCount });
+    const result = await Booking.updateMany(
+      { deletedAt: null },
+      { $set: { deletedAt: new Date(), deletedBy: req.adminUser } }
+    );
+    res.json({ archivedCount: result.modifiedCount });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Einzelne Buchung loeschen
+// Einzelne Buchung archivieren
 router.delete('/bookings/:id', async (req, res) => {
   try {
-    const booking = await Booking.findByIdAndDelete(req.params.id);
+    const booking = await Booking.findOneAndUpdate(
+      { _id: req.params.id, deletedAt: null },
+      { $set: { deletedAt: new Date(), deletedBy: req.adminUser } },
+      { new: true }
+    );
     if (!booking) {
       return res.status(404).json({ error: 'Buchung nicht gefunden' });
     }
-    res.json({ message: 'Buchung geloescht' });
+    res.json({ message: 'Buchung archiviert' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Archivierte Buchungen abrufen
+router.get('/deleted-bookings', async (req, res) => {
+  try {
+    const bookings = await Booking.find({ deletedAt: { $ne: null } }).sort({ deletedAt: -1 });
+    res.json(bookings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Archivierte Buchung permanent loeschen
+router.delete('/deleted-bookings/:id', async (req, res) => {
+  try {
+    const booking = await Booking.findOneAndDelete({ _id: req.params.id, deletedAt: { $ne: null } });
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+    res.json({ message: 'Buchung permanent geloescht' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -129,7 +160,8 @@ router.get('/calendar', async (req, res) => {
     // Buchungen abrufen
     const bookings = await Booking.find({
       ...query,
-      bookingStatus: { $ne: 'cancelled' }
+      bookingStatus: { $ne: 'cancelled' },
+      deletedAt: null
     });
     
     // Blockierte Zeiten abrufen
@@ -147,14 +179,14 @@ router.get('/calendar', async (req, res) => {
 // Statistiken
 router.get('/statistics', async (req, res) => {
   try {
-    const totalBookings = await Booking.countDocuments();
-    const confirmedBookings = await Booking.countDocuments({ bookingStatus: 'confirmed' });
+    const totalBookings = await Booking.countDocuments({ deletedAt: null });
+    const confirmedBookings = await Booking.countDocuments({ bookingStatus: 'confirmed', deletedAt: null });
     const totalRevenue = await Booking.aggregate([
-      { $match: { paymentStatus: 'paid' } },
+      { $match: { paymentStatus: 'paid', deletedAt: null } },
       { $group: { _id: null, total: { $sum: '$total' } } }
     ]);
     
-    const recentBookings = await Booking.find()
+    const recentBookings = await Booking.find({ deletedAt: null })
       .sort({ createdAt: -1 })
       .limit(5);
     

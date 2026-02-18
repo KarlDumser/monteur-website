@@ -13,7 +13,8 @@ const bookingSchema = new mongoose.Schema({
   city: { type: String, required: true },
   
   // Buchungsdetails
-  wohnung: { type: String, required: true, enum: ['neubau', 'hackerberg'] },
+  wohnung: { type: String, required: true, enum: ['neubau', 'hackerberg', 'kombi'] },
+  wohnungLabel: { type: String },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   nights: { type: Number, required: true },
@@ -21,6 +22,7 @@ const bookingSchema = new mongoose.Schema({
   
   // Preisdetails
   pricePerNight: { type: Number, required: true },
+  cleaningFee: { type: Number },
   subtotal: { type: Number, required: true },
   discount: { type: Number, default: 0 },
   vat: { type: Number, required: true },
@@ -41,6 +43,10 @@ const bookingSchema = new mongoose.Schema({
     enum: ['confirmed', 'cancelled', 'completed'],
     default: 'confirmed'
   },
+
+  // Archivierte Buchungen
+  deletedAt: { type: Date, default: null },
+  deletedBy: { type: String, default: null },
   
   // Check-in/Check-out Zeiten
   checkInTime: { type: String, default: '15:00' },
@@ -54,5 +60,6 @@ const bookingSchema = new mongoose.Schema({
 // Index für schnelle Abfragen
 bookingSchema.index({ wohnung: 1, startDate: 1, endDate: 1 });
 bookingSchema.index({ email: 1 });
+bookingSchema.index({ deletedAt: 1 });
 
 export default mongoose.model('Booking', bookingSchema);

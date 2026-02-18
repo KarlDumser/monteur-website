@@ -58,12 +58,20 @@ export default function Home() {
         <div className="container mx-auto text-center">
           <h1 className="text-5xl font-bold mb-4">Willkommen zu unseren Wohnungen</h1>
           <p className="text-xl mb-8">Finden Sie Ihre Monteurwohnung!</p>
-          <Link
-            to="/booking"
-            className="inline-block bg-white text-blue-600 font-bold py-4 px-12 rounded-lg hover:bg-gray-100 transition text-lg"
-          >
-            Jetzt Buchen
-          </Link>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              to="/booking"
+              className="inline-block bg-white text-blue-600 font-bold py-4 px-12 rounded-lg hover:bg-gray-100 transition text-lg"
+            >
+              Jetzt Buchen
+            </Link>
+            <Link
+              to="/admin"
+              className="inline-block border border-white/60 text-white font-semibold py-3 px-6 rounded-lg hover:bg-white/10 transition text-sm"
+            >
+              Admin-Login
+            </Link>
+          </div>
         </div>
       </div>
 

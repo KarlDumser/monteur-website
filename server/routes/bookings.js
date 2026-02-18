@@ -16,6 +16,7 @@ router.post('/check-availability', async (req, res) => {
     const existingBookings = await Booking.find({
       wohnung,
       bookingStatus: { $ne: 'cancelled' },
+      deletedAt: null,
       $or: [
         { startDate: { $lte: end }, endDate: { $gte: start } }
       ]
@@ -43,7 +44,7 @@ router.post('/check-availability', async (req, res) => {
 // Alle Buchungen abrufen (für Admin)
 router.get('/all', async (req, res) => {
   try {
-    const bookings = await Booking.find().sort({ createdAt: -1 });
+    const bookings = await Booking.find({ deletedAt: null }).sort({ createdAt: -1 });
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ error: error.message });
