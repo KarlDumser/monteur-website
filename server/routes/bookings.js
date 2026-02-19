@@ -1,3 +1,11 @@
+import express from 'express';
+import Booking from '../models/Booking.js';
+import BlockedDate from '../models/BlockedDate.js';
+
+const router = express.Router();
+
+// ...existing code...
+
 // Blocked periods API (for frontend calendar)
 router.get('/blocked', async (req, res) => {
   try {
