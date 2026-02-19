@@ -178,18 +178,25 @@ export async function generateInvoice(booking) {
             doc.text(rightCol[i].text, col3X, footerY + i * 12, { continued: false });
          }
 
-         // Adresse der Wohnung (weiter nach oben, max Y=700)
-         const wohnungAdresse = booking.wohnung === 'kombi'
-            ? 'Frühlingstraße 8 und Hackerbergstraße 8, D-82152 Krailling'
-            : booking.wohnung === 'neubau'
-               ? 'Frühlingstraße 8, D-82152 Krailling'
-               : 'Hackerbergstraße 8, D-82152 Krailling';
+         // Adresse der Wohnung (unten, FS/HB je nach Wohnung)
+         let wohnungAdresse = '';
+         let wohnungKuerzel = '';
+         if (booking.wohnung === 'kombi') {
+            wohnungAdresse = 'Frühlingstraße 8 und Hackerbergstraße 8, D-82152 Krailling';
+            wohnungKuerzel = 'FS + HB';
+         } else if (booking.wohnung === 'neubau') {
+            wohnungAdresse = 'Frühlingstraße 8, D-82152 Krailling';
+            wohnungKuerzel = 'FS';
+         } else {
+            wohnungAdresse = 'Hackerbergstraße 8, D-82152 Krailling';
+            wohnungKuerzel = 'HB';
+         }
 
          let addressBlockY = sumTop + 100;
          if (addressBlockY > 700) addressBlockY = 700;
          doc.fontSize(10)
             .font('Helvetica')
-            .text(`Adresse der Wohnung FS: ${wohnungAdresse}`, 50, addressBlockY)
+            .text(`Adresse der Wohnung ${wohnungKuerzel}: ${wohnungAdresse}`, 50, addressBlockY)
             .text('Anreise am Anreisetag 16:00-19:00 Uhr, Abreise am Abreisetag bis 10:00 Uhr', 50, addressBlockY + 15);
 
          // Abschlusstext
