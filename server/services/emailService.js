@@ -212,36 +212,6 @@ export async function sendBookingConfirmation(booking) {
         response: error.response
       };
     }
-      }
-            <p style="margin: 5px 0;">
-              <strong>Anreise:</strong> 16:00 - 19:00 Uhr<br>
-              <strong>Abreise:</strong> bis 10:00 Uhr
-            </p>
-          </div>
-          
-          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-          
-          <p>Bei Fragen oder Wünschen stehen wir Ihnen gerne zur Verfügung.</p>
-          
-          <p>
-            Mit freundlichen Grüßen<br>
-            <strong>Christine Dumser</strong><br>
-            Ferienwohnungen Christine Dumser<br>
-            Frühlingstr. 8<br>
-            82152 Krailling b. München<br>
-            Tel: +49(0)89 8571174<br>
-            Email: monteur-wohnung@dumser.net
-          </p>
-        </div>
-      `,
-      attachments: [
-        {
-          filename: `Rechnung_${invoiceNumber.replace(/\./g, '-')}.pdf`,
-          content: invoicePDF,
-          contentType: 'application/pdf'
-        }
-      ]
-    };
 
     // Sende Email
     console.log('📤 Sende Email an:', booking.email);
