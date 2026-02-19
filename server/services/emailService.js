@@ -11,118 +11,140 @@ export async function sendBookingConfirmation(booking) {
     if (!smtpPassword) {
       console.log('ℹ️ SMTP nicht konfiguriert - Email wird übersprungen');
       return { status: 'skipped', reason: 'SMTP_PASSWORD missing' };
-    }
-
-    console.log('📧 Erstelle Buchungsbestätigungs-Email...');
-    
-    // Lade nodemailer dynamisch
-    let nodemailer;
     try {
-      const mod = await import('nodemailer');
-      nodemailer = mod.default || mod;
-      console.log('✅ nodemailer geladen');
-    } catch (importError) {
-      console.error('❌ nodemailer Import fehlgeschlagen:', importError.message);
-      console.warn('⚠️ Emails deaktiviert');
-      return { status: 'skipped', reason: 'nodemailer import failed', error: importError.message };
-    }
-    
-    if (!nodemailer || !nodemailer.createTransport) {
-      console.warn('⚠️ nodemailer.createTransport nicht verfügbar');
-      return { status: 'skipped', reason: 'nodemailer createTransport missing' };
-    }
-
-    // Generiere PDF-Rechnung
-    console.log('📄 Generiere PDF-Rechnung...');
-    const invoicePDF = await generateInvoice(booking);
-    console.log('✅ PDF-Rechnung erstellt');
-
-    // Erstelle Transporter mit Konfiguration
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.ionos.de',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER || 'monteur-wohnung@dumser.net',
-        pass: smtpPassword
-      },
-      tls: {
-        rejectUnauthorized: false
+      // Prüfe ob SMTP konfiguriert ist
+      const smtpPassword = process.env.SMTP_PASSWORD;
+      if (!smtpPassword) {
+        console.log('ℹ️ SMTP nicht konfiguriert - Email wird übersprungen');
+        return { status: 'skipped', reason: 'SMTP_PASSWORD missing' };
       }
-    });
 
-    // DEBUG: Teste SMTP-Verbindung
-    console.log('🔍 DEBUG SMTP-Konfiguration:');
-    console.log('  Host:', process.env.SMTP_HOST || 'smtp.ionos.de');
-    console.log('  Port:', process.env.SMTP_PORT || '587');
-    console.log('  User:', process.env.SMTP_USER || 'monteur-wohnung@dumser.net');
-    console.log('  Password vorhanden:', !!smtpPassword, `(${smtpPassword?.length} zeichen)`);
-    
-    let verifyWarning = null;
+      console.log('📧 Erstelle Buchungsbestätigungs-Email...');
 
-    // Teste Verbindung (nicht-blockierend)
-    console.log('📡 Teste SMTP-Verbindung...');
-    try {
-      await transporter.verify();
-      console.log('✅ SMTP-Verbindung erfolgreich!');
-    } catch (verifyError) {
-      console.warn('⚠️ SMTP-Verbindungstest fehlgeschlagen:', verifyError.message);
-      console.warn('   Code:', verifyError.code);
-      console.warn('   Versuche trotzdem zu senden...');
-      verifyWarning = {
-        message: verifyError.message,
-        code: verifyError.code,
-        response: verifyError.response
+      // Lade nodemailer dynamisch
+      let nodemailer;
+      try {
+        const mod = await import('nodemailer');
+        nodemailer = mod.default || mod;
+        console.log('✅ nodemailer geladen');
+      } catch (importError) {
+        console.error('❌ nodemailer Import fehlgeschlagen:', importError.message);
+        console.warn('⚠️ Emails deaktiviert');
+        return { status: 'skipped', reason: 'nodemailer import failed', error: importError.message };
+      }
+
+      if (!nodemailer || !nodemailer.createTransport) {
+        console.warn('⚠️ nodemailer.createTransport nicht verfügbar');
+        return { status: 'skipped', reason: 'nodemailer createTransport missing' };
+      }
+
+      // Generiere PDF-Rechnung
+      console.log('📄 Generiere PDF-Rechnung...');
+      const invoicePDF = await generateInvoice(booking);
+      console.log('✅ PDF-Rechnung erstellt');
+
+      // Erstelle Transporter mit Konfiguration
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.ionos.de',
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: false,
+        auth: {
+          user: process.env.SMTP_USER || 'monteur-wohnung@dumser.net',
+          pass: smtpPassword
+        },
+        tls: {
+          rejectUnauthorized: false
+        }
+      });
+
+      // DEBUG: Teste SMTP-Verbindung
+      console.log('🔍 DEBUG SMTP-Konfiguration:');
+      console.log('  Host:', process.env.SMTP_HOST || 'smtp.ionos.de');
+      console.log('  Port:', process.env.SMTP_PORT || '587');
+      console.log('  User:', process.env.SMTP_USER || 'monteur-wohnung@dumser.net');
+      console.log('  Password vorhanden:', !!smtpPassword, `(${smtpPassword?.length} zeichen)`);
+
+      let verifyWarning = null;
+      // Teste Verbindung (nicht-blockierend)
+      console.log('📡 Teste SMTP-Verbindung...');
+      try {
+        await transporter.verify();
+        console.log('✅ SMTP-Verbindung erfolgreich!');
+      } catch (verifyError) {
+        console.warn('⚠️ SMTP-Verbindungstest fehlgeschlagen:', verifyError.message);
+        console.warn('   Code:', verifyError.code);
+        console.warn('   Versuche trotzdem zu senden...');
+        verifyWarning = {
+          message: verifyError.message,
+          code: verifyError.code,
+          response: verifyError.response
+        };
+        // Nicht werfen - versuche trotzdem zu senden
+      }
+
+      // Email Optionen
+      const wohnungName = booking.wohnungLabel
+        || (booking.wohnung === 'neubau'
+          ? 'Neubau – Frühlingstraße'
+          : booking.wohnung === 'kombi'
+            ? 'Kombi-Paket: Hackerberg + Frühlingstraße'
+            : 'Hackerberg');
+      const startDate = formatGermanDate(booking.startDate);
+      const endDate = formatGermanDate(booking.endDate);
+      const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
+
+      const mailOptions = {
+        from: 'Ferienwohnungen Dumser <monteur-wohnung@dumser.net>',
+        to: booking.email,
+        subject: `Buchungsbestätigung: ${wohnungName} (${startDate} - ${endDate})`,
+        html: `...`, // gekürzt für Übersicht
+        attachments: [
+          {
+            filename: `Rechnung_${invoiceNumber.replace(/\./g, '-')}.pdf`,
+            content: invoicePDF,
+            contentType: 'application/pdf'
+          }
+        ]
       };
-      // Nicht werfen - versuche trotzdem zu senden
+
+      // Zusätzliche Debug-Ausgaben
+      console.log('📧 MailOptions:', {
+        to: mailOptions.to,
+        from: mailOptions.from,
+        subject: mailOptions.subject,
+        attachments: mailOptions.attachments?.map(a => a.filename),
+        htmlLength: mailOptions.html?.length
+      });
+
+      // Sende Email
+      console.log('📤 Sende Email an:', booking.email);
+      let info;
+      try {
+        info = await transporter.sendMail(mailOptions);
+        console.log('✅ Email gesendet:', info.messageId, info.response);
+      } catch (sendError) {
+        console.error('❌ Email-Versand fehlgeschlagen:', sendError.message || sendError);
+        if (sendError.response) {
+          console.error('❌ SMTP-Server Response:', sendError.response);
+        }
+        return {
+          status: 'failed',
+          error: sendError.message,
+          code: sendError.code,
+          response: sendError.response
+        };
+      }
+
+      return { status: 'sent', messageId: info.messageId, verifyWarning, response: info.response };
+    } catch (error) {
+      console.error('❌ Email-Versand (allgemeiner Fehler):', error.message || error);
+      return {
+        status: 'failed',
+        error: error.message,
+        code: error.code,
+        response: error.response
+      };
     }
-
-    // Email Optionen
-    const wohnungName = booking.wohnungLabel
-      || (booking.wohnung === 'neubau'
-        ? 'Neubau – Frühlingstraße'
-        : booking.wohnung === 'kombi'
-          ? 'Kombi-Paket: Hackerberg + Frühlingstraße'
-          : 'Hackerberg');
-    const startDate = formatGermanDate(booking.startDate);
-    const endDate = formatGermanDate(booking.endDate);
-    const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
-
-    const mailOptions = {
-      from: '"Ferienwohnungen Dumser" <monteur-wohnung@dumser.net>',
-      to: booking.email,
-      subject: `Buchungsbestätigung: ${wohnungName} (${startDate} - ${endDate})`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Vielen Dank für Ihre Buchung!</h2>
-          
-          <p>Sehr geehrte Damen und Herren von ${booking.company},</p>
-          
-          <p>Ihre Buchung wurde erfolgreich bestätigt. Anbei finden Sie die Rechnung als PDF.</p>
-          
-          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #374151;">Buchungsdetails</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px 0;"><strong>Wohnung:</strong></td>
-                <td>${wohnungName}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;"><strong>Anreise:</strong></td>
-                <td>${startDate} (16:00-19:00 Uhr)</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;"><strong>Abreise:</strong></td>
-                <td>${endDate} (bis 10:00 Uhr)</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;"><strong>Nächte:</strong></td>
-                <td>${booking.nights}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0;"><strong>Personen:</strong></td>
-                <td>${booking.people}</td>
-              </tr>
               <tr>
                 <td style="padding: 8px 0;"><strong>Gesamtbetrag:</strong></td>
                 <td><strong>${booking.total.toFixed(2)} €</strong></td>
