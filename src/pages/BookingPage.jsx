@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
-import { format, addMonths } from "date-fns";
+import { format, addMonths, addDays, isAfter } from "date-fns";
 import { APP_VERSION } from "../config";
 import { DateRange } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
+import { apiCall } from "../utils/api";
 
 export default function BookingPage() {
   const [range, setRange] = useState([
@@ -29,10 +31,33 @@ export default function BookingPage() {
   const MAX_PEOPLE_FRUEHLING = 6;
   const MAX_PEOPLE = 11;
 
-  const belegteZeiten = {
-    neubau: ["2025-06-01", "2025-06-30"],
-    hackerberg: ["2025-07-01", "2025-07-28"],
-  };
+  // Dynamisch belegte Zeiten (aus Backend)
+  const [blockedDates, setBlockedDates] = useState({ neubau: [], hackerberg: [] });
+  const [loadingBlocked, setLoadingBlocked] = useState(true);
+
+  // Lädt alle BlockedDates und Buchungen für beide Wohnungen
+  useEffect(() => {
+    async function fetchBlocked() {
+      setLoadingBlocked(true);
+      try {
+        const [neubauRes, hackerbergRes] = await Promise.all([
+          apiCall("/api/bookings/blocked?wohnung=neubau"),
+          apiCall("/api/bookings/blocked?wohnung=hackerberg")
+        ]);
+        const neubau = await neubauRes.json();
+        const hackerberg = await hackerbergRes.json();
+        setBlockedDates({
+          neubau: neubau.periods || [],
+          hackerberg: hackerberg.periods || []
+        });
+      } catch (e) {
+        setBlockedDates({ neubau: [], hackerberg: [] });
+      } finally {
+        setLoadingBlocked(false);
+      }
+    }
+    fetchBlocked();
+  }, []);
 
   // Berechne Preis basierend auf Anzahl der Mitarbeiter
   const getBasePricePerNight = () => {
@@ -64,17 +89,42 @@ export default function BookingPage() {
     return 0;
   };
 
+  // Hilfsfunktion: Prüft, ob ein Zeitraum mit einer Liste von belegten Zeiträumen kollidiert
+  function isBlocked(dateRange, periods) {
+    return periods.some(period =>
+      dateRange[0] <= period.end && dateRange[1] >= period.start
+    );
+  }
+
+  // Hilfsfunktion: Finde das nächste freie Datum nach dem gewünschten Zeitraum
+  function getNextFreeDate(dateRange, periods) {
+    // Sortiere nach Startdatum
+    const sorted = [...periods].sort((a, b) => a.start.localeCompare(b.start));
+    let next = addDays(new Date(dateRange[1]), 1);
+    for (const period of sorted) {
+      if (isAfter(new Date(period.start), next)) {
+        // Lücke gefunden
+        return next;
+      }
+      if (next <= new Date(period.end)) {
+        next = addDays(new Date(period.end), 1);
+      }
+    }
+    return next;
+  }
+
   const checkAvailability = () => {
     const numPeople = parseInt(people, 10);
     const start = format(range[0].startDate, "yyyy-MM-dd");
     const end = format(range[0].endDate, "yyyy-MM-dd");
     const dateRange = [start, end];
 
-    const isBelegt = (range, belegung) =>
-      range[0] <= belegung[1] && range[1] >= belegung[0];
+    // Blocked periods: [{start, end}] (yyyy-MM-dd)
+    const hackerbergBlocked = blockedDates.hackerberg || [];
+    const neubauBlocked = blockedDates.neubau || [];
 
-    const hackerbergFrei = !isBelegt(dateRange, belegteZeiten.hackerberg);
-    const fruehlingFrei = !isBelegt(dateRange, belegteZeiten.neubau);
+    const hackerbergFrei = !isBlocked(dateRange, hackerbergBlocked);
+    const fruehlingFrei = !isBlocked(dateRange, neubauBlocked);
 
     const status = {
       hackerberg: hackerbergFrei,
@@ -473,11 +523,21 @@ export default function BookingPage() {
                         <h2 className="text-3xl font-bold mb-3 text-gray-800">{wohnung.titel}</h2>
                         <p className="text-gray-700 mb-4 leading-relaxed">{wohnung.beschreibung}</p>
                         {!isAvailable && (
-                          <span className="inline-block mb-4 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
-                            Ausgebucht
-                          </span>
+                          <>
+                            <span className="inline-block mb-2 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                              Ausgebucht
+                            </span>
+                            <div className="text-sm text-gray-700 mb-2">
+                              Nächster freier Zeitraum ab: <strong>{(() => {
+                                const periods = key === "hackerberg" ? blockedDates.hackerberg : blockedDates.neubau;
+                                const start = format(range[0].startDate, "yyyy-MM-dd");
+                                const end = format(range[0].endDate, "yyyy-MM-dd");
+                                const next = getNextFreeDate([start, end], periods || []);
+                                return next ? format(new Date(next), "dd.MM.yyyy") : "unbekannt";
+                              })()}</strong>
+                            </div>
+                          </>
                         )}
-                        
                         <div className="space-y-2 text-sm text-gray-700 mb-4">
                           <div className="flex items-center gap-2">
                             <span className="text-lg">📡</span>

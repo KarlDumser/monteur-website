@@ -1,3 +1,21 @@
+// Blocked periods API (for frontend calendar)
+router.get('/blocked', async (req, res) => {
+  try {
+    const { wohnung } = req.query;
+    if (!wohnung) return res.status(400).json({ error: 'wohnung required' });
+    // Get all BlockedDates and active bookings for this apartment
+    const blocked = await BlockedDate.find({ wohnung });
+    const bookings = await Booking.find({ wohnung, bookingStatus: { $ne: 'cancelled' }, deletedAt: null });
+    // Merge all periods
+    const periods = [
+      ...blocked.map(b => ({ start: b.startDate.toISOString().slice(0,10), end: b.endDate.toISOString().slice(0,10) })),
+      ...bookings.map(b => ({ start: b.startDate.toISOString().slice(0,10), end: b.endDate.toISOString().slice(0,10) }))
+    ];
+    res.json({ periods });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 import express from 'express';
 import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
@@ -70,16 +88,30 @@ router.post('/', async (req, res) => {
     const booking = new Booking(req.body);
     await booking.save();
 
-    // Email-Bestätigung asynchron versenden (nicht auf Antwort warten)
-    (async () => {
-      try {
-        const { sendBookingConfirmation } = await import('../services/emailService.js');
-        const emailResult = await sendBookingConfirmation(booking);
-        console.log('📧 Buchungsbestätigung gesendet:', emailResult);
-      } catch (emailError) {
-        console.error('❌ Fehler beim Senden der Buchungsbestätigung:', emailError);
-      }
-    })();
+    // Zeitraum für die Wohnung blockieren
+    try {
+      const BlockedDate = (await import('../models/BlockedDate.js')).default;
+      await BlockedDate.create({
+        wohnung: booking.wohnung,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        reason: 'Buchung',
+        createdBy: booking.email || 'system'
+      });
+    } catch (blockError) {
+      console.error('❌ Fehler beim Blockieren des Zeitraums:', blockError);
+    }
+
+    // Email-Bestätigung asynchron versenden (vorübergehend deaktiviert)
+    // (async () => {
+    //   try {
+    //     const { sendBookingConfirmation } = await import('../services/emailService.js');
+    //     const emailResult = await sendBookingConfirmation(booking);
+    //     console.log('📧 Buchungsbestätigung gesendet:', emailResult);
+    //   } catch (emailError) {
+    //     console.error('❌ Fehler beim Senden der Buchungsbestätigung:', emailError);
+    //   }
+    // })();
 
     res.status(201).json(booking);
   } catch (error) {
