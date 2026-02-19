@@ -1,3 +1,20 @@
+// Rechnung als PDF generieren und zum Download bereitstellen
+import { generateInvoice } from '../services/invoiceGenerator.js';
+
+router.get('/:id/invoice', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+    const pdfBuffer = await generateInvoice(booking);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Rechnung-${booking._id}.pdf`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 import express from 'express';
 import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';

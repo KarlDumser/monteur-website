@@ -42,6 +42,18 @@ export default function Success() {
             <strong>Nächste Schritte:</strong><br/>
             Sie erhalten in Kürze eine E-Mail mit allen weiteren Informationen und der bezahlten Rechnung zu Ihrer Buchung.
           </p>
+          {bookingId && (
+            <div className="mt-4">
+              <a
+                href={`/api/bookings/${bookingId}/invoice`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition"
+              >
+                Rechnung herunterladen
+              </a>
+            </div>
+          )}
         </div>
 
         <Link
