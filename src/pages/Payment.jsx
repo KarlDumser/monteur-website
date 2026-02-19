@@ -35,17 +35,13 @@ function CheckoutForm({ bookingInfo }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paymentIntentId: paymentIntent.id,
-            bookingData: bookingInfo,
-            debugEmail: true
+            bookingData: bookingInfo
           })
         });
 
         const data = await response.json();
         
         if (data.success) {
-          if (data.emailStatus) {
-            console.log('📧 Email debug:', data.emailStatus);
-          }
           // Speichere die Booking-Info NOCHMAL (mit Response-Daten) vor dem Redirect
           console.log('💾 Speichere Booking-Info vor Redirect...');
           const bookingResponse = {
@@ -55,7 +51,6 @@ function CheckoutForm({ bookingInfo }) {
           };
           localStorage.setItem('bookingInfo', JSON.stringify(bookingResponse));
           console.log('✅ Booking-Info gespeichert:', bookingResponse);
-          
           // Redirect zur Erfolgsseite
           window.location.href = '/erfolg';
         } else {
@@ -77,7 +72,9 @@ function CheckoutForm({ bookingInfo }) {
         disabled={isLoading || !stripe || !elements}
         className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg text-lg"
       >
-        {isLoading ? 'Zahlung wird verarbeitet...' : `Jetzt ${bookingInfo.total}€ bezahlen`}
+        {isLoading
+          ? 'Zahlung wird verarbeitet...'
+          : `Jetzt ${bookingInfo.total.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€ bezahlen`}
       </button>
       
       {message && (
