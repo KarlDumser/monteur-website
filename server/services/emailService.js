@@ -11,13 +11,7 @@ export async function sendBookingConfirmation(booking) {
     if (!smtpPassword) {
       console.log('ℹ️ SMTP nicht konfiguriert - Email wird übersprungen');
       return { status: 'skipped', reason: 'SMTP_PASSWORD missing' };
-    try {
-      // Prüfe ob SMTP konfiguriert ist
-      const smtpPassword = process.env.SMTP_PASSWORD;
-      if (!smtpPassword) {
-        console.log('ℹ️ SMTP nicht konfiguriert - Email wird übersprungen');
-        return { status: 'skipped', reason: 'SMTP_PASSWORD missing' };
-      }
+    }
 
       console.log('📧 Erstelle Buchungsbestätigungs-Email...');
 
