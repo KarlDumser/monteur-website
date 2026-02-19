@@ -212,23 +212,6 @@ export async function sendBookingConfirmation(booking) {
         response: error.response
       };
     }
-
-    // Sende Email
-    console.log('📤 Sende Email an:', booking.email);
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email gesendet:', info.messageId);
-    
-    return { status: 'sent', messageId: info.messageId, verifyWarning };
-  } catch (error) {
-    console.error('❌ Email-Versand fehlgeschlagen:', error.message || error);
-    // Nicht werfen - Email-Fehler sollten die Buchung nicht blockieren
-    return {
-      status: 'failed',
-      error: error.message,
-      code: error.code,
-      response: error.response
-    };
-  }
 }
 
 /**
