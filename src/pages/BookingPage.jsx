@@ -108,11 +108,11 @@ export default function BookingPage() {
     const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
     const pricePerNight = getPricePerNight(wohnungKey);
     const cleaningFee = wohnungKey === "kombi" ? 180 : 90;
-    const subtotal = nights * pricePerNight + cleaningFee;
+    const subtotal = Number((nights * pricePerNight + cleaningFee).toFixed(2));
     const discount = getEarlyBookingDiscount();
-    const subtotalAfterDiscount = subtotal * (1 - discount);
-    const vat = subtotalAfterDiscount * 0.19;
-    const total = Math.round(subtotalAfterDiscount + vat);
+    const subtotalAfterDiscount = Number((subtotal * (1 - discount)).toFixed(2));
+    const vat = Number((subtotalAfterDiscount * 0.19).toFixed(2));
+    const total = Number((subtotalAfterDiscount + vat).toFixed(2));
     const wohnungLabel = wohnungen[wohnungKey]?.titel || wohnungKey;
     
     // Store booking info and redirect to payment
@@ -134,7 +134,7 @@ export default function BookingPage() {
       wohnungLabel,
       subtotal,
       discount,
-      vat: Math.round(vat),
+      vat,
       total
     };
     
@@ -521,13 +521,13 @@ export default function BookingPage() {
                             {getEarlyBookingDiscount() > 0 ? (
                               <>
                                 <div className="pt-2 border-t border-blue-200">
-                                  <p className="font-semibold">Summe: {baseSum}€</p>
-                                  <p className="text-green-700">- 10% Rabatt: {Math.round(baseSum * 0.10)}€</p>
-                                  <p className="font-semibold">Zwischensumme: {Math.round(baseSum * 0.90)}€</p>
-                                  <p>+ 19% MwSt.: {Math.round(baseSum * 0.90 * 0.19)}€</p>
+                                  <p className="font-semibold">Summe: {baseSum.toFixed(2)}€</p>
+                                  <p className="text-green-700">- 10% Rabatt: {(baseSum * 0.10).toFixed(2)}€</p>
+                                  <p className="font-semibold">Zwischensumme: {(baseSum * 0.90).toFixed(2)}€</p>
+                                  <p>+ 19% MwSt.: {(baseSum * 0.90 * 0.19).toFixed(2)}€</p>
                                   <p className="pt-2 border-t border-green-300">
                                     <strong className="text-green-800 text-lg">
-                                      Total: {Math.round(baseSum * 0.90 * 1.19)}€
+                                      Total: {(baseSum * 0.90 * 1.19).toFixed(2)}€
                                     </strong>
                                   </p>
                                 </div>
@@ -535,10 +535,10 @@ export default function BookingPage() {
                             ) : (
                               <>
                                 <p className="pt-2 border-t border-blue-200 font-semibold">Summe: {baseSum}€</p>
-                                <p>+ 19% MwSt.: {Math.round(baseSum * 0.19)}€</p>
+                                <p>+ 19% MwSt.: {(baseSum * 0.19).toFixed(2)}€</p>
                                 <p className="pt-2 border-t border-blue-300">
                                   <strong className="text-lg">
-                                    Total: {Math.round(baseSum * 1.19)}€
+                                    Total: {(baseSum * 1.19).toFixed(2)}€
                                   </strong>
                                 </p>
                               </>
@@ -566,7 +566,7 @@ export default function BookingPage() {
                 onClick={() => setStep("form")}
                 className="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition"
               >
-                ← Zurueck zur Datumsauswahl
+                ← Zurück zur Datumsauswahl
               </button>
             </div>
           );

@@ -85,8 +85,8 @@ export async function generateInvoice(booking) {
          .text(`Ferienwohnung ${wohnungName} (${startDateStr} -`, 100, tableTop + 25)
          .text(`${endDateStr})`, 100, tableTop + 38)
          .text(booking.nights.toString(), 350, tableTop + 25)
-         .text(booking.pricePerNight.toFixed(2), 410, tableTop + 25)
-         .text((booking.nights * booking.pricePerNight).toFixed(2), 490, tableTop + 25);
+         .text(Number(booking.pricePerNight).toFixed(2), 410, tableTop + 25)
+         .text(Number(booking.nights * booking.pricePerNight).toFixed(2), 490, tableTop + 25);
 
       // Zeile 2: Reinigung
       const cleaningRow = tableTop + 70;
@@ -94,8 +94,8 @@ export async function generateInvoice(booking) {
       doc.text('', 50, cleaningRow)
          .text('Reinigung ' + wohnungName, 100, cleaningRow)
          .text('1', 350, cleaningRow)
-         .text(cleaningFee.toFixed(2), 410, cleaningRow)
-         .text(cleaningFee.toFixed(2), 490, cleaningRow);
+         .text(Number(cleaningFee).toFixed(2), 410, cleaningRow)
+         .text(Number(cleaningFee).toFixed(2), 490, cleaningRow);
 
       // Trennlinie vor Summen
       const sumTop = cleaningRow + 40;
@@ -105,17 +105,17 @@ export async function generateInvoice(booking) {
       const netTotal = booking.total / 1.07; // 7% MwSt rausrechnen
       doc.font('Helvetica')
          .text('Nettosumme:', 350, sumTop + 10)
-         .text(netTotal.toFixed(2) + ' €', 490, sumTop + 10);
+         .text(Number(netTotal).toFixed(2) + ' €', 490, sumTop + 10);
 
       // Umsatzsteuer 7%
       const vatAmount = booking.total - netTotal;
       doc.text('Umsatzsteuer:', 350, sumTop + 25)
-         .text(vatAmount.toFixed(2) + ' €', 490, sumTop + 25);
+         .text(Number(vatAmount).toFixed(2) + ' €', 490, sumTop + 25);
 
       // Gesamtbetrag (fett)
       doc.font('Helvetica-Bold')
          .text('Gesamtbetrag:', 350, sumTop + 40)
-         .text(booking.total.toFixed(2) + ' €', 490, sumTop + 40);
+         .text(Number(booking.total).toFixed(2) + ' €', 490, sumTop + 40);
 
       // Zahlungsziel
       const paymentDueDate = formatGermanDate(new Date(booking.startDate.getTime() - 5 * 24 * 60 * 60 * 1000)); // 5 Tage vor Anreise

@@ -111,22 +111,22 @@ export async function generateInvoicePDF(booking) {
       // Rabatt falls vorhanden
       if (booking.discount > 0) {
         currentY += 20;
-        const discountAmount = Math.round(booking.subtotal * booking.discount);
+        const discountAmount = Number((booking.subtotal * booking.discount).toFixed(2));
         doc.fillColor('#16a34a')
            .text('Frühbucherrabatt (-10%):', col2X, currentY)
-           .text(`-${discountAmount}€`, col3X, currentY)
+           .text(`-${discountAmount.toFixed(2)}€`, col3X, currentY)
            .fillColor('#000');
         
         currentY += 20;
-        const subtotalAfterDiscount = booking.subtotal - discountAmount;
+        const subtotalAfterDiscount = Number((booking.subtotal - discountAmount).toFixed(2));
         doc.text('Zwischensumme:', col2X, currentY)
-           .text(`${subtotalAfterDiscount}€`, col3X, currentY);
+           .text(`${subtotalAfterDiscount.toFixed(2)}€`, col3X, currentY);
       }
       
       // MwSt
       currentY += 20;
       doc.text('zzgl. 19% MwSt.:', col2X, currentY)
-         .text(`${booking.vat}€`, col3X, currentY);
+         .text(`${Number(booking.vat).toFixed(2)}€`, col3X, currentY);
       
       // Gesamtbetrag
       currentY += 30;

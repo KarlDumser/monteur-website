@@ -80,7 +80,7 @@ export async function sendBookingConfirmation(booking) {
               </div>
               
               <div class="highlight">
-                <h3 style="margin-top: 0;">💶 Gesamtpreis: ${booking.total}€</h3>
+                <h3 style="margin-top: 0;">💶 Gesamtpreis: ${Number(booking.total).toFixed(2)}€</h3>
                 <p style="margin: 5px 0; font-size: 14px; color: #6b7280;">
                   (inkl. 19% MwSt.)
                 </p>
