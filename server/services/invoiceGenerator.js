@@ -118,19 +118,38 @@ export async function generateInvoice(booking) {
          .text(Number(booking.total).toFixed(2) + ' €', 490, sumTop + 40);
 
 
-      // Hinweis: Bereits bezahlt
+      // Hinweis: Bereits bezahlt (Bugfix: keine Sonderzeichen, Abstand, Font)
       doc.font('Helvetica-Bold')
          .fontSize(12)
          .fillColor('green')
-         .text('✔️ Diese Rechnung ist bereits bezahlt.', 50, sumTop + 80);
+         .text('Diese Rechnung ist bereits bezahlt.', 60, sumTop + 80, { continued: false })
       doc.fillColor('black');
 
 
-      // Fußzeile mit Bankverbindung und Pflichtangaben
-      doc.fontSize(9)
-         .text('Bankverbindung: Kreissparkasse München-Starnberg, IBAN: DE78 7025 0150 0430 6154 01, BIC: BYLADEM1KMS', 50, 780, { width: 500 })
-         .text('USt-IdNr.: DE43806551921 | Steuernummer: 161-21280659 | Inhaberin: Christine Dumser, Frühlingstr. 8, 82152 Krailling', 50, 792, { width: 500 })
-         .text('Bitte bewahren Sie diese Rechnung für Ihre Unterlagen auf. Es gelten unsere AGB und Datenschutzbestimmungen.', 50, 804, { width: 500 });
+
+      // Fußzeile: 3 Spalten wie Muster
+      const footerY = 800;
+      const col1X = 50;
+      const col2X = 230;
+      const col3X = 410;
+      doc.fontSize(8);
+      // Linke Spalte: Firmenanschrift, Anschrift, Handy, Email
+      doc.font('Helvetica-Bold').text('Ferienwohnungen Christine Dumser', col1X, footerY);
+      doc.font('Helvetica').text('Frühlingstr. 8', col1X, footerY + 12);
+      doc.text('82152 Krailling', col1X, footerY + 24);
+      doc.text('Mobil: +49 176 234 567 89', col1X, footerY + 36);
+      doc.text('info@fewo-dumser.de', col1X, footerY + 48);
+
+      // Mittlere Spalte: Bankdaten
+      doc.font('Helvetica-Bold').text('Kreissparkasse München-Starnberg-Ebersberg', col2X, footerY);
+      doc.font('Helvetica').text('IBAN: DE78 7025 0150 0430 6154 01', col2X, footerY + 12);
+      doc.text('BIC: BYLADEM1KMS', col2X, footerY + 24);
+      doc.text('Kontoinhaber: Christine Dumser', col2X, footerY + 36);
+
+      // Rechte Spalte: USt-ID, Geschäftsführer, Domain
+      doc.font('Helvetica-Bold').text('USt-IdNr.: DE43806551921', col3X, footerY);
+      doc.font('Helvetica').text('Geschäftsführerin: Christine Dumser', col3X, footerY + 12);
+      doc.text('www.fewo-dumser.de', col3X, footerY + 24);
 
       // Adresse der Wohnung
          const wohnungAdresse = booking.wohnung === 'kombi'
