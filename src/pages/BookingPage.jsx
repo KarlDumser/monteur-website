@@ -29,10 +29,21 @@ export default function BookingPage() {
   const MAX_PEOPLE_FRUEHLING = 6;
   const MAX_PEOPLE = 11;
 
-  const belegteZeiten = {
-    neubau: ["2025-06-01", "2025-06-30"],
-    hackerberg: ["2025-07-01", "2025-07-28"],
-  };
+
+  // Buchungen aus Backend laden
+  const [bookings, setBookings] = useState([]);
+  useEffect(() => {
+    async function fetchBookings() {
+      try {
+        const res = await (await import("../utils/api")).apiCall("/api/bookings/all");
+        const data = await res.json();
+        setBookings(data);
+      } catch (e) {
+        console.error("Fehler beim Laden der Buchungen", e);
+      }
+    }
+    fetchBookings();
+  }, []);
 
   // Berechne Preis basierend auf Anzahl der Mitarbeiter
   const getBasePricePerNight = () => {
@@ -64,17 +75,44 @@ export default function BookingPage() {
     return 0;
   };
 
+  // Hilfsfunktion: Prüft, ob ein Zeitraum mit bestehenden Buchungen kollidiert
+  function isOverlapping(startA, endA, startB, endB) {
+    return startA <= endB && endA >= startB;
+  }
+
+  // Gibt true zurück, wenn die Wohnung im gewählten Zeitraum frei ist
+  function isWohnungAvailable(wohnungKey, start, end) {
+    return !bookings.some(b =>
+      b.wohnung === wohnungKey &&
+      b.bookingStatus !== "cancelled" &&
+      isOverlapping(
+        new Date(start),
+        new Date(end),
+        new Date(b.startDate),
+        new Date(b.endDate)
+      )
+    );
+  }
+
+  // Gibt das nächste freie Datum für eine Wohnung zurück
+  function getNextAvailableDate(wohnungKey, start, end) {
+    // Finde alle Buchungen, die nach dem gewählten Zeitraum liegen
+    const futureBookings = bookings
+      .filter(b => b.wohnung === wohnungKey && b.bookingStatus !== "cancelled" && new Date(b.startDate) > new Date(end))
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+    if (futureBookings.length > 0) {
+      return format(new Date(futureBookings[0].startDate), "dd.MM.yyyy");
+    }
+    return null;
+  }
+
   const checkAvailability = () => {
     const numPeople = parseInt(people, 10);
-    const start = format(range[0].startDate, "yyyy-MM-dd");
-    const end = format(range[0].endDate, "yyyy-MM-dd");
-    const dateRange = [start, end];
+    const start = range[0].startDate;
+    const end = range[0].endDate;
 
-    const isBelegt = (range, belegung) =>
-      range[0] <= belegung[1] && range[1] >= belegung[0];
-
-    const hackerbergFrei = !isBelegt(dateRange, belegteZeiten.hackerberg);
-    const fruehlingFrei = !isBelegt(dateRange, belegteZeiten.neubau);
+    const hackerbergFrei = isWohnungAvailable("hackerberg", start, end);
+    const fruehlingFrei = isWohnungAvailable("neubau", start, end);
 
     const status = {
       hackerberg: hackerbergFrei,
@@ -473,9 +511,20 @@ export default function BookingPage() {
                         <h2 className="text-3xl font-bold mb-3 text-gray-800">{wohnung.titel}</h2>
                         <p className="text-gray-700 mb-4 leading-relaxed">{wohnung.beschreibung}</p>
                         {!isAvailable && (
-                          <span className="inline-block mb-4 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
-                            Ausgebucht
-                          </span>
+                          <div className="mb-4">
+                            <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                              Ausgebucht
+                            </span>
+                            {/* Nächstes freies Datum anzeigen */}
+                            <div className="mt-2 text-xs text-gray-700">
+                              {(() => {
+                                const nextDate = getNextAvailableDate(key, range[0].startDate, range[0].endDate);
+                                return nextDate
+                                  ? (<span>Nächste freie Buchung ab: <strong>{nextDate}</strong></span>)
+                                  : (<span>Kein zukünftiges Buchungsdatum gefunden</span>);
+                              })()}
+                            </div>
+                          </div>
                         )}
                         
                         <div className="space-y-2 text-sm text-gray-700 mb-4">
