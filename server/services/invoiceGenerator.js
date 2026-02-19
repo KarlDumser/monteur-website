@@ -182,13 +182,13 @@ export async function generateInvoice(booking) {
          let wohnungAdresse = '';
          let wohnungKuerzel = '';
          if (booking.wohnung === 'kombi') {
-            wohnungAdresse = 'Frühlingstraße 8 und Hackerbergstraße 8, D-82152 Krailling';
+            wohnungAdresse = 'Frühlingstraße 8 und Hackerberg 4, D-82152 Krailling';
             wohnungKuerzel = 'FS + HB';
          } else if (booking.wohnung === 'neubau') {
             wohnungAdresse = 'Frühlingstraße 8, D-82152 Krailling';
             wohnungKuerzel = 'FS';
          } else {
-            wohnungAdresse = 'Hackerbergstraße 8, D-82152 Krailling';
+            wohnungAdresse = 'Hackerberg 4, D-82152 Krailling';
             wohnungKuerzel = 'HB';
          }
 
