@@ -88,7 +88,7 @@ export async function sendBookingConfirmation(booking) {
       const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
 
       const mailOptions = {
-        from: 'Ferienwohnungen Dumser <monteur-wohnung@dumser.net>',
+        from: 'Karl Dumser <karl658@hotmail.de>',
         to: booking.email,
         subject: `Buchungsbestätigung: ${wohnungName} (${startDate} - ${endDate})`,
         html: `
