@@ -521,13 +521,13 @@ export default function BookingPage() {
                             {getEarlyBookingDiscount() > 0 ? (
                               <>
                                 <div className="pt-2 border-t border-blue-200">
-                                  <p className="font-semibold">Summe: {baseSum.toFixed(2)}€</p>
-                                  <p className="text-green-700">- 10% Rabatt: {(baseSum * 0.10).toFixed(2)}€</p>
-                                  <p className="font-semibold">Zwischensumme: {(baseSum * 0.90).toFixed(2)}€</p>
-                                  <p>+ 19% MwSt.: {(baseSum * 0.90 * 0.19).toFixed(2)}€</p>
+                                  <p className="font-semibold">Nettosumme: {baseSum.toFixed(2).replace('.', ',')} €</p>
+                                  <p className="text-green-700">- 10% Rabatt: {(baseSum * 0.10).toFixed(2).replace('.', ',')} €</p>
+                                  <p className="font-semibold">Zwischensumme: {(baseSum * 0.90).toFixed(2).replace('.', ',')} €</p>
+                                  <p>+ 19% MwSt.: {(baseSum * 0.90 * 0.19).toFixed(2).replace('.', ',')} €</p>
                                   <p className="pt-2 border-t border-green-300">
                                     <strong className="text-green-800 text-lg">
-                                      Total: {(baseSum * 0.90 * 1.19).toFixed(2)}€
+                                      Rechnungsbetrag: {(baseSum * 0.90 * 1.19).toFixed(2).replace('.', ',')} €
                                     </strong>
                                   </p>
                                 </div>
@@ -535,10 +535,11 @@ export default function BookingPage() {
                             ) : (
                               <>
                                 <p className="pt-2 border-t border-blue-200 font-semibold">Summe: {baseSum}€</p>
-                                <p>+ 19% MwSt.: {(baseSum * 0.19).toFixed(2)}€</p>
+                                <p className="pt-2 border-t border-blue-200 font-semibold">Nettosumme: {baseSum.toFixed(2).replace('.', ',')} €</p>
+                                <p>+ 19% MwSt.: {(baseSum * 0.19).toFixed(2).replace('.', ',')} €</p>
                                 <p className="pt-2 border-t border-blue-300">
                                   <strong className="text-lg">
-                                    Total: {(baseSum * 1.19).toFixed(2)}€
+                                    Rechnungsbetrag: {(baseSum * 1.19).toFixed(2).replace('.', ',')} €
                                   </strong>
                                 </p>
                               </>

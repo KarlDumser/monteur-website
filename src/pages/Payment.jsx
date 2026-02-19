@@ -262,25 +262,25 @@ export default function Payment() {
                 </div>
                 
                 <div className="border-t pt-3 flex justify-between text-lg">
-                  <span>Summe:</span>
-                    <strong>{Number(bookingInfo.subtotal).toFixed(2)}€</strong>
+                  <span>Nettosumme:</span>
+                    <strong>{Number(bookingInfo.subtotal).toFixed(2).replace('.', ',')} €</strong>
                 </div>
 
                 {bookingInfo.discount > 0 && (
                   <div className="flex justify-between text-green-700">
                     <span>Frühbucherabatt (-10%):</span>
-                      <span>-{(bookingInfo.subtotal * bookingInfo.discount).toFixed(2)}€</span>
+                      <span>-{(bookingInfo.subtotal * bookingInfo.discount).toFixed(2).replace('.', ',')} €</span>
                   </div>
                 )}
 
                 <div className="flex justify-between">
                   <span>zzgl. 19% MwSt.:</span>
-                    <span>{Number(bookingInfo.vat).toFixed(2)}€</span>
+                    <span>{Number(bookingInfo.vat).toFixed(2).replace('.', ',')} €</span>
                 </div>
                 
                 <div className="border-t pt-3 flex justify-between text-2xl font-bold text-blue-800">
-                  <span>Gesamtpreis:</span>
-                    <span>{Number(bookingInfo.total).toFixed(2)}€</span>
+                  <span>Rechnungsbetrag:</span>
+                    <span>{Number(bookingInfo.total).toFixed(2).replace('.', ',')} €</span>
                 </div>
               </div>
             </div>
