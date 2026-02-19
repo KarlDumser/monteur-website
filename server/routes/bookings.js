@@ -70,14 +70,16 @@ router.post('/', async (req, res) => {
     const booking = new Booking(req.body);
     await booking.save();
 
-    // Email-Bestätigung versenden (asynchron, Fehler werden geloggt)
-    try {
-      const { sendBookingConfirmation } = await import('../services/emailService.js');
-      const emailResult = await sendBookingConfirmation(booking);
-      console.log('📧 Buchungsbestätigung gesendet:', emailResult);
-    } catch (emailError) {
-      console.error('❌ Fehler beim Senden der Buchungsbestätigung:', emailError);
-    }
+    // Email-Bestätigung asynchron versenden (nicht auf Antwort warten)
+    (async () => {
+      try {
+        const { sendBookingConfirmation } = await import('../services/emailService.js');
+        const emailResult = await sendBookingConfirmation(booking);
+        console.log('📧 Buchungsbestätigung gesendet:', emailResult);
+      } catch (emailError) {
+        console.error('❌ Fehler beim Senden der Buchungsbestätigung:', emailError);
+      }
+    })();
 
     res.status(201).json(booking);
   } catch (error) {
