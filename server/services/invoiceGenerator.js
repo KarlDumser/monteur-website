@@ -56,8 +56,11 @@ export async function generateInvoice(booking) {
       const invoiceDate = formatGermanDate(new Date());
       
       doc.fontSize(14)
-         .font('Helvetica-Bold')
-         .text('Rechnung für Ihre Monteurwohnungen in Krailling', 50, 280)
+         .font('Helvetica-Bold');
+      const rechnungTitel = booking.wohnung === 'kombi'
+        ? 'Rechnung für Ihre Monteurwohnungen in Krailling'
+        : 'Rechnung für Ihre Monteurwohnung in Krailling';
+      doc.text(rechnungTitel, 50, 280)
          .fontSize(10)
          .font('Helvetica')
          .text(`Rechnungsnummer: ${invoiceNumber}`, 50, 300)
