@@ -1,6 +1,12 @@
 // Rechnung als PDF generieren und zum Download bereitstellen
+import express from 'express';
+import Booking from '../models/Booking.js';
+import BlockedDate from '../models/BlockedDate.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
 
+const router = express.Router();
+
+// Rechnung als PDF generieren und zum Download bereitstellen
 router.get('/:id/invoice', async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
@@ -15,11 +21,6 @@ router.get('/:id/invoice', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-import express from 'express';
-import Booking from '../models/Booking.js';
-import BlockedDate from '../models/BlockedDate.js';
-
-const router = express.Router();
 
 // Blocked periods API (for frontend calendar)
 router.get('/blocked', async (req, res) => {
