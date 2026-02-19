@@ -24,9 +24,17 @@ export async function generateInvoice(booking) {
       });
       doc.on('error', reject);
 
+
+      // Hinweis: Bereits bezahlt ganz oben links
+      doc.font('Helvetica-Bold')
+         .fontSize(12)
+         .fillColor('green')
+         .text('Diese Rechnung ist bereits bezahlt.', 50, 30);
+      doc.fillColor('black');
+
       // Absender (oben rechts)
       doc.fontSize(9)
-         .text('Ferienwohnungen Christine Dumser', 350, 50)
+         .text('Monteurwohnungen Christine Dumser', 350, 50)
          .text('Frühlingstr. 8', 350, 62)
          .text('D-82152 Krailling b. München', 350, 74)
          .text('Tel. +49(0)89 8571174', 350, 86)
@@ -49,7 +57,7 @@ export async function generateInvoice(booking) {
       
       doc.fontSize(14)
          .font('Helvetica-Bold')
-         .text('Rechnung für Ihre Ferienwohnungen in Krailling', 50, 280)
+         .text('Rechnung für Ihre Monteurwohnungen in Krailling', 50, 280)
          .fontSize(10)
          .font('Helvetica')
          .text(`Rechnungsnummer: ${invoiceNumber}`, 50, 300)
@@ -118,57 +126,79 @@ export async function generateInvoice(booking) {
          .text(Number(booking.total).toFixed(2) + ' €', 490, sumTop + 40);
 
 
-      // Hinweis: Bereits bezahlt (Bugfix: keine Sonderzeichen, Abstand, Font)
-      doc.font('Helvetica-Bold')
-         .fontSize(12)
-         .fillColor('green')
-         .text('Diese Rechnung ist bereits bezahlt.', 60, sumTop + 80, { continued: false })
-      doc.fillColor('black');
+      // (Hinweis unten entfällt, steht jetzt nur noch oben links)
 
 
 
-      // Fußzeile: 3 Spalten in EINER Zeile, keine Seitenumbrüche
-      const footerY = 820;
-      const col1X = 50;
-      const col2X = 230;
-      const col3X = 410;
-      doc.fontSize(8);
-      // Linke Spalte
-      doc.font('Helvetica-Bold').text('Ferienwohnungen Christine Dumser', col1X, footerY, { continued: false });
-      doc.font('Helvetica').text('Frühlingstr. 8, 82152 Krailling', col1X, footerY + 10, { continued: false });
-      doc.text('Mobil: +49 176 234 567 89', col1X, footerY + 20, { continued: false });
-      doc.text('info@fewo-dumser.de', col1X, footerY + 30, { continued: false });
+         // Fußzeile: 3 Spalten, alle Zeilen nebeneinander, Y-Position ca. 740, Abstand 12
+         const footerY = 740;
+         const col1X = 50;
+         const col2X = 230;
+         const col3X = 410;
+         doc.fontSize(8);
+         const leftCol = [
+            { text: 'Monteurwohnungen Christine Dumser', bold: true },
+            { text: 'Frühlingstr. 8, 82152 Krailling' },
+            { text: 'Mobil: +49 176 234 567 89' },
+            { text: 'monteur-wohnungen@dumser.net' }
+         ];
+         const midCol = [
+            { text: 'KS München-Starnberg-Ebersberg', bold: true },
+            { text: 'IBAN: DE78 7025 0150 0430 6154 01' },
+            { text: 'BIC: BYLADEM1KMS' },
+            { text: 'Kontoinhaber: Christine Dumser' }
+         ];
+         const rightCol = [
+            { text: 'USt-IdNr.: DE43806551921', bold: true },
+            { text: 'Geschäftsführerin: Christine Dumser' },
+            { text: 'monteurwohnung-dumser.de' },
+            { text: '' }
+         ];
+         for (let i = 0; i < 4; i++) {
+            // Linke Spalte
+            if (leftCol[i].bold) {
+               doc.font('Helvetica-Bold');
+            } else {
+               doc.font('Helvetica');
+            }
+            doc.text(leftCol[i].text, col1X, footerY + i * 12, { continued: false });
+            // Mittlere Spalte
+            if (midCol[i].bold) {
+               doc.font('Helvetica-Bold');
+            } else {
+               doc.font('Helvetica');
+            }
+            doc.text(midCol[i].text, col2X, footerY + i * 12, { continued: false });
+            // Rechte Spalte
+            if (rightCol[i].bold) {
+               doc.font('Helvetica-Bold');
+            } else {
+               doc.font('Helvetica');
+            }
+            doc.text(rightCol[i].text, col3X, footerY + i * 12, { continued: false });
+         }
 
-      // Mittlere Spalte
-      doc.font('Helvetica-Bold').text('Kreissparkasse München-Starnberg-Ebersberg', col2X, footerY, { continued: false });
-      doc.font('Helvetica').text('IBAN: DE78 7025 0150 0430 6154 01', col2X, footerY + 10, { continued: false });
-      doc.text('BIC: BYLADEM1KMS', col2X, footerY + 20, { continued: false });
-      doc.text('Kontoinhaber: Christine Dumser', col2X, footerY + 30, { continued: false });
-
-      // Rechte Spalte
-      doc.font('Helvetica-Bold').text('USt-IdNr.: DE43806551921', col3X, footerY, { continued: false });
-      doc.font('Helvetica').text('Geschäftsführerin: Christine Dumser', col3X, footerY + 10, { continued: false });
-      doc.text('www.fewo-dumser.de', col3X, footerY + 20, { continued: false });
-
-      // Adresse der Wohnung
+         // Adresse der Wohnung (weiter nach oben, max Y=700)
          const wohnungAdresse = booking.wohnung === 'kombi'
             ? 'Frühlingstraße 8 und Hackerbergstraße 8, D-82152 Krailling'
             : booking.wohnung === 'neubau'
                ? 'Frühlingstraße 8, D-82152 Krailling'
                : 'Hackerbergstraße 8, D-82152 Krailling';
-      
-      doc.fontSize(10)
-         .font('Helvetica')
-         .text(`Adresse der Wohnung FS: ${wohnungAdresse}`, 50, sumTop + 180)
-         .text('Anreise am Anreisetag 16:00-19:00 Uhr, Abreise am Abreisetag bis 10:00 Uhr', 50, sumTop + 195);
 
-      // Abschlusstext
-      doc.fontSize(10)
-         .text('Vielen Dank für Ihren Aufenthalt!', 50, sumTop + 230);
+         let addressBlockY = sumTop + 100;
+         if (addressBlockY > 700) addressBlockY = 700;
+         doc.fontSize(10)
+            .font('Helvetica')
+            .text(`Adresse der Wohnung FS: ${wohnungAdresse}`, 50, addressBlockY)
+            .text('Anreise am Anreisetag 16:00-19:00 Uhr, Abreise am Abreisetag bis 10:00 Uhr', 50, addressBlockY + 15);
 
-      doc.fontSize(9)
-         .text(`Krailling, den ${invoiceDate}`, 50, sumTop + 260)
-         .text('Christine Dumser', 50, sumTop + 275);
+         // Abschlusstext
+         doc.fontSize(10)
+            .text('Vielen Dank für Ihren Aufenthalt!', 50, addressBlockY + 45);
+
+         doc.fontSize(9)
+            .text(`Krailling, den ${invoiceDate}`, 50, addressBlockY + 70)
+            .text('Christine Dumser', 50, addressBlockY + 85);
 
       doc.end();
     } catch (error) {
