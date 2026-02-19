@@ -34,7 +34,7 @@ export async function generateInvoice(booking) {
          .text('Steuernummer: 161-21280659', 350, 110)
          .text('Umsatzsteuer ID 43806551921', 350, 122);
 
-      // Empfänger (links)
+      // Empfänger (links) - Ansprechpartner raus, Firmenname als erste Zeile
       doc.fontSize(11)
          .text('An:', 50, 180)
          .font('Helvetica-Bold')
@@ -117,22 +117,20 @@ export async function generateInvoice(booking) {
          .text('Gesamtbetrag:', 350, sumTop + 40)
          .text(Number(booking.total).toFixed(2) + ' €', 490, sumTop + 40);
 
-      // Zahlungsziel
-      const paymentDueDate = formatGermanDate(new Date(booking.startDate.getTime() - 5 * 24 * 60 * 60 * 1000)); // 5 Tage vor Anreise
-      doc.font('Helvetica')
-         .fontSize(10)
-         .text(`Zahlungsziel: Bitte zahlen Sie den Gesamtbetrag bis spätestens ${paymentDueDate}.`, 50, sumTop + 80);
 
-      // Empfänger Bankverbindung
+      // Hinweis: Bereits bezahlt
+      doc.font('Helvetica-Bold')
+         .fontSize(12)
+         .fillColor('green')
+         .text('✔️ Diese Rechnung ist bereits bezahlt.', 50, sumTop + 80);
+      doc.fillColor('black');
+
+
+      // Fußzeile mit Bankverbindung und Pflichtangaben
       doc.fontSize(9)
-         .text('Empfänger:', 50, sumTop + 110)
-         .text('Christine Dumser', 150, sumTop + 110)
-         .text('Kreditinstitut:', 50, sumTop + 122)
-         .text('Kreissparkasse München – Starnberg', 150, sumTop + 122)
-         .text('IBAN:', 50, sumTop + 134)
-         .text('DE 78 7025 0150 0430 6154 01', 150, sumTop + 134)
-         .text('BIC:', 50, sumTop + 146)
-         .text('BYLADEM1KMS', 150, sumTop + 146);
+         .text('Bankverbindung: Kreissparkasse München-Starnberg, IBAN: DE78 7025 0150 0430 6154 01, BIC: BYLADEM1KMS', 50, 780, { width: 500 })
+         .text('USt-IdNr.: DE43806551921 | Steuernummer: 161-21280659 | Inhaberin: Christine Dumser, Frühlingstr. 8, 82152 Krailling', 50, 792, { width: 500 })
+         .text('Bitte bewahren Sie diese Rechnung für Ihre Unterlagen auf. Es gelten unsere AGB und Datenschutzbestimmungen.', 50, 804, { width: 500 });
 
       // Adresse der Wohnung
          const wohnungAdresse = booking.wohnung === 'kombi'
