@@ -274,7 +274,7 @@ export default function Payment() {
                 )}
 
                 <div className="flex justify-between">
-                  <span>zzgl. 19% MwSt.:</span>
+                  <span>zzgl. 7% MwSt.:</span>
                     <span>{Number(bookingInfo.vat).toFixed(2).replace('.', ',')} €</span>
                 </div>
                 

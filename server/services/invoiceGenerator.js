@@ -109,7 +109,7 @@ export async function generateInvoice(booking) {
 
       // Umsatzsteuer 7%
       const vatAmount = booking.total - netTotal;
-      doc.text('Umsatzsteuer:', 350, sumTop + 25)
+      doc.text('Umsatzsteuer 7%:', 350, sumTop + 25)
          .text(Number(vatAmount).toFixed(2) + ' €', 490, sumTop + 25);
 
       // Gesamtbetrag (fett)

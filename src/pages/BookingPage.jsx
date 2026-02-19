@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format, addMonths } from "date-fns";
 import { APP_VERSION } from "../config";
 import { DateRange } from "react-date-range";
@@ -111,7 +111,7 @@ export default function BookingPage() {
     const subtotal = Number((nights * pricePerNight + cleaningFee).toFixed(2));
     const discount = getEarlyBookingDiscount();
     const subtotalAfterDiscount = Number((subtotal * (1 - discount)).toFixed(2));
-    const vat = Number((subtotalAfterDiscount * 0.19).toFixed(2));
+    const vat = Number((subtotalAfterDiscount * 0.07).toFixed(2));
     const total = Number((subtotalAfterDiscount + vat).toFixed(2));
     const wohnungLabel = wohnungen[wohnungKey]?.titel || wohnungKey;
     
@@ -223,6 +223,38 @@ export default function BookingPage() {
       ]
     }
   };
+
+  const handleKeyDown = (e) => {
+    if (!selectedImage) return;
+
+    const currentIndex = wohnung.images.findIndex(
+      (img) => img === selectedImage.image
+    );
+
+    if (e.key === "ArrowRight") {
+      const nextIndex = (currentIndex + 1) % wohnung.images.length;
+      setSelectedImage({
+        image: wohnung.images[nextIndex],
+        folder: selectedImage.folder,
+        titel: selectedImage.titel,
+      });
+    } else if (e.key === "ArrowLeft") {
+      const prevIndex =
+        (currentIndex - 1 + wohnung.images.length) % wohnung.images.length;
+      setSelectedImage({
+        image: wohnung.images[prevIndex],
+        folder: selectedImage.folder,
+        titel: selectedImage.titel,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (selectedImage) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [selectedImage]);
 
   return (
     <div className="space-y-8">
@@ -524,10 +556,10 @@ export default function BookingPage() {
                                   <p className="font-semibold">Nettosumme: {baseSum.toFixed(2).replace('.', ',')} €</p>
                                   <p className="text-green-700">- 10% Rabatt: {(baseSum * 0.10).toFixed(2).replace('.', ',')} €</p>
                                   <p className="font-semibold">Zwischensumme: {(baseSum * 0.90).toFixed(2).replace('.', ',')} €</p>
-                                  <p>+ 19% MwSt.: {(baseSum * 0.90 * 0.19).toFixed(2).replace('.', ',')} €</p>
+                                  <p>+ 7% MwSt.: {(baseSum * 0.90 * 0.07).toFixed(2).replace('.', ',')} €</p>
                                   <p className="pt-2 border-t border-green-300">
                                     <strong className="text-green-800 text-lg">
-                                      Rechnungsbetrag: {(baseSum * 0.90 * 1.19).toFixed(2).replace('.', ',')} €
+                                      Rechnungsbetrag: {(baseSum * 0.90 * 1.07).toFixed(2).replace('.', ',')} €
                                     </strong>
                                   </p>
                                 </div>
@@ -536,10 +568,10 @@ export default function BookingPage() {
                               <>
                                 <p className="pt-2 border-t border-blue-200 font-semibold">Summe: {baseSum}€</p>
                                 <p className="pt-2 border-t border-blue-200 font-semibold">Nettosumme: {baseSum.toFixed(2).replace('.', ',')} €</p>
-                                <p>+ 19% MwSt.: {(baseSum * 0.19).toFixed(2).replace('.', ',')} €</p>
+                                <p>+ 7% MwSt.: {(baseSum * 0.07).toFixed(2).replace('.', ',')} €</p>
                                 <p className="pt-2 border-t border-blue-300">
                                   <strong className="text-lg">
-                                    Rechnungsbetrag: {(baseSum * 1.19).toFixed(2).replace('.', ',')} €
+                                    Rechnungsbetrag: {(baseSum * 1.07).toFixed(2).replace('.', ',')} €
                                   </strong>
                                 </p>
                               </>
@@ -581,7 +613,7 @@ export default function BookingPage() {
           className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50"
           onClick={() => setSelectedImage(null)}
         >
-          <div className="max-w-5xl w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="max-w-5xl w-full relative" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-white">{selectedImage.titel}</h3>
               <button
@@ -591,11 +623,46 @@ export default function BookingPage() {
                 ✕
               </button>
             </div>
-            <img
-              src={`/${selectedImage.folder}/${selectedImage.image}?v=${APP_VERSION}`}
-              alt={selectedImage.titel}
-              className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-            />
+            <div className="relative">
+              <button
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full"
+                onClick={() => {
+                  const currentIndex = wohnung.images.findIndex(
+                    (img) => img === selectedImage.image
+                  );
+                  const prevIndex =
+                    (currentIndex - 1 + wohnung.images.length) % wohnung.images.length;
+                  setSelectedImage({
+                    image: wohnung.images[prevIndex],
+                    folder: selectedImage.folder,
+                    titel: selectedImage.titel,
+                  });
+                }}
+              >
+                ◀
+              </button>
+              <img
+                src={`/${selectedImage.folder}/${selectedImage.image}?v=${APP_VERSION}`}
+                alt={selectedImage.titel}
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+              />
+              <button
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full"
+                onClick={() => {
+                  const currentIndex = wohnung.images.findIndex(
+                    (img) => img === selectedImage.image
+                  );
+                  const nextIndex = (currentIndex + 1) % wohnung.images.length;
+                  setSelectedImage({
+                    image: wohnung.images[nextIndex],
+                    folder: selectedImage.folder,
+                    titel: selectedImage.titel,
+                  });
+                }}
+              >
+                ▶
+              </button>
+            </div>
           </div>
         </div>
       )}

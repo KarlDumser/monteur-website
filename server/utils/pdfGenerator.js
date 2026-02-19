@@ -125,7 +125,7 @@ export async function generateInvoicePDF(booking) {
       
       // MwSt
       currentY += 20;
-      doc.text('zzgl. 19% MwSt.:', col2X, currentY)
+      doc.text('zzgl. 7% MwSt.:', col2X, currentY)
          .text(`${Number(booking.vat).toFixed(2)}€`, col3X, currentY);
       
       // Gesamtbetrag
