@@ -17,12 +17,15 @@ export async function generateInvoice(booking) {
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
       const buffers = [];
       
-      doc.on('data', buffers.push.bind(buffers));
-      doc.on('end', () => {
-        const pdfBuffer = Buffer.concat(buffers);
-        resolve(pdfBuffer);
-      });
-      doc.on('error', reject);
+         // Rechnungsnummer für Dateinamen merken
+         const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
+         const pdfFileName = `Rechnung-${invoiceNumber}.pdf`;
+         doc.on('data', buffers.push.bind(buffers));
+         doc.on('end', () => {
+            const pdfBuffer = Buffer.concat(buffers);
+            resolve({ buffer: pdfBuffer, fileName: pdfFileName });
+         });
+         doc.on('error', reject);
 
 
       // Hinweis: Bereits bezahlt ganz oben links
@@ -52,9 +55,7 @@ export async function generateInvoice(booking) {
          .text(`${booking.zip} ${booking.city}`, 50, 225);
 
       // Rechnungstitel
-      const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
       const invoiceDate = formatGermanDate(new Date());
-      
       doc.fontSize(14)
          .font('Helvetica-Bold');
       const rechnungTitel = booking.wohnung === 'kombi'
@@ -153,9 +154,9 @@ export async function generateInvoice(booking) {
          ];
          const rightCol = [
             { text: 'USt-IdNr.: DE43806551921', bold: true },
+            { text: 'Steuernummer: 161-21280659' },
             { text: 'Geschäftsführerin: Christine Dumser' },
-            { text: 'monteurwohnung-dumser.de' },
-            { text: '' }
+            { text: 'monteurwohnung-dumser.de' }
          ];
          for (let i = 0; i < 4; i++) {
             // Linke Spalte
