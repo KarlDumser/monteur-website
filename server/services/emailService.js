@@ -5,6 +5,7 @@ import mailjet from 'node-mailjet';
  * Sendet Buchungsbestätigung mit Rechnung als PDF-Anhang
  * @param {Object} booking - Vollständiges Booking-Objekt aus MongoDB
  */
+export async function sendBookingConfirmation(booking) {
   try {
     // Prüfe ob Mailjet API konfiguriert ist
     const mailjetApiKey = process.env.SMTP_USER;
@@ -13,33 +14,64 @@ import mailjet from 'node-mailjet';
       console.log('ℹ️ Mailjet API nicht konfiguriert - Email wird übersprungen');
       return { status: 'skipped', reason: 'Mailjet API missing' };
     }
+    const startDate = formatGermanDate(booking.startDate);
+    const endDate = formatGermanDate(booking.endDate);
+    const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
 
-    console.log('📧 Erstelle Buchungsbestätigungs-Email mit Mailjet API...');
+    const mailjetClient = mailjet.apiConnect(mailjetApiKey, mailjetApiSecret);
 
-    // Generiere PDF-Rechnung
-    console.log('📄 Generiere PDF-Rechnung...');
-    const invoicePDF = await generateInvoice(booking);
-    console.log('✅ PDF-Rechnung erstellt');
+    // Mailjet API expects base64 for attachments
+    const pdfBase64 = invoicePDF.toString('base64');
 
-    const wohnungName = booking.wohnungLabel
-        || (booking.wohnung === 'neubau'
-          ? 'Neubau – Frühlingstraße'
-          : booking.wohnung === 'kombi'
-            ? 'Kombi-Paket: Hackerberg + Frühlingstraße'
-            : 'Hackerberg');
-      const startDate = formatGermanDate(booking.startDate);
-      const endDate = formatGermanDate(booking.endDate);
-      const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
+    const emailData = {
+      Messages: [
+        {
+          From: {
+            Email: 'karl658@hotmail.de',
+            Name: 'Karl Dumser'
+          },
+          To: [
+            {
+              Email: booking.email,
+              Name: booking.name || booking.company || 'Gast'
+            }
+          ],
+          Subject: `Buchungsbestätigung: ${booking.wohnungLabel || booking.wohnung} (${startDate} - ${endDate})`,
+          HTMLPart: '<div>Vielen Dank für Ihre Buchung!</div>'
+        }
+      ]
+    };
 
-      const mailjetClient = mailjet.apiConnect(mailjetApiKey, mailjetApiSecret);
+    try {
+      const result = await mailjetClient.post('send', { version: 'v3.1' }).request(emailData);
+      console.log('✅ Mailjet API E-Mail gesendet:', result.body);
+      return { status: 'sent', result: result.body };
+    } catch (error) {
+      console.error('❌ Mailjet API Fehler:', error);
+              HTMLPart: '<div>Vielen Dank für Ihre Buchung!</div>'
+    }
+  } catch (error) {
+    console.error('❌ Email-Versand (allgemeiner Fehler):', error.message || error);
+    return {
+      status: 'failed',
+      error: error.message,
+      code: error.code,
+      response: error.response
+    };
+  }
+}
 
-      // Mailjet API expects base64 for attachments
-      const pdfBase64 = invoicePDF.toString('base64');
-
-      const emailData = {
-        Messages: [
-          {
-            From: {
+/**
+ * Formatiert Date Object zu deutschem Datumsformat DD.MM.YYYY
+ */
+export function formatGermanDate(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return day + '.' + month + '.' + year;
+}
               Email: 'karl658@hotmail.de',
               Name: 'Karl Dumser'
             },
@@ -137,16 +169,17 @@ import mailjet from 'node-mailjet';
         response: error.response
       };
     }
-}
 
 /**
  * Formatiert Date Object zu deutschem Datumsformat DD.MM.YYYY
  */
-function formatGermanDate(date) {
   if (!date) return '';
   const d = new Date(date);
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  return `${day}.${month}.${year}`;
+  return day + '.' + month + '.' + year;
+}
+// Schließe sendBookingConfirmation Funktion
+}
 }
