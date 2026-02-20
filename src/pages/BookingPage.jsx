@@ -744,9 +744,11 @@ export default function BookingPage() {
                     const wohnungKey = Object.keys(wohnungen).find(key => wohnungen[key].folder === selectedImage.folder);
                     imagesArr = wohnungen[wohnungKey]?.images || [];
                   }
+                  console.log('Pfeil links geklickt', { imagesArr, selectedImage });
                   if (imagesArr.length > 0) {
                     const currentIndex = imagesArr.findIndex(img => img === selectedImage.image);
                     const prevIndex = (currentIndex - 1 + imagesArr.length) % imagesArr.length;
+                    console.log('Wechsle zu Bild', imagesArr[prevIndex]);
                     setSelectedImage({
                       image: imagesArr[prevIndex],
                       folder: selectedImage.folder,
@@ -777,9 +779,11 @@ export default function BookingPage() {
                     const wohnungKey = Object.keys(wohnungen).find(key => wohnungen[key].folder === selectedImage.folder);
                     imagesArr = wohnungen[wohnungKey]?.images || [];
                   }
+                  console.log('Pfeil rechts geklickt', { imagesArr, selectedImage });
                   if (imagesArr.length > 0) {
                     const currentIndex = imagesArr.findIndex(img => img === selectedImage.image);
                     const nextIndex = (currentIndex + 1) % imagesArr.length;
+                    console.log('Wechsle zu Bild', imagesArr[nextIndex]);
                     setSelectedImage({
                       image: imagesArr[nextIndex],
                       folder: selectedImage.folder,
