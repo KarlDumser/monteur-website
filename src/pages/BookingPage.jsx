@@ -91,9 +91,15 @@ export default function BookingPage() {
 
   // Hilfsfunktion: Prüft, ob ein Zeitraum mit einer Liste von belegten Zeiträumen kollidiert
   function isBlocked(dateRange, periods) {
-    return periods.some(period =>
-      dateRange[0] <= period.end && dateRange[1] >= period.start
-    );
+    // dateRange: [start, end] als yyyy-MM-dd
+    // periods: [{start, end}] als yyyy-MM-dd
+    const start = new Date(dateRange[0]);
+    const end = new Date(dateRange[1]);
+    return periods.some(period => {
+      const pStart = new Date(period.start);
+      const pEnd = new Date(period.end);
+      return start <= pEnd && end >= pStart;
+    });
   }
 
   // Hilfsfunktion: Finde das nächste freie Datum nach dem gewünschten Zeitraum
