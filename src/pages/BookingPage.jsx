@@ -123,27 +123,23 @@ export default function BookingPage() {
     const hackerbergBlocked = blockedDates.hackerberg || [];
     const neubauBlocked = blockedDates.neubau || [];
 
-    const hackerbergFrei = !isBlocked(dateRange, hackerbergBlocked);
-    const fruehlingFrei = !isBlocked(dateRange, neubauBlocked);
-
+    // Neue Logik: Immer alle Keys anzeigen, aber Status korrekt setzen
     const status = {
-      hackerberg: hackerbergFrei,
-      neubau: fruehlingFrei,
-      kombi: hackerbergFrei && fruehlingFrei
+      hackerberg: !isBlocked(dateRange, hackerbergBlocked),
+      neubau: !isBlocked(dateRange, neubauBlocked),
+      kombi: !isBlocked(dateRange, hackerbergBlocked) && !isBlocked(dateRange, neubauBlocked)
     };
 
+    // Zeige immer alle Keys, aber markiere sie ggf. als ausgebucht
+    let keys = [];
     if (numPeople >= 7 && numPeople <= MAX_PEOPLE) {
-      return { keys: status.kombi ? ["kombi"] : [], status };
+      keys = ["kombi"];
+    } else if (numPeople === MAX_PEOPLE_FRUEHLING) {
+      keys = ["neubau"];
+    } else {
+      keys = ["hackerberg", "neubau"];
     }
-
-    if (numPeople === MAX_PEOPLE_FRUEHLING) {
-      return { keys: fruehlingFrei ? ["neubau"] : [], status };
-    }
-
-    const frei = [];
-    if (hackerbergFrei) frei.push("hackerberg");
-    if (fruehlingFrei) frei.push("neubau");
-    return { keys: frei, status };
+    return { keys, status };
   };
 
   const handleBooking = (e) => {
