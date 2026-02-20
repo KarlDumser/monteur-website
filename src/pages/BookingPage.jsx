@@ -95,11 +95,23 @@ export default function BookingPage() {
     // periods: [{start, end}] als yyyy-MM-dd
     const start = new Date(dateRange[0]);
     const end = new Date(dateRange[1]);
-    return periods.some(period => {
+    let blocked = false;
+    for (const period of periods) {
       const pStart = new Date(period.start);
       const pEnd = new Date(period.end);
-      return start <= pEnd && end >= pStart;
-    });
+      const overlap = start <= pEnd && end >= pStart;
+      console.log('[DEBUG isBlocked]', {
+        dateRange,
+        start,
+        end,
+        period,
+        pStart,
+        pEnd,
+        overlap
+      });
+      if (overlap) blocked = true;
+    }
+    return blocked;
   }
 
   // Hilfsfunktion: Finde das nächste freie Datum nach dem gewünschten Zeitraum
