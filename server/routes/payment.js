@@ -1,5 +1,7 @@
 // ...existing code...
-// Alias für Frontend-Kompatibilität (ganz am Ende, nach allen anderen Routen)
+// ...existing code...
+
+// Alias für Frontend-Kompatibilität (ganz am Dateiende, nach allen anderen Routen)
 router.post('/payment/create-payment-intent', async (req, res) => {
   // Nutze die Logik von /payment
   const handler = router.stack.find(r => r.route && r.route.path === '/payment' && r.route.methods.post);
