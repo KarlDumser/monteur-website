@@ -671,11 +671,26 @@ export default function BookingPage() {
                           <p className="text-4xl font-bold text-blue-600 mb-4">{pricePerNight.toFixed(2).replace('.', ',')}€</p>
                           <p className="text-xs text-gray-500 mb-4">(für {people} {parseInt(people) === 1 ? 'Person' : 'Personen'})</p>
                           <hr className="my-2 border-blue-200" />
-                          <p className="text-base text-gray-700 mb-1">{nights} Nächte x {pricePerNight.toFixed(0)} € = {(nights * pricePerNight).toFixed(2).replace('.', ',')} €</p>
-                          <p className="text-base text-gray-700 mb-1">+ {cleaningFee.toFixed(2).replace('.', ',')} € Endreinigung</p>
-                          <p className="font-semibold text-gray-700 mb-1">Nettosumme = {baseSum.toFixed(2).replace('.', ',')} €</p>
-                          <p className="text-base text-gray-700 mb-1">+ 19% MwSt: {((baseSum * 0.19).toFixed(2)).replace('.', ',')} €</p>
-                          <p className="font-bold text-blue-800 text-xl mb-2">Bruttosumme = {(baseSum * 1.19).toFixed(2).replace('.', ',')} €</p>
+                          <div className="flex justify-between text-base mb-1">
+                            <span>{nights} Nächte x {pricePerNight.toFixed(0)} € =</span>
+                            <span>{(nights * pricePerNight).toFixed(2).replace('.', ',')} €</span>
+                          </div>
+                          <div className="flex justify-between text-base mb-1">
+                            <span>+ Endreinigung</span>
+                            <span>{cleaningFee.toFixed(2).replace('.', ',')} €</span>
+                          </div>
+                          <div className="flex justify-between text-base font-semibold mt-2">
+                            <span>Nettosumme</span>
+                            <span>{baseSum.toFixed(2).replace('.', ',')} €</span>
+                          </div>
+                          <div className="flex justify-between text-base mt-1">
+                            <span>+ 19% MwSt.</span>
+                            <span>{(baseSum * 0.19).toFixed(2).replace('.', ',')} €</span>
+                          </div>
+                          <div className="flex justify-between text-xl font-bold text-blue-800 mt-2">
+                            <span>Bruttosumme</span>
+                            <span>{(baseSum * 1.19).toFixed(2).replace('.', ',')} €</span>
+                          </div>
                           <div className="bg-blue-50 rounded-lg p-3 mt-3 text-gray-700 text-sm">
                             <strong>Gewählt:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")} ({nights} Nächte)
                           </div>
