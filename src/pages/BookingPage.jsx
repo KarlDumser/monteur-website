@@ -625,7 +625,7 @@ export default function BookingPage() {
                                   {gallery.images.map((image, index) => (
                                     <div
                                       key={`${gallery.titel}-${index}`}
-                                      className="bg-gray-200 rounded-lg overflow-hidden h-[180px] w-[180px] hover:opacity-80 transition cursor-pointer flex items-center justify-center"
+                                      className="bg-gray-200 rounded-lg overflow-hidden h-[220px] w-[220px] hover:opacity-80 transition cursor-pointer flex items-center justify-center"
                                       onClick={() =>
                                         setSelectedImage({
                                           image,
@@ -638,7 +638,7 @@ export default function BookingPage() {
                                         src={`/${gallery.folder}/${image}?v=${APP_VERSION}`}
                                         alt={`${gallery.titel} ${index + 1}`}
                                         className="w-full h-full object-cover"
-                                        style={{ aspectRatio: '1/1', objectFit: 'cover' }}
+                                        style={{ aspectRatio: '1/1', objectFit: 'cover', width: '100%', height: '100%' }}
                                       />
                                     </div>
                                   ))}
