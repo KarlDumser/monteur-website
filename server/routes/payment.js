@@ -60,21 +60,6 @@ router.get('/config', (req, res) => {
       console.error('❌ Push-Benachrichtigung fehlgeschlagen:', pushError);
     }
 
-    res.json({ clientSecret: paymentIntent.client_secret });
-      automatic_payment_methods: {
-        enabled: true,
-      },
-      metadata: {
-        wohnung: bookingData.wohnung,
-        name: bookingData.name,
-        email: bookingData.email,
-        startDate: bookingData.startDate,
-        endDate: bookingData.endDate
-      }
-    });
-    
-    console.log('✅ Payment Intent erstellt:', paymentIntent.id);
-    
     res.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id
