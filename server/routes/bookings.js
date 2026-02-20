@@ -104,6 +104,22 @@ router.get('/:id', async (req, res) => {
 // Neue Buchung erstellen
 router.post('/', async (req, res) => {
   try {
+    // Prüfe auf Überschneidung mit bestehenden Buchungen
+    const { wohnung, startDate, endDate } = req.body;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const overlapping = await Booking.findOne({
+      wohnung,
+      bookingStatus: { $ne: 'cancelled' },
+      deletedAt: null,
+      $or: [
+        { startDate: { $lte: end }, endDate: { $gte: start } }
+      ]
+    });
+    if (overlapping) {
+      return res.status(409).json({ error: 'Für diesen Zeitraum existiert bereits eine Buchung für diese Wohnung.' });
+    }
+
     const booking = new Booking(req.body);
     await booking.save();
 
@@ -120,17 +136,6 @@ router.post('/', async (req, res) => {
     } catch (blockError) {
       console.error('❌ Fehler beim Blockieren des Zeitraums:', blockError);
     }
-
-    // Email-Bestätigung asynchron versenden (vorübergehend deaktiviert)
-    // (async () => {
-    //   try {
-    //     const { sendBookingConfirmation } = await import('../services/emailService.js');
-    //     const emailResult = await sendBookingConfirmation(booking);
-    //     console.log('📧 Buchungsbestätigung gesendet:', emailResult);
-    //   } catch (emailError) {
-    //     console.error('❌ Fehler beim Senden der Buchungsbestätigung:', emailError);
-    //   }
-    // })();
 
     res.status(201).json(booking);
   } catch (error) {
