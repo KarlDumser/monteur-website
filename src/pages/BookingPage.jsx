@@ -715,8 +715,8 @@ export default function BookingPage() {
       {/* Image Modal */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-0 m-0 z-50"
-          style={{ top: 0, left: 0, width: '100vw', height: '100vh' }}
+          className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-90 flex items-center justify-center p-0 m-0 z-50"
+          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', minHeight: '100vh' }}
           onClick={() => setSelectedImage(null)}
         >
           <div className="max-w-5xl w-full relative" onClick={(e) => e.stopPropagation()}>
