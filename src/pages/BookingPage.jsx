@@ -621,11 +621,11 @@ export default function BookingPage() {
                             {wohnung.galleries.map((gallery) => (
                               <div key={gallery.titel}>
                                 <p className="text-sm font-semibold text-gray-700 mb-2">{gallery.titel}</p>
-                                <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+                                <div className="grid grid-cols-4 md:grid-cols-5 gap-0">
                                   {gallery.images.map((image, index) => (
                                     <div
                                       key={`${gallery.titel}-${index}`}
-                                      className="bg-gray-200 rounded-lg overflow-hidden h-24 hover:opacity-75 transition cursor-pointer"
+                                      className="bg-gray-200 rounded-lg overflow-hidden h-[180px] w-[180px] hover:opacity-80 transition cursor-pointer flex items-center justify-center"
                                       onClick={() =>
                                         setSelectedImage({
                                           image,
@@ -638,6 +638,7 @@ export default function BookingPage() {
                                         src={`/${gallery.folder}/${image}?v=${APP_VERSION}`}
                                         alt={`${gallery.titel} ${index + 1}`}
                                         className="w-full h-full object-cover"
+                                        style={{ aspectRatio: '1/1', objectFit: 'cover' }}
                                       />
                                     </div>
                                   ))}
