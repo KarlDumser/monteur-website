@@ -650,13 +650,14 @@ export default function BookingPage() {
                             {wohnung.images.map((image, index) => (
                               <div
                                 key={index}
-                                className="bg-gray-200 rounded-lg overflow-hidden h-24 hover:opacity-75 transition cursor-pointer"
+                                className="bg-gray-200 rounded-lg overflow-hidden h-36 w-36 hover:opacity-80 transition cursor-pointer flex items-center justify-center"
                                 onClick={() => setSelectedImage({ image, folder: wohnung.folder, titel: wohnung.titel })}
                               >
                                 <img
                                   src={`/${wohnung.folder}/${image}?v=${APP_VERSION}`}
                                   alt={`${wohnung.titel} ${index + 1}`}
-                                  className="w-full h-full object-cover"
+                                        className="w-full h-full object-cover"
+                                        style={{ aspectRatio: '1/1', objectFit: 'cover' }}
                                 />
                               </div>
                             ))}
@@ -713,7 +714,8 @@ export default function BookingPage() {
       {/* Image Modal */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-0 m-0 z-50"
+          style={{ top: 0, left: 0, width: '100vw', height: '100vh' }}
           onClick={() => setSelectedImage(null)}
         >
           <div className="max-w-5xl w-full relative" onClick={(e) => e.stopPropagation()}>
@@ -730,13 +732,22 @@ export default function BookingPage() {
               <button
                 className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full"
                 onClick={() => {
-                  const currentIndex = wohnung.images.findIndex(
-                    (img) => img === selectedImage.image
-                  );
-                  const prevIndex =
-                    (currentIndex - 1 + wohnung.images.length) % wohnung.images.length;
+                  // Finde Bilder-Array für Navigation (Galerie oder Einzelbilder)
+                  let imagesArr = [];
+                  if (selectedImage.folder && selectedImage.titel && selectedImage.titel.includes('–')) {
+                    // Galerie-Modus
+                    const wohnungKey = Object.keys(wohnungen).find(key => selectedImage.titel.startsWith(wohnungen[key].titel));
+                    const gallery = wohnungen[wohnungKey]?.galleries?.find(g => g.folder === selectedImage.folder);
+                    imagesArr = gallery ? gallery.images : [];
+                  } else {
+                    // Einzelbild-Modus
+                    const wohnungKey = Object.keys(wohnungen).find(key => wohnungen[key].folder === selectedImage.folder);
+                    imagesArr = wohnungen[wohnungKey]?.images || [];
+                  }
+                  const currentIndex = imagesArr.findIndex(img => img === selectedImage.image);
+                  const prevIndex = (currentIndex - 1 + imagesArr.length) % imagesArr.length;
                   setSelectedImage({
-                    image: wohnung.images[prevIndex],
+                    image: imagesArr[prevIndex],
                     folder: selectedImage.folder,
                     titel: selectedImage.titel,
                   });
@@ -747,17 +758,25 @@ export default function BookingPage() {
               <img
                 src={`/${selectedImage.folder}/${selectedImage.image}?v=${APP_VERSION}`}
                 alt={selectedImage.titel}
-                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                className="mx-auto object-contain rounded-lg max-h-[80vh] max-w-[90vw]"
+                style={{ background: '#fff', boxShadow: '0 2px 16px rgba(0,0,0,0.2)' }}
               />
               <button
                 className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full"
                 onClick={() => {
-                  const currentIndex = wohnung.images.findIndex(
-                    (img) => img === selectedImage.image
-                  );
-                  const nextIndex = (currentIndex + 1) % wohnung.images.length;
+                  let imagesArr = [];
+                  if (selectedImage.folder && selectedImage.titel && selectedImage.titel.includes('–')) {
+                    const wohnungKey = Object.keys(wohnungen).find(key => selectedImage.titel.startsWith(wohnungen[key].titel));
+                    const gallery = wohnungen[wohnungKey]?.galleries?.find(g => g.folder === selectedImage.folder);
+                    imagesArr = gallery ? gallery.images : [];
+                  } else {
+                    const wohnungKey = Object.keys(wohnungen).find(key => wohnungen[key].folder === selectedImage.folder);
+                    imagesArr = wohnungen[wohnungKey]?.images || [];
+                  }
+                  const currentIndex = imagesArr.findIndex(img => img === selectedImage.image);
+                  const nextIndex = (currentIndex + 1) % imagesArr.length;
                   setSelectedImage({
-                    image: wohnung.images[nextIndex],
+                    image: imagesArr[nextIndex],
                     folder: selectedImage.folder,
                     titel: selectedImage.titel,
                   });
