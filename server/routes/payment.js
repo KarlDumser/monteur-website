@@ -1,3 +1,14 @@
+// Alias für Frontend-Kompatibilität
+router.post('/payment/create-payment-intent', async (req, res) => {
+  // ...existing code...
+  // Nutze die Logik von /payment
+  const handler = router.stack.find(r => r.route && r.route.path === '/payment' && r.route.methods.post);
+  if (handler && handler.handle) {
+    return handler.handle(req, res);
+  }
+  // Fallback falls nicht gefunden
+  res.status(404).json({ error: 'Payment Intent Route nicht gefunden' });
+});
 import express from 'express';
 import Stripe from 'stripe';
 import Booking from '../models/Booking.js';
