@@ -32,7 +32,14 @@ router.get('/config', (req, res) => {
   });
 });
 
-    // Erstelle Payment Intent
+
+// Payment Intent erstellen
+router.post('/payment', async (req, res) => {
+  try {
+    const { bookingData, amount } = req.body;
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe nicht konfiguriert' });
+    }
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency: 'eur',
@@ -47,7 +54,6 @@ router.get('/config', (req, res) => {
       }
     });
     console.log('✅ Payment Intent erstellt:', paymentIntent.id);
-
     // Push-Benachrichtigung (nur Demo, echte Integration ggf. nach erfolgreicher Zahlung)
     try {
       const { sendPushNotification } = await import('../services/pushService.js');
@@ -59,7 +65,6 @@ router.get('/config', (req, res) => {
     } catch (pushError) {
       console.error('❌ Push-Benachrichtigung fehlgeschlagen:', pushError);
     }
-
     res.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id
