@@ -250,12 +250,12 @@ export default function Payment() {
             <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6">
               <div className="space-y-3 text-gray-700">
                 <div className="flex justify-between">
-                  <span>Unterkunft ({bookingInfo.nights} Nächte × {bookingInfo.pricePerNight}€):</span>
-                    <span>{(bookingInfo.nights * bookingInfo.pricePerNight).toFixed(2)}€</span>
+                  <span>Unterkunft ({bookingInfo.nights} Nächte × {Number(bookingInfo.pricePerNight).toFixed(0)}€):</span>
+                  <span>{(bookingInfo.nights * bookingInfo.pricePerNight).toFixed(2).replace('.', ',')}€</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Endreinigung:</span>
-                    <span>{Number(bookingInfo.cleaningFee ?? 90).toFixed(2)}€</span>
+                  <span>{Number(bookingInfo.cleaningFee ?? 90).toFixed(2).replace('.', ',')}€</span>
                 </div>
                 
                 <div className="border-t pt-3 flex justify-between text-lg">
