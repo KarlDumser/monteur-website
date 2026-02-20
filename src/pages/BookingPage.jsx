@@ -737,8 +737,12 @@ export default function BookingPage() {
                   e.stopPropagation();
                   let imagesArr = [];
                   if (selectedImage.folder && selectedImage.titel && selectedImage.titel.includes('–')) {
-                    const wohnungKey = Object.keys(wohnungen).find(key => selectedImage.titel.startsWith(wohnungen[key].titel));
-                    const gallery = wohnungen[wohnungKey]?.galleries?.find(g => g.folder === selectedImage.folder);
+                    // Robustere Galerie-Suche: Finde Wohnung anhand folder
+                    const wohnungKey = Object.keys(wohnungen).find(key => wohnungen[key].folder === selectedImage.folder);
+                    let gallery = null;
+                    if (wohnungen[wohnungKey]?.galleries) {
+                      gallery = wohnungen[wohnungKey].galleries.find(g => g.folder === selectedImage.folder);
+                    }
                     imagesArr = gallery ? gallery.images : [];
                   } else {
                     const wohnungKey = Object.keys(wohnungen).find(key => wohnungen[key].folder === selectedImage.folder);
