@@ -371,8 +371,8 @@ export default function BookingPage() {
                   onChange={(item) => {
                     setRange([item.selection]);
                     const nights = Math.max(0, Math.ceil((item.selection.endDate - item.selection.startDate) / (1000 * 60 * 60 * 24)));
-                    if (nights > 0 && nights < 14) {
-                      setMinNightsError("Mindestbuchdauer 14 Tage");
+                    if (nights > 0 && nights < 13) {
+                      setMinNightsError("Mindestbuchdauer 14 Tage (13 Nächte)");
                       setMinNightsErrorAnim(false); // Reset for retrigger
                       setTimeout(() => setMinNightsErrorAnim(true), 10);
                     } else {
