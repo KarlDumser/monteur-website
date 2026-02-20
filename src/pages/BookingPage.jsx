@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format, addMonths, addDays, isAfter } from "date-fns";
 import { APP_VERSION } from "../config";
 import { DateRange } from "react-date-range";
@@ -8,6 +8,11 @@ import "react-date-range/dist/theme/default.css";
 import { apiCall } from "../utils/api";
 
 export default function BookingPage() {
+  // State für Mindestbuchungsdauer-Fehler
+  const [minNightsError, setMinNightsError] = useState("");
+  // State für Animation der Fehlermeldung
+  const [minNightsErrorAnim, setMinNightsErrorAnim] = useState(false);
+  const minNightsErrorRef = useRef(null);
   const [range, setRange] = useState([
     {
       startDate: new Date(),
@@ -162,6 +167,21 @@ export default function BookingPage() {
 
   const handleBooking = (e) => {
     e.preventDefault();
+    const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
+    if (nights < 14) {
+      setMinNightsError("Mindestbuchdauer 14 Tage");
+      setMinNightsErrorAnim(false); // Reset for retrigger
+      setTimeout(() => setMinNightsErrorAnim(true), 10);
+      // Kalenderfeld hervorheben und zum Fehler scrollen
+      const calendar = document.querySelector('.rdrCalendarWrapper');
+      if (calendar) {
+        calendar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        calendar.focus?.();
+      }
+      return;
+    } else {
+      setMinNightsError("");
+    }
     const ergebnis = checkAvailability();
     setAvailability(ergebnis);
     setStep("select");
@@ -348,7 +368,17 @@ export default function BookingPage() {
               <div className="bg-gray-50 p-4 rounded-xl">
                 <DateRange
                   editableDateInputs={true}
-                  onChange={(item) => setRange([item.selection])}
+                  onChange={(item) => {
+                    setRange([item.selection]);
+                    const nights = Math.max(0, Math.ceil((item.selection.endDate - item.selection.startDate) / (1000 * 60 * 60 * 24)));
+                    if (nights > 0 && nights < 14) {
+                      setMinNightsError("Mindestbuchdauer 14 Tage");
+                      setMinNightsErrorAnim(false); // Reset for retrigger
+                      setTimeout(() => setMinNightsErrorAnim(true), 10);
+                    } else {
+                      setMinNightsError("");
+                    }
+                  }}
                   moveRangeOnFirstSelection={false}
                   ranges={range}
                   minDate={new Date()}
@@ -360,6 +390,15 @@ export default function BookingPage() {
                   "dd.MM.yyyy"
                 )} ({Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)))} Nächte)
               </p>
+              {minNightsError && (
+                <div
+                  ref={minNightsErrorRef}
+                  className={`bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mt-2 text-sm transition-all duration-300 ${minNightsErrorAnim ? 'animate-bounce-grow' : ''}`}
+                  style={{ display: 'block', textAlign: 'center' }}
+                >
+                  {minNightsError}
+                </div>
+              )}
               
               {getEarlyBookingDiscount() > 0 && (
                 <div className="bg-green-50 border-2 border-green-400 p-4 rounded-lg mt-3">
@@ -629,51 +668,27 @@ export default function BookingPage() {
                       <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
                         <div>
                           <p className="text-gray-600 text-sm mb-2">Preis pro Nacht</p>
-                          <p className="text-4xl font-bold text-blue-600 mb-4">{pricePerNight}€</p>
+                          <p className="text-4xl font-bold text-blue-600 mb-4">{pricePerNight.toFixed(2).replace('.', ',')}€</p>
                           <p className="text-xs text-gray-500 mb-4">(für {people} {parseInt(people) === 1 ? 'Person' : 'Personen'})</p>
-                          <div className="space-y-2 text-sm text-gray-700">
-                            <p>+ {cleaningFee}€ Endreinigung</p>
-                            
-                            {getEarlyBookingDiscount() > 0 ? (
-                              <>
-                                <div className="pt-2 border-t border-blue-200">
-                                  <p className="font-semibold">Nettosumme: {baseSum.toFixed(2).replace('.', ',')} €</p>
-                                  <p className="text-green-700">- 10% Rabatt: {(baseSum * 0.10).toFixed(2).replace('.', ',')} €</p>
-                                  <p className="font-semibold">Zwischensumme: {(baseSum * 0.90).toFixed(2).replace('.', ',')} €</p>
-                                  <p>+ 7% MwSt.: {(baseSum * 0.90 * 0.07).toFixed(2).replace('.', ',')} €</p>
-                                  <p className="pt-2 border-t border-green-300">
-                                    <strong className="text-green-800 text-lg">
-                                      Rechnungsbetrag: {(baseSum * 0.90 * 1.07).toFixed(2).replace('.', ',')} €
-                                    </strong>
-                                  </p>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <p className="pt-2 border-t border-blue-200 font-semibold">Summe: {baseSum}€</p>
-                                <p className="pt-2 border-t border-blue-200 font-semibold">Nettosumme: {baseSum.toFixed(2).replace('.', ',')} €</p>
-                                <p>+ 7% MwSt.: {(baseSum * 0.07).toFixed(2).replace('.', ',')} €</p>
-                                <p className="pt-2 border-t border-blue-300">
-                                  <strong className="text-lg">
-                                    Rechnungsbetrag: {(baseSum * 1.07).toFixed(2).replace('.', ',')} €
-                                  </strong>
-                                </p>
-                              </>
-                            )}
+                          <p className="text-sm text-gray-700 mb-2">+ {cleaningFee.toFixed(2).replace('.', ',')}€ Endreinigung</p>
+                          <hr className="my-2 border-blue-200" />
+                          <p className="font-semibold text-gray-700">Summe: {baseSum.toFixed(2).replace('.', ',')}€</p>
+                          <p className="font-semibold text-gray-700">Nettosumme: {baseSum.toFixed(2).replace('.', ',')} €</p>
+                          <div className="bg-blue-50 rounded-lg p-3 mt-3 text-gray-700 text-sm">
+                            <strong>Gewählt:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")} ({nights} Nächte)
                           </div>
+                          <button
+                            onClick={() => handleSelectWohnung(key)}
+                            disabled={!isAvailable}
+                            className={`mt-6 w-full font-bold py-3 px-4 rounded-xl transition shadow-lg ${
+                              isAvailable
+                                ? "bg-green-600 text-white hover:bg-green-700"
+                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            }`}
+                          >
+                            {isAvailable ? "✓ Diese Wohnung buchen" : "Ausgebucht"}
+                          </button>
                         </div>
-
-                        <button 
-                          onClick={() => handleSelectWohnung(key)}
-                          disabled={!isAvailable}
-                          className={`mt-6 w-full font-bold py-3 px-4 rounded-xl transition shadow-lg ${
-                            isAvailable
-                              ? "bg-green-600 text-white hover:bg-green-700"
-                              : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                          }`}
-                        >
-                          {isAvailable ? "✓ Diese Wohnung buchen" : "Ausgebucht"}
-                        </button>
                       </div>
                     </div>
                   </div>

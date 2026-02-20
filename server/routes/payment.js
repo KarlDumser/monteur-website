@@ -104,8 +104,19 @@ router.post('/confirm-payment', async (req, res) => {
     
     const parsedStartDate = parseGermanDate(bookingData.startDate);
     const parsedEndDate = parseGermanDate(bookingData.endDate);
-    
+
     console.log('✅ Parsed dates:', { startDate: parsedStartDate, endDate: parsedEndDate });
+
+    // Mindestbuchungszeit prüfen (mind. 14 Nächte)
+    if (!parsedStartDate || !parsedEndDate) {
+      return res.status(400).json({ error: 'Ungültige Buchungsdaten: Start- oder Enddatum fehlt.' });
+    }
+    // Differenz in Tagen berechnen
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const diffDays = Math.round((parsedEndDate - parsedStartDate) / msPerDay);
+    if (diffDays < 14) {
+      return res.status(400).json({ error: 'Die Mindestbuchungsdauer beträgt 14 Nächte.' });
+    }
     
     // Erstelle Buchung in Datenbank
     const booking = new Booking({
