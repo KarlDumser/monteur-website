@@ -744,13 +744,15 @@ export default function BookingPage() {
                     const wohnungKey = Object.keys(wohnungen).find(key => wohnungen[key].folder === selectedImage.folder);
                     imagesArr = wohnungen[wohnungKey]?.images || [];
                   }
-                  const currentIndex = imagesArr.findIndex(img => img === selectedImage.image);
-                  const prevIndex = (currentIndex - 1 + imagesArr.length) % imagesArr.length;
-                  setSelectedImage({
-                    image: imagesArr[prevIndex],
-                    folder: selectedImage.folder,
-                    titel: selectedImage.titel,
-                  });
+                  if (imagesArr.length > 0) {
+                    const currentIndex = imagesArr.findIndex(img => img === selectedImage.image);
+                    const prevIndex = (currentIndex - 1 + imagesArr.length) % imagesArr.length;
+                    setSelectedImage({
+                      image: imagesArr[prevIndex],
+                      folder: selectedImage.folder,
+                      titel: selectedImage.titel,
+                    });
+                  }
                 }}
               >
                 ◀
@@ -775,13 +777,15 @@ export default function BookingPage() {
                     const wohnungKey = Object.keys(wohnungen).find(key => wohnungen[key].folder === selectedImage.folder);
                     imagesArr = wohnungen[wohnungKey]?.images || [];
                   }
-                  const currentIndex = imagesArr.findIndex(img => img === selectedImage.image);
-                  const nextIndex = (currentIndex + 1) % imagesArr.length;
-                  setSelectedImage({
-                    image: imagesArr[nextIndex],
-                    folder: selectedImage.folder,
-                    titel: selectedImage.titel,
-                  });
+                  if (imagesArr.length > 0) {
+                    const currentIndex = imagesArr.findIndex(img => img === selectedImage.image);
+                    const nextIndex = (currentIndex + 1) % imagesArr.length;
+                    setSelectedImage({
+                      image: imagesArr[nextIndex],
+                      folder: selectedImage.folder,
+                      titel: selectedImage.titel,
+                    });
+                  }
                 }}
               >
                 ▶
