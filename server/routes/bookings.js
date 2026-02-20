@@ -13,10 +13,10 @@ router.get('/:id/invoice', async (req, res) => {
     if (!booking) {
       return res.status(404).json({ error: 'Buchung nicht gefunden' });
     }
-    const pdfBuffer = await generateInvoice(booking);
+    const { buffer, fileName } = await generateInvoice(booking);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=Rechnung-${booking._id}.pdf`);
-    res.send(pdfBuffer);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(buffer);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
