@@ -168,8 +168,8 @@ export default function BookingPage() {
   const handleBooking = (e) => {
     e.preventDefault();
     const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
-    if (nights < 14) {
-      setMinNightsError("Mindestbuchdauer 14 Tage");
+    if (nights < 13) {
+      setMinNightsError("Mindestbuchdauer 14 Tage (13 Nächte)");
       setMinNightsErrorAnim(false); // Reset for retrigger
       setTimeout(() => setMinNightsErrorAnim(true), 10);
       // Kalenderfeld hervorheben und zum Fehler scrollen
