@@ -731,17 +731,16 @@ export default function BookingPage() {
             </div>
             <div className="relative">
               <button
-                className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full"
-                onClick={() => {
-                  // Finde Bilder-Array für Navigation (Galerie oder Einzelbilder)
+                className="absolute left-[-60px] top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full z-50"
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
                   let imagesArr = [];
                   if (selectedImage.folder && selectedImage.titel && selectedImage.titel.includes('–')) {
-                    // Galerie-Modus
                     const wohnungKey = Object.keys(wohnungen).find(key => selectedImage.titel.startsWith(wohnungen[key].titel));
                     const gallery = wohnungen[wohnungKey]?.galleries?.find(g => g.folder === selectedImage.folder);
                     imagesArr = gallery ? gallery.images : [];
                   } else {
-                    // Einzelbild-Modus
                     const wohnungKey = Object.keys(wohnungen).find(key => wohnungen[key].folder === selectedImage.folder);
                     imagesArr = wohnungen[wohnungKey]?.images || [];
                   }
@@ -763,8 +762,10 @@ export default function BookingPage() {
                 style={{ background: '#fff', boxShadow: '0 2px 16px rgba(0,0,0,0.2)' }}
               />
               <button
-                className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full"
-                onClick={() => {
+                className="absolute right-[-60px] top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full z-50"
+                type="button"
+                onClick={e => {
+                  e.stopPropagation();
                   let imagesArr = [];
                   if (selectedImage.folder && selectedImage.titel && selectedImage.titel.includes('–')) {
                     const wohnungKey = Object.keys(wohnungen).find(key => selectedImage.titel.startsWith(wohnungen[key].titel));
