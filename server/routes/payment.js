@@ -32,22 +32,35 @@ router.get('/config', (req, res) => {
   });
 });
 
-// Create Payment Intent
-router.post('/create-payment-intent', async (req, res) => {
-  try {
-    if (!stripe) {
-      console.error('❌ Stripe nicht konfiguriert - Secret Key:', process.env.STRIPE_SECRET_KEY ? 'existiert' : 'FEHLT');
-      return res.status(500).json({ error: 'Stripe nicht konfiguriert. Bitte Secret Key in Umgebungsvariablen setzen.' });
-    }
-    
-    const { amount, bookingData } = req.body;
-    
-    console.log('💳 Erstelle Payment Intent:', { amount, wohnung: bookingData.wohnung });
-    
     // Erstelle Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Betrag in Cent
+      amount,
       currency: 'eur',
+      metadata: {
+        wohnung: bookingData.wohnung,
+        email: bookingData.email,
+        name: bookingData.name,
+        company: bookingData.company
+      },
+      automatic_payment_methods: {
+        enabled: true
+      }
+    });
+    console.log('✅ Payment Intent erstellt:', paymentIntent.id);
+
+    // Push-Benachrichtigung (nur Demo, echte Integration ggf. nach erfolgreicher Zahlung)
+    try {
+      const { sendPushNotification } = await import('../services/pushService.js');
+      await sendPushNotification(
+        'Neue Buchung bezahlt',
+        `Wohnung: ${bookingData.wohnung}\nName: ${bookingData.name}\nFirma: ${bookingData.company}\nZeitraum: ${bookingData.startDate} - ${bookingData.endDate}\nBetrag: ${amount / 100} €`,
+        bookingData
+      );
+    } catch (pushError) {
+      console.error('❌ Push-Benachrichtigung fehlgeschlagen:', pushError);
+    }
+
+    res.json({ clientSecret: paymentIntent.client_secret });
       automatic_payment_methods: {
         enabled: true,
       },
@@ -121,6 +134,18 @@ router.post('/confirm-payment', async (req, res) => {
     await booking.save();
     console.log('✅ Buchung gespeichert:', booking._id);
     
+    // Sende Push-Benachrichtigung im Hintergrund
+    try {
+      const { sendPushNotification } = await import('../services/pushService.js');
+      await sendPushNotification(
+        'Neue Buchung bezahlt',
+        `Wohnung: ${booking.property}\nZeitraum: ${booking.startDate.toLocaleDateString()} bis ${booking.endDate.toLocaleDateString()}\nName: ${booking.name}\nBetrag: ${booking.amount} €`,
+        { bookingId: booking._id }
+      );
+    } catch (pushError) {
+      console.error('❌ Push-Benachrichtigung fehlgeschlagen:', pushError);
+    }
+
     if (debugEmail) {
       const emailStatus = await sendBookingConfirmation(booking);
       res.json({ 

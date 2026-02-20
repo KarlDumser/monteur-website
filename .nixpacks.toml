@@ -1,2 +1,6 @@
+[phases.setup]
+nixPkgs = ["nodejs"]
+cmds = ["npm install --include=dev"]
+
 [phases.build]
-cmds = ["npm install", "npm run build"]
+cmds = ["npm run build"]
