@@ -20,9 +20,14 @@ export const getApiUrl = () => {
 
 export const apiCall = async (endpoint, options = {}) => {
   const apiUrl = getApiUrl();
-  const url = endpoint.startsWith('/api') 
-    ? `${apiUrl}${endpoint}`
-    : `${apiUrl}${endpoint}`;
-    
+  // Korrigiere: Wenn apiUrl schon /api enthält und endpoint auch, dann nicht doppelt
+  let url = '';
+  if (apiUrl.endsWith('/api') && endpoint.startsWith('/api')) {
+    url = apiUrl + endpoint.slice(4); // endpoint ohne /api
+  } else if (!apiUrl.endsWith('/api') && !endpoint.startsWith('/api')) {
+    url = apiUrl + '/api' + endpoint;
+  } else {
+    url = apiUrl + endpoint;
+  }
   return fetch(url, options);
 };
