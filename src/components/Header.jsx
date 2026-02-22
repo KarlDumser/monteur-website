@@ -78,8 +78,8 @@ export default function Header() {
                   v{APP_VERSION}
                 </span>
               </span>
-        </div>
-      </nav>
-    </header>
-  );
-}
+            </div>
+          </nav>
+        </header>
+      );
+  }
