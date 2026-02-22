@@ -92,6 +92,9 @@ export default function Payment() {
   const [stripePromise, setStripePromise] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('stripe');
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [invoiceError, setInvoiceError] = useState(null);
 
   // Lade Stripe Key vom Backend UND Payment Intent - beide gleichzeitig
   useEffect(() => {
@@ -285,16 +288,80 @@ export default function Payment() {
             {/* Payment Form */}
             <div>
               <h2 className="text-xl font-bold text-gray-800 mb-4">Zahlungsmethode</h2>
-              
-              {clientSecret && stripePromise ? (
-                <Elements stripe={stripePromise} options={options}>
-                  <CheckoutForm bookingInfo={bookingInfo} />
-                </Elements>
+              <div className="mb-4 flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="stripe"
+                    checked={paymentMethod === 'stripe'}
+                    onChange={() => setPaymentMethod('stripe')}
+                  />
+                  <span>Kreditkarte (Stripe)</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="invoice"
+                    checked={paymentMethod === 'invoice'}
+                    onChange={() => setPaymentMethod('invoice')}
+                  />
+                  <span>Auf Rechnung</span>
+                </label>
+              </div>
+              {paymentMethod === 'stripe' ? (
+                clientSecret && stripePromise ? (
+                  <Elements stripe={stripePromise} options={options}>
+                    <CheckoutForm bookingInfo={bookingInfo} />
+                  </Elements>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">⏳ Zahlung wird vorbereitet...</p>
+                    <p className="text-sm text-gray-400 mt-2">Stripe lädt...</p>
+                  </div>
+                )
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-600">⏳ Zahlung wird vorbereitet...</p>
-                  <p className="text-sm text-gray-400 mt-2">Stripe lädt...</p>
-                </div>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setInvoiceLoading(true);
+                    setInvoiceError(null);
+                    try {
+                      const apiUrl = getApiUrl();
+                      const response = await fetch(`${apiUrl}/bookings`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...bookingInfo, paymentStatus: 'invoice' })
+                      });
+                      const data = await response.json();
+                      if (response.ok && data._id) {
+                        localStorage.setItem('bookingInfo', JSON.stringify({ ...bookingInfo, _id: data._id }));
+                        window.location.href = '/erfolg';
+                      } else {
+                        setInvoiceError(data.error || 'Fehler beim Buchen');
+                      }
+                    } catch (err) {
+                      setInvoiceError('Fehler beim Buchen');
+                    } finally {
+                      setInvoiceLoading(false);
+                    }
+                  }}
+                  className="space-y-6"
+                >
+                  <button
+                    type="submit"
+                    disabled={invoiceLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg text-lg"
+                  >
+                    {invoiceLoading ? 'Buchung wird verarbeitet...' : 'Jetzt verbindlich buchen'}
+                  </button>
+                  {invoiceError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                      {invoiceError}
+                    </div>
+                  )}
+                </form>
               )}
             </div>
 
