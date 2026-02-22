@@ -338,12 +338,16 @@ export default function Payment() {
                         startDate: startDate && !isNaN(startDate) ? startDate.toISOString() : bookingInfo.startDate,
                         endDate: endDate && !isNaN(endDate) ? endDate.toISOString() : bookingInfo.endDate
                       };
+                      // Debug-Ausgabe
+                      console.log('[DEBUG] Buchung Auf Rechnung Payload:', payload);
                       const response = await fetch(`${apiUrl}/bookings`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                       });
                       const data = await response.json();
+                      // Debug-Antwort
+                      console.log('[DEBUG] Backend Response:', data);
                       if (response.ok && data._id) {
                         localStorage.setItem('bookingInfo', JSON.stringify({ ...bookingInfo, _id: data._id }));
                         window.location.href = '/erfolg';
@@ -352,6 +356,7 @@ export default function Payment() {
                       }
                     } catch (err) {
                       setInvoiceError('Fehler beim Buchen');
+                      console.error('[DEBUG] Fehler beim Buchen:', err);
                     } finally {
                       setInvoiceLoading(false);
                     }
