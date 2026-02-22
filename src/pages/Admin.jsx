@@ -280,14 +280,29 @@ export default function Admin() {
                 </div>
                 {/* Download-Link für Rechnung */}
                 <div className="mt-4">
-                  <a
-                    href={`/api/bookings/${selectedBooking._id}/invoice`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
                     className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition"
+                    onClick={async () => {
+                      console.log('[DEBUG] paymentMethod:', selectedBooking.paymentMethod, 'paymentStatus:', selectedBooking.paymentStatus);
+                      try {
+                        const res = await fetch(`/api/bookings/${selectedBooking._id}/invoice`);
+                        if (!res.ok) throw new Error('Fehler beim Herunterladen der Rechnung');
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `Rechnung-${selectedBooking._id}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        window.URL.revokeObjectURL(url);
+                      } catch (err) {
+                        alert('Fehler beim Herunterladen der Rechnung');
+                      }
+                    }}
                   >
                     Rechnung herunterladen
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>
