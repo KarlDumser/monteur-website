@@ -340,7 +340,8 @@ export default function Payment() {
                       }
                       const payload = {
                         ...bookingInfo,
-                        paymentStatus: 'invoice',
+                        paymentStatus: 'pending',
+                        paymentMethod: 'invoice',
                         startDate: parseGermanDate(bookingInfo.startDate),
                         endDate: parseGermanDate(bookingInfo.endDate)
                       };
