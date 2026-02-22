@@ -329,10 +329,19 @@ export default function Payment() {
                     setInvoiceError(null);
                     try {
                       const apiUrl = getApiUrl();
+                      // Korrekte Date-Konvertierung
+                      const startDate = bookingInfo.startDate ? new Date(bookingInfo.startDate) : null;
+                      const endDate = bookingInfo.endDate ? new Date(bookingInfo.endDate) : null;
+                      const payload = {
+                        ...bookingInfo,
+                        paymentStatus: 'invoice',
+                        startDate: startDate && !isNaN(startDate) ? startDate.toISOString() : bookingInfo.startDate,
+                        endDate: endDate && !isNaN(endDate) ? endDate.toISOString() : bookingInfo.endDate
+                      };
                       const response = await fetch(`${apiUrl}/bookings`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ...bookingInfo, paymentStatus: 'invoice' })
+                        body: JSON.stringify(payload)
                       });
                       const data = await response.json();
                       if (response.ok && data._id) {
