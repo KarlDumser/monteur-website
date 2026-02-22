@@ -330,13 +330,19 @@ export default function Payment() {
                     try {
                       const apiUrl = getApiUrl();
                       // Korrekte Date-Konvertierung
-                      const startDate = bookingInfo.startDate ? new Date(bookingInfo.startDate) : null;
-                      const endDate = bookingInfo.endDate ? new Date(bookingInfo.endDate) : null;
+                      // Hilfsfunktion für deutsches Datum zu ISO
+                      function parseGermanDate(str) {
+                        if (typeof str === 'string' && str.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+                          const [d, m, y] = str.split('.');
+                          return new Date(`${y}-${m}-${d}T00:00:00Z`).toISOString();
+                        }
+                        return str;
+                      }
                       const payload = {
                         ...bookingInfo,
                         paymentStatus: 'invoice',
-                        startDate: startDate && !isNaN(startDate) ? startDate.toISOString() : bookingInfo.startDate,
-                        endDate: endDate && !isNaN(endDate) ? endDate.toISOString() : bookingInfo.endDate
+                        startDate: parseGermanDate(bookingInfo.startDate),
+                        endDate: parseGermanDate(bookingInfo.endDate)
                       };
                       // Debug-Ausgabe
                       console.log('[DEBUG] Buchung Auf Rechnung Payload:', payload);
