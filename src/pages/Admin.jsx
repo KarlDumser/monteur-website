@@ -14,7 +14,10 @@ export default function Admin() {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [actionMessage, setActionMessage] = useState(null);
   const messageTimeoutRef = useRef(null);
-  
+
+  // Pop-Up für Details
+  const [selectedBooking, setSelectedBooking] = useState(null);
+
   // Form für Zeitblockierung
   const [blockForm, setBlockForm] = useState({
     wohnung: 'hackerberg',
@@ -231,6 +234,46 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
+        {/* Pop-Up für Buchungsdetails */}
+        {selectedBooking && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full relative">
+              <button
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
+                onClick={() => setSelectedBooking(null)}
+              >
+                ×
+              </button>
+              <h2 className="text-2xl font-bold mb-4">Buchungsdetails</h2>
+              <div className="space-y-2">
+                <div><strong>Datum:</strong> {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleDateString('de-DE') : '-'}</div>
+                <div><strong>Name:</strong> {selectedBooking.name}</div>
+                <div><strong>Email:</strong> {selectedBooking.email}</div>
+                <div><strong>Telefon:</strong> {selectedBooking.phone}</div>
+                <div><strong>Firma:</strong> {selectedBooking.company}</div>
+                <div><strong>Straße:</strong> {selectedBooking.street}</div>
+                <div><strong>PLZ:</strong> {selectedBooking.zip}</div>
+                <div><strong>Ort:</strong> {selectedBooking.city}</div>
+                <div><strong>Wohnung:</strong> {selectedBooking.wohnungLabel || selectedBooking.wohnung}</div>
+                <div><strong>Zeitraum:</strong> {selectedBooking.startDate ? new Date(selectedBooking.startDate).toLocaleDateString('de-DE') : '-'} - {selectedBooking.endDate ? new Date(selectedBooking.endDate).toLocaleDateString('de-DE') : '-'}</div>
+                <div><strong>Nächte:</strong> {selectedBooking.nights}</div>
+                <div><strong>Personen:</strong> {selectedBooking.people}</div>
+                <div><strong>Betrag:</strong> {selectedBooking.total}€</div>
+                <div><strong>Status:</strong> {selectedBooking.paymentStatus === 'paid' ? '✓ Bezahlt' : 'Ausstehend'}</div>
+                {/* Weitere Felder falls vorhanden */}
+                {selectedBooking.checkInTime && <div><strong>Check-In:</strong> {selectedBooking.checkInTime}</div>}
+                {selectedBooking.checkOutTime && <div><strong>Check-Out:</strong> {selectedBooking.checkOutTime}</div>}
+                {selectedBooking.stripePaymentIntentId && <div><strong>Stripe Payment Intent:</strong> {selectedBooking.stripePaymentIntentId}</div>}
+                {selectedBooking.stripePaymentId && <div><strong>Stripe Payment ID:</strong> {selectedBooking.stripePaymentId}</div>}
+                {selectedBooking.discount !== undefined && <div><strong>Rabatt:</strong> {selectedBooking.discount}€</div>}
+                {selectedBooking.cleaningFee !== undefined && <div><strong>Reinigungsgebühr:</strong> {selectedBooking.cleaningFee}€</div>}
+                {selectedBooking.vat !== undefined && <div><strong>Mehrwertsteuer:</strong> {selectedBooking.vat}€</div>}
+                {selectedBooking.subtotal !== undefined && <div><strong>Zwischensumme:</strong> {selectedBooking.subtotal}€</div>}
+                {/* ...weitere Felder nach Bedarf... */}
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Admin Dashboard</h1>
           <button
@@ -343,29 +386,37 @@ export default function Admin() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={async () => {
-                          if (!confirm('Buchung wirklich archivieren?')) return;
-                          try {
-                            const apiUrl = getApiUrl();
-                            const response = await fetch(`${apiUrl}/admin/bookings/${booking._id}`, {
-                              method: 'DELETE',
-                              headers: { Authorization: `Basic ${auth}` }
-                            });
-                            if (response.ok) {
-                              loadData();
-                            } else {
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setSelectedBooking(booking)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                        >
+                          Details
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Buchung wirklich archivieren?')) return;
+                            try {
+                              const apiUrl = getApiUrl();
+                              const response = await fetch(`${apiUrl}/admin/bookings/${booking._id}`, {
+                                method: 'DELETE',
+                                headers: { Authorization: `Basic ${auth}` }
+                              });
+                              if (response.ok) {
+                                loadData();
+                              } else {
+                                alert('Archivieren fehlgeschlagen');
+                              }
+                            } catch (error) {
+                              console.error('Error deleting booking:', error);
                               alert('Archivieren fehlgeschlagen');
                             }
-                          } catch (error) {
-                            console.error('Error deleting booking:', error);
-                            alert('Archivieren fehlgeschlagen');
-                          }
-                        }}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Archivieren
-                      </button>
+                          }}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          Archivieren
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
