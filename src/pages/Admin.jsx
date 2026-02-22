@@ -237,39 +237,47 @@ export default function Admin() {
         {/* Pop-Up für Buchungsdetails */}
         {selectedBooking && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full relative">
+            <div className="bg-white rounded-2xl shadow-lg p-6 max-w-md w-full relative overflow-y-auto" style={{ maxHeight: '90vh' }}>
               <button
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
                 onClick={() => setSelectedBooking(null)}
+                aria-label="Schließen"
               >
                 ×
               </button>
               <h2 className="text-2xl font-bold mb-4">Buchungsdetails</h2>
-              <div className="space-y-2">
-                <div><strong>Datum:</strong> {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleDateString('de-DE') : '-'}</div>
-                <div><strong>Name:</strong> {selectedBooking.name}</div>
-                <div><strong>Email:</strong> {selectedBooking.email}</div>
-                <div><strong>Telefon:</strong> {selectedBooking.phone}</div>
-                <div><strong>Firma:</strong> {selectedBooking.company}</div>
-                <div><strong>Straße:</strong> {selectedBooking.street}</div>
-                <div><strong>PLZ:</strong> {selectedBooking.zip}</div>
-                <div><strong>Ort:</strong> {selectedBooking.city}</div>
-                <div><strong>Wohnung:</strong> {selectedBooking.wohnungLabel || selectedBooking.wohnung}</div>
-                <div><strong>Zeitraum:</strong> {selectedBooking.startDate ? new Date(selectedBooking.startDate).toLocaleDateString('de-DE') : '-'} - {selectedBooking.endDate ? new Date(selectedBooking.endDate).toLocaleDateString('de-DE') : '-'}</div>
-                <div><strong>Nächte:</strong> {selectedBooking.nights}</div>
-                <div><strong>Personen:</strong> {selectedBooking.people}</div>
-                <div><strong>Betrag:</strong> {selectedBooking.total}€</div>
-                <div><strong>Status:</strong> {selectedBooking.paymentStatus === 'paid' ? '✓ Bezahlt' : 'Ausstehend'}</div>
-                {/* Weitere Felder falls vorhanden */}
-                {selectedBooking.checkInTime && <div><strong>Check-In:</strong> {selectedBooking.checkInTime}</div>}
-                {selectedBooking.checkOutTime && <div><strong>Check-Out:</strong> {selectedBooking.checkOutTime}</div>}
-                {selectedBooking.stripePaymentIntentId && <div><strong>Stripe Payment Intent:</strong> {selectedBooking.stripePaymentIntentId}</div>}
-                {selectedBooking.stripePaymentId && <div><strong>Stripe Payment ID:</strong> {selectedBooking.stripePaymentId}</div>}
-                {selectedBooking.discount !== undefined && <div><strong>Rabatt:</strong> {selectedBooking.discount}€</div>}
-                {selectedBooking.cleaningFee !== undefined && <div><strong>Reinigungsgebühr:</strong> {selectedBooking.cleaningFee}€</div>}
-                {selectedBooking.vat !== undefined && <div><strong>Mehrwertsteuer:</strong> {selectedBooking.vat}€</div>}
-                {selectedBooking.subtotal !== undefined && <div><strong>Zwischensumme:</strong> {selectedBooking.subtotal}€</div>}
-                {/* ...weitere Felder nach Bedarf... */}
+              <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
+                <div className="col-span-2 text-sm text-gray-700"><strong>Datum:</strong> {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleDateString('de-DE') : '-'}</div>
+                <div className="col-span-2 text-sm text-gray-700"><strong>Name:</strong> {selectedBooking.name}</div>
+                <div className="col-span-2 text-sm text-gray-700"><strong>Email:</strong> {selectedBooking.email}</div>
+                <div className="col-span-1 text-sm text-gray-700"><strong>Telefon:</strong> {selectedBooking.phone}</div>
+                <div className="col-span-1 text-sm text-gray-700"><strong>Firma:</strong> {selectedBooking.company}</div>
+                <div className="col-span-2 text-sm text-gray-700"><strong>Straße:</strong> {selectedBooking.street}</div>
+                <div className="col-span-1 text-sm text-gray-700"><strong>PLZ:</strong> {selectedBooking.zip}</div>
+                <div className="col-span-1 text-sm text-gray-700"><strong>Ort:</strong> {selectedBooking.city}</div>
+                <div className="col-span-2 text-sm text-gray-700"><strong>Wohnung:</strong> {selectedBooking.wohnungLabel || selectedBooking.wohnung}</div>
+                <div className="col-span-2 text-sm text-gray-700"><strong>Zeitraum:</strong> {selectedBooking.startDate ? new Date(selectedBooking.startDate).toLocaleDateString('de-DE') : '-'} - {selectedBooking.endDate ? new Date(selectedBooking.endDate).toLocaleDateString('de-DE') : '-'}</div>
+                <div className="col-span-1 text-sm text-gray-700"><strong>Nächte:</strong> {selectedBooking.nights}</div>
+                <div className="col-span-1 text-sm text-gray-700"><strong>Personen:</strong> {selectedBooking.people}</div>
+                <div className="col-span-1 text-sm text-gray-700"><strong>Check-In:</strong> {selectedBooking.checkInTime || '-'}</div>
+                <div className="col-span-1 text-sm text-gray-700"><strong>Check-Out:</strong> {selectedBooking.checkOutTime || '-'}</div>
+                <div className="col-span-2 text-sm text-gray-700"><strong>Status:</strong> {selectedBooking.paymentStatus === 'paid' ? '✓ Bezahlt' : 'Ausstehend'}</div>
+                {selectedBooking.stripePaymentIntentId && <div className="col-span-2 text-xs text-gray-500"><strong>Stripe Payment Intent:</strong> {selectedBooking.stripePaymentIntentId}</div>}
+                {selectedBooking.stripePaymentId && <div className="col-span-2 text-xs text-gray-500"><strong>Stripe Payment ID:</strong> {selectedBooking.stripePaymentId}</div>}
+              </div>
+              {/* Mini-Rechnung */}
+              <div className="bg-gray-50 rounded-lg p-4 mt-2 mb-2">
+                <h3 className="text-lg font-semibold mb-2">Rechnungsübersicht</h3>
+                <div className="flex flex-col gap-1 text-sm">
+                  {selectedBooking.pricePerNight !== undefined && <div><span className="font-medium">Preis/Nacht:</span> {selectedBooking.pricePerNight}€</div>}
+                  {selectedBooking.nights !== undefined && <div><span className="font-medium">Nächte:</span> {selectedBooking.nights}</div>}
+                  {selectedBooking.subtotal !== undefined && <div><span className="font-medium">Zwischensumme:</span> {selectedBooking.subtotal}€</div>}
+                  {selectedBooking.cleaningFee !== undefined && <div><span className="font-medium">Reinigungsgebühr:</span> {selectedBooking.cleaningFee}€</div>}
+                  {selectedBooking.discount !== undefined && <div><span className="font-medium">Rabatt:</span> {selectedBooking.discount}€</div>}
+                  {selectedBooking.vat !== undefined && <div><span className="font-medium">Mehrwertsteuer:</span> {selectedBooking.vat}€</div>}
+                  <div className="border-t border-gray-300 my-2"></div>
+                  <div className="font-bold text-base">Gesamtbetrag: {selectedBooking.total}€</div>
+                </div>
               </div>
             </div>
           </div>
