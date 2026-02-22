@@ -297,7 +297,7 @@ export default function Payment() {
                     checked={paymentMethod === 'stripe'}
                     onChange={() => setPaymentMethod('stripe')}
                   />
-                  <span>Kreditkarte (Stripe)</span>
+                  <span>Stripe</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
