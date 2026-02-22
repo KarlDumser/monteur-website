@@ -28,7 +28,7 @@ export default function Footer() {
           <p>&copy; 2026 Monteurwohnung Dumser. Alle Rechte vorbehalten.</p>
         </div>
         <div className="text-xs text-blue-300 text-center py-2 sm:hidden">
-          v{APP_VERSION}
+          v{APP_VERSION} {/* safe-state marker */}
         </div>
       </div>
     </footer>
