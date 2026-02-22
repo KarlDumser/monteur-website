@@ -36,7 +36,7 @@ export default function Header() {
             </div>
             <span className="text-xl font-bold text-white">Monteurwohnung Dumser</span>
           </Link>
-          <div className="flex gap-4 items-center flex-wrap overflow-x-hidden">
+          <div className="flex gap-4 items-center flex-nowrap overflow-x-auto scrollbar-hide py-2" style={{ WebkitOverflowScrolling: 'touch' }}>
             <Link to="/" className="text-white hover:bg-blue-500 px-3 py-2 rounded-lg transition">
               Home
             </Link>
