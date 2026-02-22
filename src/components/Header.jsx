@@ -36,7 +36,7 @@ export default function Header() {
             </div>
             <span className="text-xl font-bold text-white">Monteurwohnung Dumser</span>
           </Link>
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-4 items-center flex-wrap overflow-x-hidden">
             <Link to="/" className="text-white hover:bg-blue-500 px-3 py-2 rounded-lg transition">
               Home
             </Link>

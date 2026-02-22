@@ -201,7 +201,7 @@ export default function Payment() {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-bold text-gray-800 mb-8">Buchungsbestätigung</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-8 break-words text-center">Buchungsbestätigung</h1>
 
           <div className="bg-white rounded-lg shadow-lg p-8 space-y-6">
             
