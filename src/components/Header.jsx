@@ -74,8 +74,9 @@ export default function Header() {
               </Link>
             )}
             <span className="text-xs bg-white text-blue-600 px-2 py-1 rounded font-semibold ml-4">
-              v{APP_VERSION}
-            </span>
+              <span className="text-xs bg-white text-blue-600 px-2 py-1 rounded font-semibold ml-4 hidden sm:inline-block">
+                v{APP_VERSION}
+              </span>
           </div>
         </div>
       </nav>

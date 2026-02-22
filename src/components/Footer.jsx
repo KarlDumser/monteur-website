@@ -1,3 +1,4 @@
+import { APP_VERSION } from '../config';
 export default function Footer() {
   return (
     <footer className="bg-gray-800 text-white mt-16">
@@ -25,6 +26,9 @@ export default function Footer() {
         </div>
         <div className="border-t border-gray-700 pt-6 text-center text-gray-400">
           <p>&copy; 2026 Monteurwohnung Dumser. Alle Rechte vorbehalten.</p>
+        </div>
+        <div className="text-xs text-blue-300 text-center py-2 sm:hidden">
+          v{APP_VERSION}
         </div>
       </div>
     </footer>
