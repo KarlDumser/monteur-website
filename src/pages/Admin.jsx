@@ -329,7 +329,9 @@ export default function Admin() {
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-gray-600 text-sm font-semibold">Umsatz (gesamt)</h3>
-              <p className="text-3xl font-bold text-blue-600">{stats.totalRevenue}€</p>
+              <p className="text-3xl font-bold text-blue-600">
+                {Number(stats.totalRevenue).toFixed(2).replace('.', ',')}€
+              </p>
             </div>
           </div>
         )}
@@ -395,7 +397,7 @@ export default function Admin() {
                       <div className="text-gray-500">{booking.nights} Nächte</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {booking.total}€
+                      {Number(booking.total).toFixed(2).replace('.', ',')}€
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs rounded-full ${
@@ -405,7 +407,7 @@ export default function Admin() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <button
                           onClick={() => setSelectedBooking(booking)}
                           className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
@@ -431,7 +433,7 @@ export default function Admin() {
                               alert('Archivieren fehlgeschlagen');
                             }
                           }}
-                          className="text-red-600 hover:text-red-800"
+                          className="text-red-600 hover:text-red-800 px-3 py-1.5 rounded-md"
                         >
                           Archivieren
                         </button>
