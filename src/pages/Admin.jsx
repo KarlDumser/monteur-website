@@ -278,6 +278,17 @@ export default function Admin() {
                   <div className="border-t border-gray-300 my-2"></div>
                   <div className="font-bold text-base">Gesamtbetrag: {selectedBooking.total}€</div>
                 </div>
+                {/* Download-Link für Rechnung */}
+                <div className="mt-4">
+                  <a
+                    href={`/api/bookings/${selectedBooking._id}/invoice`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition"
+                  >
+                    Rechnung herunterladen
+                  </a>
+                </div>
               </div>
             </div>
           </div>
