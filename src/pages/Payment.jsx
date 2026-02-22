@@ -278,9 +278,9 @@ export default function Payment() {
                     <span>{Number(bookingInfo.vat).toFixed(2).replace('.', ',')} €</span>
                 </div>
                 
-                <div className="border-t pt-3 flex justify-between text-2xl font-bold text-blue-800">
+                <div className="border-t pt-3 flex flex-col sm:flex-row justify-between text-2xl font-bold text-blue-800">
                   <span>Rechnungsbetrag:</span>
-                    <span>{Number(bookingInfo.total).toFixed(2).replace('.', ',')} €</span>
+                  <span className="sm:text-right mt-2 sm:mt-0 block w-full sm:w-auto break-all">{Number(bookingInfo.total).toFixed(2).replace('.', ',')} €</span>
                 </div>
               </div>
             </div>
