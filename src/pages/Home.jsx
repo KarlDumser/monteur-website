@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { APP_VERSION } from '../config';
+import ImageGallery from '../components/ImageGallery';
 
 export default function Home() {
-  const [selectedProperty, setSelectedProperty] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
+  // Galerie-Modal-Logik wird durch ImageGallery übernommen
   
   const properties = [
     {
@@ -85,13 +85,7 @@ export default function Home() {
           {properties.map((property) => (
             <div key={property.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
               {/* Image Gallery */}
-              <div className="bg-gray-200 h-72 overflow-hidden relative">
-                <img
-                  src={`/${property.folder}/${getImages(property.folder)[0]}?v=${APP_VERSION}`}
-                  alt={property.titel}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <ImageGallery images={getImages(property.folder)} folder={property.folder} titel={property.titel} />
 
               {/* Content */}
               <div className="p-8">
@@ -123,12 +117,6 @@ export default function Home() {
 
                 {/* Buttons */}
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => setSelectedProperty(property)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
-                  >
-                    Galerie ({getImages(property.folder).length} Bilder)
-                  </button>
                   <Link
                     to="/booking"
                     className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg text-center transition"
@@ -142,81 +130,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Image Modal */}
-      {selectedProperty && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-2xl font-bold">{selectedProperty.titel} - Galerie</h3>
-              <button
-                onClick={() => setSelectedProperty(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-6 max-h-96 overflow-y-auto">
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                {getImages(selectedProperty.folder).map((image, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-200 rounded-lg overflow-hidden h-24 cursor-pointer hover:opacity-75 transition"
-                    onClick={() => setSelectedImage({ image, folder: selectedProperty.folder, titel: selectedProperty.titel })}
-                  >
-                    <img
-                      src={`/${selectedProperty.folder}/${image}`}
-                      alt={`${selectedProperty.titel} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-6 border-t flex gap-3">
-              <button
-                onClick={() => setSelectedProperty(null)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
-              >
-                Schließen
-              </button>
-              <Link
-                to="/booking"
-                onClick={() => setSelectedProperty(null)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg text-center transition"
-              >
-                Buchen
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Image Modal */}
-      {selectedImage && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="max-w-5xl w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">{selectedImage.titel}</h3>
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="text-white hover:text-gray-300 text-3xl"
-              >
-                ✕
-              </button>
-            </div>
-            <img
-              src={`/${selectedImage.folder}/${selectedImage.image}`}
-              alt={selectedImage.titel}
-              className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-            />
-          </div>
-        </div>
-      )}
+      {/* Die Galerie-Modal-Logik ist jetzt in ImageGallery enthalten */}
     </div>
   )
 }
