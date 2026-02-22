@@ -28,14 +28,16 @@ export async function generateInvoice(booking) {
          doc.on('error', reject);
 
 
-          // Hinweis: Bereits bezahlt nur bei Stripe-Zahlung UND bezahlt
-          if (booking.paymentMethod === 'stripe' && booking.paymentStatus === 'paid') {
-            doc.font('Helvetica-Bold')
-               .fontSize(12)
-               .fillColor('green')
-               .text('Diese Rechnung ist bereits bezahlt.', 50, 30);
-            doc.fillColor('black');
-          }
+               // Debug-Log für paymentMethod und paymentStatus
+               console.log('DEBUG paymentMethod:', booking.paymentMethod, 'paymentStatus:', booking.paymentStatus);
+               // Hinweis: Bereits bezahlt nur bei Stripe-Zahlung UND bezahlt
+               if (booking.paymentMethod === 'stripe' && booking.paymentStatus === 'paid') {
+                  doc.font('Helvetica-Bold')
+                      .fontSize(12)
+                      .fillColor('green')
+                      .text('Diese Rechnung ist bereits bezahlt.', 50, 30);
+                  doc.fillColor('black');
+               }
 
       // Absender (oben rechts)
       doc.fontSize(9)
