@@ -6,6 +6,7 @@ import { DateRange } from "react-date-range";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { apiCall } from "../utils/api";
+import ImageGallery from '../components/ImageGallery';
 
 export default function BookingPage() {
   // State für Mindestbuchungsdauer-Fehler
@@ -613,57 +614,25 @@ export default function BookingPage() {
                         </div>
                       </div>
 
-                      {/* Image Gallery */}
+                      {/* Einheitliche Image Gallery */}
                       <div className="mb-6">
                         <h3 className="text-lg font-semibold mb-3 text-gray-800">📸 Bildergalerie</h3>
-                        {wohnung.galleries ? (
-                          <div className="space-y-4">
-                            {wohnung.galleries.map((gallery) => (
-                              <div key={gallery.titel}>
-                                <p className="text-sm font-semibold text-gray-700 mb-2">{gallery.titel}</p>
-                                <div className="grid grid-cols-4 md:grid-cols-5 gap-0">
-                                  {gallery.images.map((image, index) => (
-                                    <div
-                                      key={`${gallery.titel}-${index}`}
-                                      className="bg-gray-200 rounded-lg overflow-hidden h-[220px] w-[220px] hover:opacity-80 transition cursor-pointer flex items-center justify-center"
-                                      onClick={() =>
-                                        setSelectedImage({
-                                          image,
-                                          folder: gallery.folder,
-                                          titel: `${wohnung.titel} – ${gallery.titel}`
-                                        })
-                                      }
-                                    >
-                                      <img
-                                        src={`/${gallery.folder}/${image}?v=${APP_VERSION}`}
-                                        alt={`${gallery.titel} ${index + 1}`}
-                                        className="w-full h-full object-cover"
-                                        style={{ aspectRatio: '1/1', objectFit: 'cover', width: '100%', height: '100%' }}
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
-                            {wohnung.images.map((image, index) => (
-                              <div
-                                key={index}
-                                className="bg-gray-200 rounded-lg overflow-hidden h-36 w-36 hover:opacity-80 transition cursor-pointer flex items-center justify-center"
-                                onClick={() => setSelectedImage({ image, folder: wohnung.folder, titel: wohnung.titel })}
-                              >
-                                <img
-                                  src={`/${wohnung.folder}/${image}?v=${APP_VERSION}`}
-                                  alt={`${wohnung.titel} ${index + 1}`}
-                                        className="w-full h-full object-cover"
-                                        style={{ aspectRatio: '1/1', objectFit: 'cover' }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {wohnung.galleries
+                          ? wohnung.galleries.map((gallery) => (
+                              <ImageGallery
+                                key={gallery.titel}
+                                images={gallery.images}
+                                folder={gallery.folder}
+                                titel={`${wohnung.titel} – ${gallery.titel}`}
+                              />
+                            ))
+                          : (
+                              <ImageGallery
+                                images={wohnung.images}
+                                folder={wohnung.folder}
+                                titel={wohnung.titel}
+                              />
+                            )}
                       </div>
 
                       {/* Price Box */}
