@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { APP_VERSION } from '../config';
 
 export default function ImageGallery({ images, folder, titel }) {
   const [selectedIndex, setSelectedIndex] = useState(null);
+  const modalRef = useRef(null);
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
 
   if (!images || images.length === 0) return null;
 
@@ -25,25 +28,64 @@ export default function ImageGallery({ images, folder, titel }) {
         ))}
       </div>
       {selectedIndex !== null && (
-        <div 
+        <div
           className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-90 flex items-center justify-center p-0 m-0 z-50"
           style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', minHeight: '100vh' }}
           onClick={() => setSelectedIndex(null)}
+          tabIndex={-1}
+          ref={modalRef}
+          onKeyDown={e => {
+            if (e.key === 'ArrowLeft') {
+              setSelectedIndex((selectedIndex - 1 + images.length) % images.length);
+            } else if (e.key === 'ArrowRight') {
+              setSelectedIndex((selectedIndex + 1) % images.length);
+            } else if (e.key === 'Escape') {
+              setSelectedIndex(null);
+            }
+          }}
+          onTouchStart={e => {
+            if (e.touches && e.touches.length === 1) {
+              touchStartX.current = e.touches[0].clientX;
+            }
+          }}
+          onTouchMove={e => {
+            if (e.touches && e.touches.length === 1) {
+              touchEndX.current = e.touches[0].clientX;
+            }
+          }}
+          onTouchEnd={() => {
+            if (touchStartX.current !== null && touchEndX.current !== null) {
+              const dx = touchEndX.current - touchStartX.current;
+              if (Math.abs(dx) > 50) {
+                if (dx < 0) {
+                  setSelectedIndex((selectedIndex + 1) % images.length); // swipe left
+                } else {
+                  setSelectedIndex((selectedIndex - 1 + images.length) % images.length); // swipe right
+                }
+              }
+            }
+            touchStartX.current = null;
+            touchEndX.current = null;
+          }}
         >
-          <div className="max-w-5xl w-full relative" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">{titel}</h3>
+          <div className="max-w-5xl w-full relative bg-transparent" onClick={e => e.stopPropagation()}>
+            <div className="flex flex-wrap justify-between items-center mb-4 px-4 pt-4" style={{minHeight:'3rem'}}>
+              <h3 className="text-xl font-bold text-white truncate max-w-[80vw]" style={{wordBreak:'break-word'}}>{titel}</h3>
               <button
                 onClick={() => setSelectedIndex(null)}
-                className="text-white hover:text-gray-300 text-3xl"
+                className="text-white hover:text-gray-300 text-3xl ml-4"
+                style={{lineHeight:'1', padding:'0 0.5rem'}}
+                aria-label="Schließen"
               >
                 ✕
               </button>
             </div>
-            <div className="relative">
+            <div className="relative flex items-center justify-center px-2 pb-4">
               <button
-                className="absolute left-[-60px] top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full z-50"
+                className="absolute left-0 sm:left-[-60px] top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full z-50"
                 type="button"
+                tabIndex={0}
+                aria-label="Vorheriges Bild"
                 onClick={e => {
                   e.stopPropagation();
                   setSelectedIndex((selectedIndex - 1 + images.length) % images.length);
@@ -58,8 +100,10 @@ export default function ImageGallery({ images, folder, titel }) {
                 style={{ background: '#fff', boxShadow: '0 2px 16px rgba(0,0,0,0.2)' }}
               />
               <button
-                className="absolute right-[-60px] top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full z-50"
+                className="absolute right-0 sm:right-[-60px] top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full z-50"
                 type="button"
+                tabIndex={0}
+                aria-label="Nächstes Bild"
                 onClick={e => {
                   e.stopPropagation();
                   setSelectedIndex((selectedIndex + 1) % images.length);
@@ -74,3 +118,11 @@ export default function ImageGallery({ images, folder, titel }) {
     </>
   );
 }
+
+// Fokus auf Modal für Keyboard-Navigation
+// eslint-disable-next-line react-hooks/rules-of-hooks
+useEffect(() => {
+  if (selectedIndex !== null && modalRef.current) {
+    modalRef.current.focus();
+  }
+}, [selectedIndex]);
