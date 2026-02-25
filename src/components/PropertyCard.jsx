@@ -1,6 +1,27 @@
+
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import BookingCalendar from './BookingCalendar';
+import { apiCall } from '../utils/api';
 
 export default function PropertyCard({ property }) {
+  const [periods, setPeriods] = useState([]);
+  useEffect(() => {
+    async function fetchPeriods() {
+      try {
+        // property.wohnung muss "hackerberg", "neubau" oder "kombi" sein
+        if (property.wohnung) {
+          const res = await apiCall(`/bookings/blocked?wohnung=${property.wohnung}`);
+          const data = await res.json();
+          setPeriods(data.periods || []);
+        }
+      } catch (e) {
+        setPeriods([]);
+      }
+    }
+    fetchPeriods();
+  }, [property.wohnung]);
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
       <div className="bg-gradient-to-r from-blue-500 to-blue-600 h-48 flex items-center justify-center">
@@ -10,6 +31,9 @@ export default function PropertyCard({ property }) {
       </div>
       
       <div className="p-6">
+        <div className="mb-4">
+          <BookingCalendar periods={periods} />
+        </div>
         <h3 className="text-2xl font-bold text-gray-800 mb-2">{property.titel}</h3>
         
         <p className="text-gray-600 mb-4">{property.beschreibung}</p>
