@@ -3,6 +3,7 @@ import express from 'express';
 import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
+import { sendBookingConfirmation } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -189,6 +190,40 @@ router.patch('/:id', async (req, res) => {
     res.json(booking);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Rechnung erneut senden (E-Mail mit Anhang versendet automatisch)
+router.post('/:id/send-invoice-email', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+
+    // Versende E-Mail mit Rechnung als Anhang
+    const emailResult = await sendBookingConfirmation(booking, 'invoice-resend');
+
+    if (emailResult.status === 'sent') {
+      return res.json({
+        success: true,
+        message: 'Rechnung erfolgreich per E-Mail versendet',
+        messageId: emailResult.messageId
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Fehler beim Versenden der E-Mail',
+        error: emailResult.error
+      });
+    }
+  } catch (error) {
+    console.error('❌ Fehler beim E-Mail-Versand:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Fehler beim Versenden der E-Mail',
+      error: error.message
+    });
   }
 });
 

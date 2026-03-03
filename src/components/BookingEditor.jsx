@@ -4,7 +4,9 @@ import { getApiUrl } from '../utils/api';
 export default function BookingEditor({ booking, auth, onClose, onSave }) {
   const [formData, setFormData] = useState({ ...booking });
   const [saving, setSaving] = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [discountPercent, setDiscountPercent] = useState(
     booking.subtotal && booking.discount ? (booking.discount / booking.subtotal) * 100 : 0
   );
@@ -76,29 +78,35 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
 
   const handleResendInvoice = async () => {
     try {
+      setSendingEmail(true);
+      setError('');
+      setSuccessMessage('');
+
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/bookings/${booking._id}/resend-invoice-data`, {
-        headers: { Authorization: `Basic ${auth}` }
+      const response = await fetch(`${apiUrl}/bookings/${booking._id}/send-invoice-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${auth}`
+        },
+        body: JSON.stringify({})
       });
 
-      if (!response.ok) throw new Error('Fehler beim Laden der Rechnungsdaten');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || data.error || 'Fehler beim Versenden der E-Mail');
+      }
 
-      const data = await response.json();
-      
-      // Outlook mailto Link mit Base64 Anhang öffnen
-      const subject = encodeURIComponent(`Aktualisierte Rechnung - Buchung ${booking._id}`);
-      const body = encodeURIComponent(data.emailTemplate);
-      
-      // Öffne Outlook/Mail
-      window.location.href = `mailto:${data.recipientEmail}?subject=${subject}&body=${body}`;
-      
-      // Alternative: Speichere PDF für manuellen Anhang
-      const link = document.createElement('a');
-      link.href = 'data:application/octet-stream;base64,' + data.base64Invoice;
-      link.download = data.fileName;
-      link.click();
+      const result = await response.json();
+      setSuccessMessage('Rechnung erfolgreich per E-Mail versendet! ✓');
+
+      // Nachricht nach 3 Sekunden ausblenden
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(err.message);
+      console.error('Fehler beim Versenden der E-Mail:', err);
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -114,6 +122,12 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded">
               {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded">
+              {successMessage}
             </div>
           )}
 
@@ -336,22 +350,22 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
         <div className="sticky bottom-0 bg-gray-50 border-t p-6 flex gap-3 justify-end">
           <button
             onClick={handleResendInvoice}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded"
-            disabled={saving}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={sendingEmail || saving}
           >
-            📨 Rechnung erneut senden
+            {sendingEmail ? 'Wird versendet...' : '📨 Rechnung erneut senden'}
           </button>
           <button
             onClick={onClose}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded"
-            disabled={saving}
+            disabled={saving || sendingEmail}
           >
             Abbrechen
           </button>
           <button
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
-            disabled={saving}
+            disabled={saving || sendingEmail}
           >
             {saving ? 'Speichert...' : 'Speichern'}
           </button>
@@ -361,293 +375,3 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
   );
 }
 
-  const handleSave = async () => {
-    setSaving(true);
-    setError('');
-    try {
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/bookings/${booking._id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${auth}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        throw new Error('Fehler beim Speichern');
-      }
-
-      const updated = await response.json();
-      onSave(updated);
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleResendInvoice = async () => {
-    try {
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/bookings/${booking._id}/resend-invoice-data`, {
-        headers: { Authorization: `Basic ${auth}` }
-      });
-
-      if (!response.ok) throw new Error('Fehler beim Laden der Rechnungsdaten');
-
-      const data = await response.json();
-      
-      // Outlook mailto Link mit Base64 Anhang öffnen
-      const subject = encodeURIComponent(`Aktualisierte Rechnung - Buchung ${booking._id}`);
-      const body = encodeURIComponent(data.emailTemplate);
-      
-      // Öffne Outlook/Mail
-      window.location.href = `mailto:${data.recipientEmail}?subject=${subject}&body=${body}`;
-      
-      // Alternative: Speichere PDF für manuellen Anhang
-      const link = document.createElement('a');
-      link.href = 'data:application/octet-stream;base64,' + data.base64Invoice;
-      link.download = data.fileName;
-      link.click();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Buchung bearbeiten</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
-        </div>
-
-        <div className="p-6 space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded">
-              {error}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Name *</label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Email *</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Telefon *</label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Firma *</label>
-              <input
-                type="text"
-                name="company"
-                value={formData.company}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Straße *</label>
-              <input
-                type="text"
-                name="street"
-                value={formData.street}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">PLZ *</label>
-              <input
-                type="text"
-                name="zip"
-                value={formData.zip}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Stadt *</label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Wohnung *</label>
-              <select
-                name="wohnung"
-                value={formData.wohnung}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              >
-                <option value="hackerberg">Wohnung Hackerberg</option>
-                <option value="neubau">Wohnung Frühlingstraße</option>
-                <option value="kombi">Kombi (beide)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Personen *</label>
-              <input
-                type="number"
-                name="people"
-                value={formData.people}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Startdatum *</label>
-              <input
-                type="date"
-                name="startDate"
-                value={formData.startDate ? new Date(formData.startDate).toISOString().slice(0, 10) : ''}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Enddatum *</label>
-              <input
-                type="date"
-                name="endDate"
-                value={formData.endDate ? new Date(formData.endDate).toISOString().slice(0, 10) : ''}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Preis pro Nacht (€)</label>
-              <input
-                type="number"
-                name="pricePerNight"
-                value={formData.pricePerNight}
-                onChange={handleChange}
-                step="0.01"
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Reinigungsgebühr (€)</label>
-              <input
-                type="number"
-                name="cleaningFee"
-                value={formData.cleaningFee || 0}
-                onChange={handleChange}
-                step="0.01"
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Rabatt (€)</label>
-              <input
-                type="number"
-                name="discount"
-                value={formData.discount || 0}
-                onChange={handleChange}
-                step="0.01"
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Summe (€)</label>
-              <input
-                type="number"
-                name="total"
-                value={formData.total}
-                onChange={handleChange}
-                step="0.01"
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Buchungsstatus</label>
-              <select
-                name="bookingStatus"
-                value={formData.bookingStatus}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              >
-                <option value="confirmed">Bestätigt</option>
-                <option value="cancelled">Storniert</option>
-                <option value="completed">Abgeschlossen</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Zahlungsstatus</label>
-              <select
-                name="paymentStatus"
-                value={formData.paymentStatus}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              >
-                <option value="pending">Ausstehend</option>
-                <option value="paid">Bezahlt</option>
-                <option value="failed">Fehlgeschlagen</option>
-                <option value="refunded">Erstattet</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="sticky bottom-0 bg-gray-50 border-t p-6 flex gap-3 justify-end">
-          <button
-            onClick={handleResendInvoice}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded"
-            disabled={saving}
-          >
-            📨 Rechnung erneut senden
-          </button>
-          <button
-            onClick={onClose}
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded"
-            disabled={saving}
-          >
-            Abbrechen
-          </button>
-          <button
-            onClick={handleSave}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
-            disabled={saving}
-          >
-            {saving ? 'Speichert...' : 'Speichern'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
