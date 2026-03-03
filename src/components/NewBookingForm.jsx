@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getApiUrl } from '../utils/api';
 
 export default function NewBookingForm({ auth, onClose, onSuccess }) {
@@ -29,12 +29,37 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [discountPercent, setDiscountPercent] = useState(0);
 
   const wohnungen = {
     hackerberg: 'Wohnung Hackerberg',
     neubau: 'Wohnung Frühlingstraße',
     kombi: 'Kombi (beide)'
   };
+
+  // Recalculate totals whenever relevant fields change
+  useEffect(() => {
+    const nights = formData.nights || 0;
+    const pricePerNight = formData.pricePerNight || 0;
+    const cleaningFee = formData.cleaningFee || 0;
+    const vat = formData.vat || 0;
+
+    // Berechne Zwischensumme
+    const subtotal = nights * pricePerNight + cleaningFee;
+    
+    // Berechne Rabatt basierend auf Prozentsatz
+    const discountAmount = subtotal * (discountPercent / 100);
+    
+    // Berechne Gesamtsumme
+    const total = subtotal - discountAmount + vat;
+
+    setFormData(prev => ({
+      ...prev,
+      subtotal: Math.round(subtotal * 100) / 100,
+      discount: Math.round(discountAmount * 100) / 100,
+      total: Math.round(total * 100) / 100
+    }));
+  }, [formData.startDate, formData.endDate, formData.nights, formData.pricePerNight, formData.cleaningFee, formData.vat, discountPercent]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -43,23 +68,27 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
     if (name === 'wohnung') {
       newData.wohnung = value;
       newData.wohnungLabel = wohnungen[value];
-    } else if (['startDate', 'endDate', 'people', 'pricePerNight', 'cleaningFee', 'discount', 'vat'].includes(name)) {
-      newData[name] = name === 'startDate' || name === 'endDate' ? value : Number(value);
+    } else if (name === 'startDate' || name === 'endDate') {
+      newData[name] = value;
       
-      // Berechne Nächte und Zwischensumme
+      // Berechne Nächte wenn beide Daten gesetzt sind
       if (newData.startDate && newData.endDate) {
         const start = new Date(newData.startDate);
         const end = new Date(newData.endDate);
         newData.nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
       }
-      
-      newData.subtotal = newData.nights * newData.pricePerNight + (newData.cleaningFee || 0);
-      newData.total = newData.subtotal - (newData.discount || 0) + (newData.vat || 0);
+    } else if (['people', 'pricePerNight', 'cleaningFee', 'vat'].includes(name)) {
+      newData[name] = Number(value);
     } else {
       newData[name] = value;
     }
     
     setFormData(newData);
+  };
+
+  const handleDiscountPercentChange = (e) => {
+    const percent = e.target.value === '' ? 0 : Math.max(0, Math.min(100, Number(e.target.value)));
+    setDiscountPercent(percent);
   };
 
   const handleSave = async () => {
@@ -239,7 +268,7 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
             </div>
 
             <div className="text-sm text-gray-600 col-span-2">
-              Nächte: {formData.nights}
+              Nächte: {formData.nights} | Zwischensumme: €{formData.subtotal.toFixed(2)}
             </div>
 
             <div>
@@ -267,15 +296,24 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Rabatt (€)</label>
+              <label className="block text-sm font-medium mb-1">Rabatt (%)</label>
               <input
                 type="number"
-                name="discount"
-                value={formData.discount}
-                onChange={handleChange}
-                step="0.01"
+                value={discountPercent}
+                onChange={handleDiscountPercentChange}
                 min="0"
+                max="100"
+                step="0.1"
                 className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Rabatt (€) - Berechnet</label>
+              <input
+                type="number"
+                value={formData.discount}
+                disabled
+                className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
               />
             </div>
             <div>
@@ -291,9 +329,12 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
               />
             </div>
 
-            <div className="col-span-2 bg-blue-50 p-3 rounded border border-blue-200">
-              <div className="text-lg font-bold text-blue-900">
+            <div className="col-span-2 bg-green-50 p-4 rounded border-2 border-green-400">
+              <div className="text-lg font-bold text-green-900">
                 Gesamtbetrag: €{formData.total.toFixed(2)}
+              </div>
+              <div className="text-sm text-green-700 mt-2">
+                = (€{formData.subtotal.toFixed(2)} - {discountPercent}% Rabatt) + MwSt €{formData.vat.toFixed(2)}
               </div>
             </div>
           </div>
