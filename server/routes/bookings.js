@@ -196,19 +196,39 @@ router.patch('/:id', async (req, res) => {
 // Rechnung erneut senden (E-Mail mit Anhang versendet automatisch)
 router.post('/:id/send-invoice-email', async (req, res) => {
   try {
+    // Prüfe ob SMTP konfiguriert ist
+    if (!process.env.SMTP_PASSWORD) {
+      console.error('❌ SMTP_PASSWORD nicht konfiguriert!');
+      return res.status(500).json({
+        success: false,
+        message: 'Email-Versand ist nicht konfiguriert. SMTP_PASSWORD fehlt. Kontaktieren Sie den Administrator.',
+        error: 'SMTP_PASSWORD missing'
+      });
+    }
+
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
       return res.status(404).json({ error: 'Buchung nicht gefunden' });
     }
 
+    console.log('📧 Starte E-Mail-Versand für Buchung:', req.params.id);
+
     // Versende E-Mail mit Rechnung als Anhang
     const emailResult = await sendBookingConfirmation(booking, 'invoice-resend');
+
+    console.log('📧 E-Mail-Ergebnis:', emailResult);
 
     if (emailResult.status === 'sent') {
       return res.json({
         success: true,
         message: 'Rechnung erfolgreich per E-Mail versendet',
         messageId: emailResult.messageId
+      });
+    } else if (emailResult.status === 'skipped') {
+      return res.status(500).json({
+        success: false,
+        message: `Email konnte nicht versendet werden: ${emailResult.reason || emailResult.error}`,
+        error: emailResult.reason
       });
     } else {
       return res.status(400).json({
@@ -221,7 +241,7 @@ router.post('/:id/send-invoice-email', async (req, res) => {
     console.error('❌ Fehler beim E-Mail-Versand:', error);
     res.status(500).json({
       success: false,
-      message: 'Fehler beim Versenden der E-Mail',
+      message: 'Fehler beim Versenden der E-Mail: ' + error.message,
       error: error.message
     });
   }

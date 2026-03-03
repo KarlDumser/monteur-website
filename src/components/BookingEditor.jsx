@@ -83,25 +83,41 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
       setSuccessMessage('');
 
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/bookings/${booking._id}/send-invoice-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${auth}`
-        },
-        body: JSON.stringify({})
-      });
+      
+      // Mit 30 Sekunden Timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || data.error || 'Fehler beim Versenden der E-Mail');
+      try {
+        const response = await fetch(`${apiUrl}/bookings/${booking._id}/send-invoice-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${auth}`
+          },
+          body: JSON.stringify({}),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || data.error || 'Fehler beim Versenden der E-Mail');
+        }
+
+        const result = await response.json();
+        setSuccessMessage('Rechnung erfolgreich per E-Mail versendet! ✓');
+
+        // Nachricht nach 3 Sekunden ausblenden
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Zeitüberschreitung beim Versenden (30s) - Server antwortet nicht. Kontaktieren Sie den Administrator.');
+        }
+        throw fetchError;
       }
-
-      const result = await response.json();
-      setSuccessMessage('Rechnung erfolgreich per E-Mail versendet! ✓');
-
-      // Nachricht nach 3 Sekunden ausblenden
-      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(err.message);
       console.error('Fehler beim Versenden der E-Mail:', err);
