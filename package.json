@@ -7,6 +7,8 @@
     "dev": "vite",
     "server": "node server/server.js",
     "dev:full": "concurrently \"npm run dev\" \"npm run server\"",
+    "dev:clean": "./cleanup-dev.sh && npm run dev",
+    "cleanup": "./cleanup-dev.sh",
     "build": "vite build",
     "start:prod": "npm run build && node server/server.js",
     "lint": "eslint .",

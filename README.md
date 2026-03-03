@@ -131,6 +131,46 @@ curl http://localhost:3001/api/health
 npm run server | tail -100
 ```
 
+## Troubleshooting
+
+### Localhost lädt nicht / Port 5173 ist bereits belegt
+
+Falls der Dev-Server nicht startet oder localhost nicht lädt, liegt das meist an "Zombie"-Prozessen von vorherigen Starts:
+
+```bash
+# Automatische Bereinigung mit integriertem Script
+npm run cleanup
+
+# Oder direkt:
+./cleanup-dev.sh
+
+# Danach normal starten:
+npm run dev
+
+# Oder alles in einem:
+npm run dev:clean
+```
+
+Das cleanup-Script prüft die Ports 5173 und 3001 und beendet alle alten Vite/Node-Prozesse dieses Projekts.
+
+### Email-Versand funktioniert nicht
+
+1. Prüfe die SMTP-Konfiguration in `.env`:
+   - `SMTP_HOST=in-v3.mailjet.com`
+   - `SMTP_PORT=587`
+   - `SMTP_USER=<deine-mailjet-api-key>`
+   - `SMTP_PASSWORD=<dein-mailjet-secret>`
+
+2. Server-Logs überprüfen - ausführliches Debugging ist aktiviert
+3. Timeouts: 10s für Verbindung, 15s für Versand
+
+### MongoDB Connection Errors
+
+Stelle sicher, dass:
+- MongoDB Atlas IP-Whitelist korrekt ist (0.0.0.0/0 für alle IPs)
+- Connection String in `.env` korrekt ist
+- Cluster aktiv ist
+
 ## Lizenz
 
 Private - Nur für Monteuerwohnungen Dumser
