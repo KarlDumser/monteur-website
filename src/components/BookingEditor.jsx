@@ -11,7 +11,21 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
     booking.subtotal && booking.discount ? (booking.discount / booking.subtotal) * 100 : 0
   );
 
-  // Recalculate totals whenever relevant fields change
+  // Berechne Nächte wenn Daten sich ändern
+  useEffect(() => {
+    if (formData.startDate && formData.endDate) {
+      const start = new Date(formData.startDate);
+      const end = new Date(formData.endDate);
+      const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+      
+      setFormData(prev => ({
+        ...prev,
+        nights: Math.max(1, nights) // Minimum 1 Nacht
+      }));
+    }
+  }, [formData.startDate, formData.endDate]);
+
+  // Berechne Summen wenn Preise/Nächte/Rabatt sich ändern
   useEffect(() => {
     const nights = formData.nights || 0;
     const pricePerNight = formData.pricePerNight || 0;
@@ -37,9 +51,20 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Spezial-Handling für Zahlen-Felder mit Min/Max
+    if (name === 'people') {
+      const numValue = value === '' ? 1 : Math.max(1, Math.min(13, Number(value) || 1));
+      setFormData(prev => ({
+        ...prev,
+        [name]: numValue
+      }));
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: name.includes('Date') ? value : (name.includes('people') || name.includes('Price') || name.includes('nights') || name.includes('vat') || name.includes('cleaningFee')) ? (isNaN(value) ? value : Number(value)) : value
+      [name]: name.includes('Date') ? value : (name.includes('Price') || name.includes('nights') || name.includes('vat') || name.includes('cleaningFee')) ? (isNaN(value) ? value : Number(value)) : value
     }));
   };
 
@@ -233,12 +258,14 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Personen *</label>
+              <label className="block text-sm font-medium mb-1">Personen * (1-13)</label>
               <input
                 type="number"
                 name="people"
                 value={formData.people}
                 onChange={handleChange}
+                min="1"
+                max="13"
                 className="w-full border rounded px-3 py-2"
               />
             </div>
