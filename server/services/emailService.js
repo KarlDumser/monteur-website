@@ -60,10 +60,16 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
       console.log('  Password vorhanden:', !!smtpPassword, `(${smtpPassword?.length} zeichen)`);
 
       let verifyWarning = null;
-      // Teste Verbindung (nicht-blockierend)
-      console.log('📡 Teste SMTP-Verbindung...');
+      // Teste Verbindung mit Timeout (nicht-blockierend)
+      console.log('📡 Teste SMTP-Verbindung (max 5 Sekunden)...');
       try {
-        await transporter.verify();
+        // Promise mit Timeout
+        const verifyPromise = transporter.verify();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SMTP verify timeout nach 5 Sekunden')), 5000)
+        );
+        
+        await Promise.race([verifyPromise, timeoutPromise]);
         console.log('✅ SMTP-Verbindung erfolgreich!');
       } catch (verifyError) {
         console.warn('⚠️ SMTP-Verbindungstest fehlgeschlagen:', verifyError.message);
@@ -187,11 +193,16 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
         htmlLength: mailOptions.html?.length
       });
 
-      // Sende Email
+      // Sende Email mit Timeout (max 15 Sekunden)
       console.log('📤 Sende Email an:', booking.email);
       let info;
       try {
-        info = await transporter.sendMail(mailOptions);
+        const sendPromise = transporter.sendMail(mailOptions);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Email sendmail timeout nach 15 Sekunden - SMTP antwortet nicht')), 15000)
+        );
+        
+        info = await Promise.race([sendPromise, timeoutPromise]);
         console.log('✅ Email gesendet:', info.messageId, info.response);
       } catch (sendError) {
         console.error('❌ Email-Versand fehlgeschlagen:', sendError.message || sendError);

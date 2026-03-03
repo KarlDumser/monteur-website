@@ -138,6 +138,21 @@ router.post('/', async (req, res) => {
       console.error('❌ Fehler beim Blockieren des Zeitraums:', blockError);
     }
 
+    // Versende Email im Hintergrund (nicht-blockierend)
+    // Damit die Buchung nicht von Email-Problemen blockiert wird
+    console.log('📧 Starte Email-Versand im Hintergrund...');
+    sendBookingConfirmation(booking, 'confirmation')
+      .then(result => {
+        if (result.status === 'sent') {
+          console.log('✅ Bestätigungs-Email erfolgreich versendet');
+        } else {
+          console.warn('⚠️ Email-Versand übersprungen/fehlgeschlagen:', result.reason || result.error);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Fehler beim Email-Versand (Hintergrund):', err.message);
+      });
+
     res.status(201).json(booking);
   } catch (error) {
     res.status(400).json({ error: error.message });
