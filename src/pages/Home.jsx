@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import BookingCalendar from '../components/BookingCalendar';
+import { apiCall } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { APP_VERSION } from '../config';
 
 export default function Home() {
   const [selectedProperty, setSelectedProperty] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   const properties = [
     {
@@ -14,7 +17,8 @@ export default function Home() {
       preis: "ab 18€ pro Person/Nacht!*",
       zimmer: "2 Zimmer",
       flaeche: "65 m²",
-      folder: "Wohnung-Hackerberg"
+      folder: "Wohnung-Hackerberg",
+      wohnung: "hackerberg"
     },
     {
       id: 2,
@@ -23,9 +27,29 @@ export default function Home() {
       preis: "ab 16€ pro Person/Nacht!*",
       zimmer: "3 Zimmer",
       flaeche: "85 m²",
-      folder: "Wohnung-Fruehlingstrasse"
+      folder: "Wohnung-Fruehlingstrasse",
+      wohnung: "neubau"
     }
   ];
+
+  const [periods, setPeriods] = useState({});
+  
+  useEffect(() => {
+    async function fetchPeriods() {
+      const result = {};
+      for (const property of properties) {
+        try {
+          const res = await apiCall(`/bookings/blocked?wohnung=${property.wohnung}`);
+          const data = await res.json();
+          result[property.wohnung] = data.periods || [];
+        } catch (e) {
+          result[property.wohnung] = [];
+        }
+      }
+      setPeriods(result);
+    }
+    fetchPeriods();
+  }, []);
 
   const hackerbergImages = [
     "Wohnzimmer.JPG",
@@ -50,6 +74,47 @@ export default function Home() {
   const getImages = (folder) => {
     return folder === "Wohnung-Hackerberg" ? hackerbergImages : fruehlingImages;
   };
+
+  const navigateGallery = (direction) => {
+    if (!selectedProperty) return;
+    const images = getImages(selectedProperty.folder);
+    
+    if (direction === 'next') {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    } else {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
+  };
+
+  const openGallery = (property, index = 0) => {
+    setSelectedProperty(property);
+    setCurrentImageIndex(index);
+    setGalleryOpen(true);
+  };
+
+  const closeGallery = () => {
+    setGalleryOpen(false);
+    setSelectedProperty(null);
+    setCurrentImageIndex(0);
+  };
+
+  // Keyboard navigation for gallery
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (!galleryOpen || !selectedProperty) return;
+      
+      if (e.key === 'ArrowLeft') {
+        navigateGallery('prev');
+      } else if (e.key === 'ArrowRight') {
+        navigateGallery('next');
+      } else if (e.key === 'Escape') {
+        closeGallery();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [galleryOpen, selectedProperty, currentImageIndex]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -84,13 +149,21 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {properties.map((property) => (
             <div key={property.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-              {/* Image Gallery */}
-              <div className="bg-gray-200 h-72 overflow-hidden relative">
+              {/* Image Gallery - Clickable */}
+              <div 
+                className="bg-gray-200 h-72 overflow-hidden relative cursor-pointer group"
+                onClick={() => openGallery(property, 0)}
+              >
                 <img
                   src={`/${property.folder}/${getImages(property.folder)[0]}?v=${APP_VERSION}`}
                   alt={property.titel}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
                 />
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-30 transition">
+                  <span className="text-white text-lg font-semibold opacity-0 group-hover:opacity-100 transition">
+                    📷 Galerie öffnen
+                  </span>
+                </div>
               </div>
 
               {/* Content */}
@@ -121,10 +194,15 @@ export default function Home() {
                   </p>
                 </div>
 
+                {/* Kalender */}
+                <div className="mt-2 mb-4">
+                  <BookingCalendar periods={periods[property.wohnung] || []} />
+                </div>
+
                 {/* Buttons */}
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setSelectedProperty(property)}
+                    onClick={() => openGallery(property, 0)}
                     className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
                   >
                     Galerie ({getImages(property.folder).length} Bilder)
@@ -142,81 +220,82 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Image Modal */}
-      {selectedProperty && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-2xl font-bold">{selectedProperty.titel} - Galerie</h3>
-              <button
-                onClick={() => setSelectedProperty(null)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-6 max-h-96 overflow-y-auto">
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                {getImages(selectedProperty.folder).map((image, index) => (
-                  <div
-                    key={index}
-                    className="bg-gray-200 rounded-lg overflow-hidden h-24 cursor-pointer hover:opacity-75 transition"
-                    onClick={() => setSelectedImage({ image, folder: selectedProperty.folder, titel: selectedProperty.titel })}
-                  >
-                    <img
-                      src={`/${selectedProperty.folder}/${image}`}
-                      alt={`${selectedProperty.titel} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="p-6 border-t flex gap-3">
-              <button
-                onClick={() => setSelectedProperty(null)}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
-              >
-                Schließen
-              </button>
-              <Link
-                to="/booking"
-                onClick={() => setSelectedProperty(null)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg text-center transition"
-              >
-                Buchen
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Image Modal */}
-      {selectedImage && (
+      {/* Full Screen Gallery Modal */}
+      {galleryOpen && selectedProperty && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50"
-          onClick={() => setSelectedImage(null)}
+          className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50"
+          onClick={closeGallery}
         >
-          <div className="max-w-5xl w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">{selectedImage.titel}</h3>
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="text-white hover:text-gray-300 text-3xl"
-              >
-                ✕
-              </button>
+          <div className="relative w-full h-full flex items-center justify-center p-4">
+            {/* Close Button */}
+            <button
+              onClick={closeGallery}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 text-4xl z-10 bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center"
+            >
+              ✕
+            </button>
+
+            {/* Image Counter */}
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-lg bg-black bg-opacity-50 px-4 py-2 rounded-lg">
+              {currentImageIndex + 1} / {getImages(selectedProperty.folder).length}
             </div>
-            <img
-              src={`/${selectedImage.folder}/${selectedImage.image}`}
-              alt={selectedImage.titel}
-              className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-            />
+
+            {/* Previous Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateGallery('prev');
+              }}
+              className="absolute left-4 text-white hover:text-gray-300 text-5xl z-10 bg-black bg-opacity-50 rounded-full w-14 h-14 flex items-center justify-center hover:bg-opacity-70 transition"
+              style={{ top: '50%', transform: 'translateY(-50%)' }}
+            >
+              ←
+            </button>
+
+            {/* Image Container */}
+            <div 
+              className="max-w-6xl max-h-[90vh] flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={`/${selectedProperty.folder}/${getImages(selectedProperty.folder)[currentImageIndex]}`}
+                alt={`${selectedProperty.titel} ${currentImageIndex + 1}`}
+                className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              />
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateGallery('next');
+              }}
+              className="absolute right-4 text-white hover:text-gray-300 text-5xl z-10 bg-black bg-opacity-50 rounded-full w-14 h-14 flex items-center justify-center hover:bg-opacity-70 transition"
+              style={{ top: '50%', transform: 'translateY(-50%)' }}
+            >
+              →
+            </button>
+
+            {/* Thumbnail Strip */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[90vw] px-4 py-2 bg-black bg-opacity-50 rounded-lg">
+              {getImages(selectedProperty.folder).map((image, index) => (
+                <img
+                  key={index}
+                  src={`/${selectedProperty.folder}/${image}`}
+                  alt={`Thumbnail ${index + 1}`}
+                  className={`h-16 w-16 object-cover rounded cursor-pointer transition ${
+                    index === currentImageIndex ? 'ring-4 ring-blue-500' : 'opacity-60 hover:opacity-100'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex(index);
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }

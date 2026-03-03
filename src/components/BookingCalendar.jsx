@@ -23,7 +23,7 @@ export default function BookingCalendar({ periods }) {
   }
 
   return (
-    <div style={{ pointerEvents: 'none', opacity: 0.8 }}>
+    <div>
       <Calendar tileDisabled={tileDisabled} />
       <div style={{ fontSize: 12, marginTop: 4 }}>*Belegte Tage sind ausgegraut</div>
     </div>
