@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { getApiUrl } from '../utils/api.js';
+import BookingEditor from '../components/BookingEditor.jsx';
+import NewBookingForm from '../components/NewBookingForm.jsx';
 
 export default function Admin() {
   const [bookings, setBookings] = useState([]);
@@ -17,6 +19,8 @@ export default function Admin() {
 
   // Pop-Up für Details
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [editingBooking, setEditingBooking] = useState(null);
+  const [showNewBookingForm, setShowNewBookingForm] = useState(false);
 
   // Form für Zeitblockierung
   const [blockForm, setBlockForm] = useState({
@@ -279,13 +283,12 @@ export default function Admin() {
                   <div className="font-bold text-base">Gesamtbetrag: {selectedBooking.total}€</div>
                 </div>
                 {/* Download-Link für Rechnung */}
-                <div className="mt-4">
+                <div className="mt-4 flex gap-2 flex-col">
                   <button
                     className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition"
                     onClick={async () => {
-                      console.log('[DEBUG] paymentMethod:', selectedBooking.paymentMethod, 'paymentStatus:', selectedBooking.paymentStatus);
                       try {
-                        const res = await fetch(`/api/bookings/${selectedBooking._id}/invoice`);
+                        const res = await fetch(`${getApiUrl()}/bookings/${selectedBooking._id}/invoice`);
                         if (!res.ok) throw new Error('Fehler beim Herunterladen der Rechnung');
                         const blob = await res.blob();
                         const url = window.URL.createObjectURL(blob);
@@ -301,12 +304,48 @@ export default function Admin() {
                       }
                     }}
                   >
-                    Rechnung herunterladen
+                    📄 Rechnung herunterladen
+                  </button>
+                  <button
+                    className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition"
+                    onClick={() => {
+                      setEditingBooking(selectedBooking);
+                      setSelectedBooking(null);
+                    }}
+                  >
+                    ✏️ Buchung bearbeiten
                   </button>
                 </div>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Booking Editor Modal */}
+        {editingBooking && (
+          <BookingEditor
+            booking={editingBooking}
+            auth={auth}
+            onClose={() => setEditingBooking(null)}
+            onSave={(updated) => {
+              setBookings(bookings.map(b => b._id === updated._id ? updated : b));
+              setEditingBooking(null);
+              showActionMessage('success', 'Buchung erfolgreich aktualisiert');
+            }}
+          />
+        )}
+
+        {/* New Booking Form Modal */}
+        {showNewBookingForm && (
+          <NewBookingForm
+            auth={auth}
+            onClose={() => setShowNewBookingForm(false)}
+            onSuccess={(newBooking) => {
+              setBookings([newBooking, ...bookings]);
+              setShowNewBookingForm(false);
+              showActionMessage('success', 'Buchung erfolgreich erstellt');
+            }}
+          />
         )}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Admin Dashboard</h1>
@@ -381,7 +420,16 @@ export default function Admin() {
 
         {/* Buchungen Tabelle */}
         {activeTab === 'bookings' && (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div>
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={() => setShowNewBookingForm(true)}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition"
+              >
+                ➕ Neue Buchung erstellen
+              </button>
+            </div>
+            <div className="bg-white rounded-lg shadow overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
@@ -458,6 +506,7 @@ export default function Admin() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 
