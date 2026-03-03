@@ -7,81 +7,109 @@ import { generateInvoice } from './invoiceGenerator.js';
  */
 export async function sendBookingConfirmation(booking, type = 'confirmation') {
   try {
+    // ========== DEBUG: Umgebungsvariablen prüfen ==========
+    console.log('\n═══════════════════════════════════════════════════════');
+    console.log('📧 EMAIL SERVICE - START');
+    console.log('═══════════════════════════════════════════════════════');
+    
+    console.log('🔧 Umgebungsvariablen:');
+    console.log('  SMTP_HOST:', process.env.SMTP_HOST);
+    console.log('  SMTP_PORT:', process.env.SMTP_PORT);
+    console.log('  SMTP_USER:', process.env.SMTP_USER);
+    console.log('  SMTP_PASSWORD vorhanden:', !!process.env.SMTP_PASSWORD);
+    console.log('  NODE_ENV:', process.env.NODE_ENV);
+    
     // Prüfe ob SMTP konfiguriert ist
     const smtpPassword = process.env.SMTP_PASSWORD;
-    if (!smtpPassword) {
-      console.log('ℹ️ SMTP nicht konfiguriert - Email wird übersprungen');
-      return { status: 'skipped', reason: 'SMTP_PASSWORD missing' };
+    const smtpUser = process.env.SMTP_USER;
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = process.env.SMTP_PORT;
+    
+    if (!smtpPassword || !smtpUser || !smtpHost) {
+      console.error('❌ SMTP nicht vollständig konfiguriert!');
+      console.error('   Host:', smtpHost ? '✓' : '✗ FEHLT');
+      console.error('   User:', smtpUser ? '✓' : '✗ FEHLT');
+      console.error('   Password:', smtpPassword ? '✓' : '✗ FEHLT');
+      return { 
+        status: 'skipped', 
+        reason: 'SMTP nicht konfiguriert',
+        details: `Host:${!smtpHost}, User:${!smtpUser}, Pass:${!smtpPassword}`
+      };
     }
 
-      console.log('📧 Erstelle Buchungsbestätigungs-Email...');
+    console.log('✓ SMTP-Konfiguration vollständig');
+    console.log('📧 Email-Typ:', type);
+    console.log('📧 Empfänger:', booking.email);
+    console.log('📧 Buchungs-ID:', booking._id);
 
-      // Lade nodemailer dynamisch
-      let nodemailer;
-      try {
-        const mod = await import('nodemailer');
-        nodemailer = mod.default || mod;
-        console.log('✅ nodemailer geladen');
-      } catch (importError) {
-        console.error('❌ nodemailer Import fehlgeschlagen:', importError.message);
-        console.warn('⚠️ Emails deaktiviert');
-        return { status: 'skipped', reason: 'nodemailer import failed', error: importError.message };
-      }
+    // Lade nodemailer dynamisch
+    console.log('\n📦 Lade nodemailer...');
+    let nodemailer;
+    try {
+      const mod = await import('nodemailer');
+      nodemailer = mod.default || mod;
+      console.log('✅ nodemailer erfolgreich geladen');
+      console.log('   Version:', nodemailer.version || 'unbekannt');
+    } catch (importError) {
+      console.error('❌ nodemailer Import fehlgeschlagen:', importError.message);
+      return { status: 'skipped', reason: 'nodemailer import failed', error: importError.message };
+    }
 
-      if (!nodemailer || !nodemailer.createTransport) {
-        console.warn('⚠️ nodemailer.createTransport nicht verfügbar');
-        return { status: 'skipped', reason: 'nodemailer createTransport missing' };
-      }
+    if (!nodemailer || !nodemailer.createTransport) {
+      console.error('❌ nodemailer.createTransport nicht verfügbar');
+      return { status: 'skipped', reason: 'nodemailer createTransport missing' };
+    }
 
-      // Generiere PDF-Rechnung
-      console.log('📄 Generiere PDF-Rechnung...');
-      const invoicePDF = await generateInvoice(booking);
-      console.log('✅ PDF-Rechnung erstellt');
+    // Generiere PDF-Rechnung
+    console.log('\n📄 Generiere PDF-Rechnung...');
+    const invoicePDF = await generateInvoice(booking);
+    console.log('✅ PDF-Rechnung erstellt');
+    console.log('   Dateiname:', invoicePDF.fileName);
+    console.log('   Größe:', (invoicePDF.buffer.length / 1024).toFixed(2), 'KB');
 
-      // Erstelle Transporter mit Konfiguration
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.ionos.de',
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: false,
-        auth: {
-          user: process.env.SMTP_USER || 'monteur-wohnung@dumser.net',
-          pass: smtpPassword
-        },
-        tls: {
-          rejectUnauthorized: false
-        }
-      });
+    // Erstelle Transporter mit Konfiguration
+    console.log('\n🔗 Erstelle SMTP-Transporter...');
+    const transporterConfig = {
+      host: smtpHost,
+      port: parseInt(smtpPort || '587'),
+      secure: false,
+      auth: {
+        user: smtpUser,
+        pass: smtpPassword
+      },
+      tls: {
+        rejectUnauthorized: false
+      },
+      logger: true,
+      debug: true
+    };
+    
+    console.log('  Konfiguration:');
+    console.log('    Host:', transporterConfig.host);
+    console.log('    Port:', transporterConfig.port);
+    console.log('    Secure:', transporterConfig.secure);
+    console.log('    TLS RejectUnauthorized:', transporterConfig.tls.rejectUnauthorized);
+    
+    const transporter = nodemailer.createTransport(transporterConfig);
+    console.log('✅ Transporter erstellt');
 
-      // DEBUG: Teste SMTP-Verbindung
-      console.log('🔍 DEBUG SMTP-Konfiguration:');
-      console.log('  Host:', process.env.SMTP_HOST || 'smtp.ionos.de');
-      console.log('  Port:', process.env.SMTP_PORT || '587');
-      console.log('  User:', process.env.SMTP_USER || 'monteur-wohnung@dumser.net');
-      console.log('  Password vorhanden:', !!smtpPassword, `(${smtpPassword?.length} zeichen)`);
-
-      let verifyWarning = null;
-      // Teste Verbindung mit Timeout (nicht-blockierend)
-      console.log('📡 Teste SMTP-Verbindung (max 5 Sekunden)...');
-      try {
-        // Promise mit Timeout
-        const verifyPromise = transporter.verify();
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('SMTP verify timeout nach 5 Sekunden')), 5000)
-        );
-        
-        await Promise.race([verifyPromise, timeoutPromise]);
-        console.log('✅ SMTP-Verbindung erfolgreich!');
-      } catch (verifyError) {
-        console.warn('⚠️ SMTP-Verbindungstest fehlgeschlagen:', verifyError.message);
-        console.warn('   Code:', verifyError.code);
-        console.warn('   Versuche trotzdem zu senden...');
-        verifyWarning = {
-          message: verifyError.message,
-          code: verifyError.code,
-          response: verifyError.response
-        };
-        // Nicht werfen - versuche trotzdem zu senden
-      }
+    // Teste Verbindung mit Timeout
+    console.log('\n🔐 Teste SMTP-Verbindung (Timeout: 10s)...');
+    try {
+      const verifyPromise = transporter.verify();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('SMTP verify timeout nach 10 Sekunden')), 10000)
+      );
+      
+      await Promise.race([verifyPromise, timeoutPromise]);
+      console.log('✅ SMTP-Verbindung erfolgreich!');
+    } catch (verifyError) {
+      console.warn('⚠️ SMTP-Verbindungstest fehlgeschlagen:', verifyError.message);
+      console.warn('   Code:', verifyError.code);
+      console.warn('   Errno:', verifyError.errno);
+      console.warn('   Syscall:', verifyError.syscall);
+      console.warn('   Versuche trotzdem zu senden...');
+    }
 
       // Email Optionen
       const wohnungName = booking.wohnungLabel
@@ -185,16 +213,21 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
       };
 
       // Zusätzliche Debug-Ausgaben
-      console.log('📧 MailOptions:', {
-        to: mailOptions.to,
-        from: mailOptions.from,
-        subject: mailOptions.subject,
-        attachments: mailOptions.attachments?.map(a => a.filename),
-        htmlLength: mailOptions.html?.length
-      });
+      console.log('\n📋 Email-Einstellungen:');
+      console.log('  An:', mailOptions.to);
+      console.log('  Von:', mailOptions.from);
+      console.log('  Betreff:', mailOptions.subject);
+      console.log('  HTML-Länge:', mailOptions.html?.length, 'Zeichen');
+      console.log('  Anhänge:', mailOptions.attachments?.length || 0);
+      if (mailOptions.attachments?.length > 0) {
+        mailOptions.attachments.forEach((att, i) => {
+          console.log(`    [${i+1}] ${att.filename} (${(att.content.length / 1024).toFixed(2)} KB)`);
+        });
+      }
 
       // Sende Email mit Timeout (max 15 Sekunden)
-      console.log('📤 Sende Email an:', booking.email);
+      console.log('\n📤 VERSENDE EMAIL...');
+      console.log('  Timeout: 15 Sekunden');
       let info;
       try {
         const sendPromise = transporter.sendMail(mailOptions);
@@ -202,24 +235,45 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
           setTimeout(() => reject(new Error('Email sendmail timeout nach 15 Sekunden - SMTP antwortet nicht')), 15000)
         );
         
+        console.log('⏳ Warte auf Versand...');
         info = await Promise.race([sendPromise, timeoutPromise]);
-        console.log('✅ Email gesendet:', info.messageId, info.response);
+        console.log('✅ EMAIL ERFOLGREICH VERSENDET!');
+        console.log('   Message ID:', info.messageId);
+        console.log('   SMTP Response:', info.response);
       } catch (sendError) {
-        console.error('❌ Email-Versand fehlgeschlagen:', sendError.message || sendError);
+        console.error('\n❌ EMAIL-VERSAND FEHLGESCHLAGEN');
+        console.error('   Fehler:', sendError.message || sendError);
+        console.error('   Code:', sendError.code);
+        console.error('   Errno:', sendError.errno);
+        console.error('   Syscall:', sendError.syscall);
         if (sendError.response) {
-          console.error('❌ SMTP-Server Response:', sendError.response);
+          console.error('   SMTP-Server Response:', sendError.response);
+        }
+        if (sendError.stack) {
+          console.error('   Stack:', sendError.stack);
         }
         return {
           status: 'failed',
           error: sendError.message,
           code: sendError.code,
+          errno: sendError.errno,
+          syscall: sendError.syscall,
           response: sendError.response
         };
       }
 
-      return { status: 'sent', messageId: info.messageId, verifyWarning, response: info.response };
+      console.log('\n═══════════════════════════════════════════════════════');
+      console.log('✅ EMAIL SERVICE - ERFOLGREICH');
+      console.log('═══════════════════════════════════════════════════════\n');
+      return { status: 'sent', messageId: info.messageId, response: info.response };
     } catch (error) {
-      console.error('❌ Email-Versand (allgemeiner Fehler):', error.message || error);
+      console.error('\n❌ EMAIL SERVICE - KRITISCHER FEHLER');
+      console.error('   Fehler:', error.message || error);
+      console.error('   Code:', error.code);
+      if (error.stack) {
+        console.error('   Stack:', error.stack);
+      }
+      console.log('═══════════════════════════════════════════════════════\n');
       return {
         status: 'failed',
         error: error.message,

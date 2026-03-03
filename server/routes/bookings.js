@@ -140,21 +140,36 @@ router.post('/', async (req, res) => {
 
     // Versende Email im Hintergrund (nicht-blockierend)
     // Damit die Buchung nicht von Email-Problemen blockiert wird
-    console.log('📧 Starte Email-Versand im Hintergrund...');
+    console.log('\n🎯 NEUE BUCHUNG ERSTELLT - ID:', booking._id);
+    console.log('   Kunde:', booking.name);
+    console.log('   Email:', booking.email);
+    console.log('   Wohnung:', booking.wohnung);
+    console.log('   Betrag:', booking.total, '€');
+    
+    console.log('\n📧 Starte Email-Versand im Hintergrund...');
     sendBookingConfirmation(booking, 'confirmation')
       .then(result => {
+        console.log('\n📬 HINTERGRUND-EMAIL-RESULT:');
+        console.log('   Status:', result.status);
         if (result.status === 'sent') {
           console.log('✅ Bestätigungs-Email erfolgreich versendet');
+          console.log('   Message ID:', result.messageId);
         } else {
-          console.warn('⚠️ Email-Versand übersprungen/fehlgeschlagen:', result.reason || result.error);
+          console.warn('⚠️ Email-Versand übersprungen/fehlgeschlagen');
+          console.warn('   Grund:', result.reason || result.error);
+          console.warn('   Details:', result);
         }
+        console.log('');
       })
       .catch(err => {
-        console.error('❌ Fehler beim Email-Versand (Hintergrund):', err.message);
+        console.error('❌ FEHLER beim Email-Versand (Hintergrund):');
+        console.error('   Message:', err.message);
+        console.error('   Stack:', err.stack);
       });
 
     res.status(201).json(booking);
   } catch (error) {
+    console.error('❌ Fehler beim Booking erstellen:', error.message);
     res.status(400).json({ error: error.message });
   }
 });
