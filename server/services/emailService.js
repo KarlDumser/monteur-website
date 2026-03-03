@@ -171,8 +171,8 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
         `,
         attachments: [
           {
-            filename: `Rechnung_${invoiceNumber.replace(/\./g, '-')}.pdf`,
-            content: invoicePDF,
+            filename: invoicePDF.fileName,
+            content: invoicePDF.buffer,
             contentType: 'application/pdf'
           }
         ]
