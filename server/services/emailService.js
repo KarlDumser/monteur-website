@@ -3,8 +3,9 @@ import { generateInvoice } from './invoiceGenerator.js';
 /**
  * Sendet Buchungsbestätigung mit Rechnung als PDF-Anhang
  * @param {Object} booking - Vollständiges Booking-Objekt aus MongoDB
+ * @param {string} type - Optional: 'invoice-resend' für Rechnungsverschicken
  */
-export async function sendBookingConfirmation(booking) {
+export async function sendBookingConfirmation(booking, type = 'confirmation') {
   try {
     // Prüfe ob SMTP konfiguriert ist
     const smtpPassword = process.env.SMTP_PASSWORD;
@@ -87,15 +88,22 @@ export async function sendBookingConfirmation(booking) {
       const endDate = formatGermanDate(booking.endDate);
       const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
 
+      // Betreff je nach Typ
+      const subject = type === 'invoice-resend'
+        ? `Aktualisierte Rechnung: ${wohnungName} (${startDate} - ${endDate})`
+        : `Buchungsbestätigung: ${wohnungName} (${startDate} - ${endDate})`;
+
       const mailOptions = {
         from: 'Ferienwohnungen Dumser <monteur-wohnung@dumser.net>',
         to: booking.email,
-        subject: `Buchungsbestätigung: ${wohnungName} (${startDate} - ${endDate})`,
+        subject: subject,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #2563eb;">Vielen Dank für Ihre Buchung!</h2>
-            <p>Sehr geehrte Damen und Herren von ${booking.company},</p>
-            <p>Ihre Buchung wurde erfolgreich bestätigt. Anbei finden Sie die Rechnung als PDF.</p>
+            <h2 style="color: #2563eb;">${type === 'invoice-resend' ? 'Aktualisierte Rechnung' : 'Vielen Dank für Ihre Buchung!'}</h2>
+            <p>Sehr geehrte Damen und Herren${booking.company ? ' von ' + booking.company : ''},</p>
+            <p>${type === 'invoice-resend' 
+              ? 'anbei erhalten Sie die aktualisierten Rechnungsdaten. Die Rechnung ist dieser E-Mail als PDF-Anhang beigefügt.'
+              : 'Ihre Buchung wurde erfolgreich bestätigt. Anbei finden Sie die Rechnung als PDF.'}</p>
             <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0; color: #374151;">Buchungsdetails</h3>
               <table style="width: 100%; border-collapse: collapse;">
@@ -129,9 +137,11 @@ export async function sendBookingConfirmation(booking) {
                 </tr>
               </table>
             </div>
+            ${type !== 'invoice-resend' ? `
             <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; margin: 20px 0;">
               <p style="margin: 0;"><strong>💳 Zahlung:</strong> Der Betrag wurde bereits per Kreditkarte bezahlt.</p>
             </div>
+            ` : ''}
             <div style="margin: 30px 0;">
               <h3 style="color: #374151;">Adresse der Wohnung:</h3>
               ${booking.wohnung === 'kombi'
