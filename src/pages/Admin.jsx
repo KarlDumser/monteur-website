@@ -21,6 +21,13 @@ export default function Admin() {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [showNewBookingForm, setShowNewBookingForm] = useState(false);
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+
+  // Kunden-Management
+  const [customers, setCustomers] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
 
   // Form für Zeitblockierung
   const [blockForm, setBlockForm] = useState({
@@ -105,6 +112,13 @@ export default function Admin() {
       const statsRes = await fetch(`${apiUrl}/admin/statistics`, { headers });
       const statsData = await statsRes.json();
       setStats(statsData);
+
+      // Kunden laden
+      const customersRes = await fetch(`${apiUrl}/admin/customers`, { headers });
+      if (customersRes.ok) {
+        const customersData = await customersRes.json();
+        setCustomers(customersData);
+      }
 
       setLoading(false);
     } catch (error) {
@@ -375,6 +389,387 @@ export default function Admin() {
             }}
           />
         )}
+
+        {/* Follow-Up Invoice Modal */}
+        {showFollowUpModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-2xl shadow-lg p-6 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
+              <button
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
+                onClick={() => setShowFollowUpModal(false)}
+                aria-label="Schließen"
+              >
+                ×
+              </button>
+              <h2 className="text-2xl font-bold mb-4">Folgerechnung erstellen</h2>
+              <p className="text-gray-600 mb-6">Wählen Sie einen Kunden aus:</p>
+              
+              <div className="space-y-2">
+                {customers
+                  .filter(c => c.isActive && c.totalBookings > 0)
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((customer) => (
+                    <div
+                      key={customer._id}
+                      onClick={async () => {
+                        // Finde die letzte Buchung dieses Kunden
+                        try {
+                          const apiUrl = getApiUrl();
+                          const response = await fetch(`${apiUrl}/admin/customers/${customer._id}/bookings`, {
+                            headers: { Authorization: `Basic ${auth}` }
+                          });
+                          
+                          if (!response.ok) throw new Error('Fehler beim Laden der Buchungen');
+                          
+                          const { bookings: customerBookings } = await response.json();
+                          
+                          if (customerBookings.length === 0) {
+                            alert('Keine Buchungen für diesen Kunden gefunden');
+                            return;
+                          }
+                          
+                          // Sortiere nach endDate (neueste zuerst)
+                          const lastBooking = customerBookings.sort((a, b) => 
+                            new Date(b.endDate) - new Date(a.endDate)
+                          )[0];
+                          
+                          const lastEndDate = new Date(lastBooking.endDate);
+                          const newStartDate = new Date(lastEndDate);
+                          const newEndDate = new Date(lastEndDate);
+                          newEndDate.setDate(newEndDate.getDate() + 28); // 4 Wochen
+                          
+                          const confirmMsg = `Folgerechnung für ${customer.name} erstellen?\n\nNeue Buchung:\n${newStartDate.toLocaleDateString('de-DE')} - ${newEndDate.toLocaleDateString('de-DE')}\n(28 Nächte)`;
+                          
+                          if (!confirm(confirmMsg)) return;
+                          
+                          // Erstelle neue Buchung basierend auf der letzten
+                          const newBookingData = {
+                            customerId: customer._id,
+                            name: customer.name,
+                            email: customer.email,
+                            phone: customer.phone || customer.mobile || lastBooking.phone,
+                            company: customer.name,
+                            street: lastBooking.street,
+                            zip: lastBooking.zip,
+                            city: lastBooking.city,
+                            wohnung: lastBooking.wohnung,
+                            wohnungLabel: lastBooking.wohnungLabel,
+                            startDate: newStartDate.toISOString(),
+                            endDate: newEndDate.toISOString(),
+                            nights: 28,
+                            people: lastBooking.people,
+                            pricePerNight: lastBooking.pricePerNight,
+                            cleaningFee: lastBooking.cleaningFee || 0,
+                            subtotal: lastBooking.pricePerNight * 28,
+                            discount: 0,
+                            vat: (lastBooking.pricePerNight * 28) * 0.19,
+                            total: (lastBooking.pricePerNight * 28) * 1.19,
+                            checkInTime: lastBooking.checkInTime,
+                            checkOutTime: lastBooking.checkOutTime,
+                            paymentStatus: 'pending',
+                            bookingStatus: 'confirmed'
+                          };
+                          
+                          // Sende die neue Buchung an den Server
+                          const createResponse = await fetch(`${apiUrl}/admin/bookings`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              Authorization: `Basic ${auth}`
+                            },
+                            body: JSON.stringify(newBookingData)
+                          });
+                          
+                          if (createResponse.ok) {
+                            setShowFollowUpModal(false);
+                            loadData();
+                            showActionMessage('success', `Folgerechnung für ${customer.name} erstellt`);
+                          } else {
+                            const error = await createResponse.json();
+                            alert(`Fehler: ${error.error || 'Unbekannter Fehler'}`);
+                          }
+                        } catch (err) {
+                          console.error('Error creating follow-up invoice:', err);
+                          alert('Fehler beim Erstellen der Folgerechnung');
+                        }
+                      }}
+                      className="p-4 border border-gray-200 rounded-lg hover:bg-orange-50 cursor-pointer transition"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-800">{customer.name}</h3>
+                          <p className="text-sm text-gray-600">{customer.email}</p>
+                          {customer.contactPerson && (
+                            <p className="text-sm text-gray-500">Kontakt: {customer.contactPerson}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-gray-800">{customer.totalBookings} Buchungen</p>
+                          <p className="text-sm text-gray-600">{customer.totalNights} Nächte</p>
+                          <p className="text-sm font-medium">{Number(customer.totalRevenue || 0).toFixed(2)}€</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                {customers.filter(c => c.isActive && c.totalBookings > 0).length === 0 && (
+                  <p className="text-center text-gray-500 py-8">Keine Kunden mit Buchungen gefunden</p>
+                )}
+              </div>
+              
+              <button
+                onClick={() => setShowFollowUpModal(false)}
+                className="mt-6 w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Customer Details Modal */}
+        {selectedCustomer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-2xl shadow-lg p-6 max-w-4xl w-full relative overflow-y-auto" style={{ maxHeight: '90vh' }}>
+              <button
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
+                onClick={() => setSelectedCustomer(null)}
+                aria-label="Schließen"
+              >
+                ×
+              </button>
+              <h2 className="text-2xl font-bold mb-4">Kundendetails</h2>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                  <p className="text-sm text-gray-600">Name</p>
+                  <p className="font-semibold">{selectedCustomer.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Email</p>
+                  <p className="font-semibold">{selectedCustomer.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Telefon</p>
+                  <p className="font-semibold">{selectedCustomer.phone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Handy</p>
+                  <p className="font-semibold">{selectedCustomer.mobile || '-'}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-600">Adresse</p>
+                  <p className="font-semibold">{selectedCustomer.address || '-'}</p>
+                </div>
+                {selectedCustomer.contactPerson && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-600">Ansprechpartner</p>
+                    <p className="font-semibold">{selectedCustomer.contactPerson}</p>
+                  </div>
+                )}
+                {selectedCustomer.ustId && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-600">USt-ID</p>
+                    <p className="font-semibold">{selectedCustomer.ustId}</p>
+                  </div>
+                )}
+              </div>
+
+              <h3 className="text-xl font-bold mb-3">Buchungshistorie</h3>
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-sm text-gray-600">Buchungen</p>
+                    <p className="text-2xl font-bold text-blue-600">{selectedCustomer.totalBookings || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Nächte</p>
+                    <p className="text-2xl font-bold text-green-600">{selectedCustomer.totalNights || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Umsatz</p>
+                    <p className="text-2xl font-bold text-purple-600">{Number(selectedCustomer.totalRevenue || 0).toFixed(2)}€</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedCustomer(null)}
+                className="mt-4 w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition"
+              >
+                Schließen
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Customer Edit/New Modal */}
+        {(editingCustomer || showNewCustomerForm) && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-2xl shadow-lg p-6 max-w-2xl w-full relative overflow-y-auto" style={{ maxHeight: '90vh' }}>
+              <button
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
+                onClick={() => {
+                  setEditingCustomer(null);
+                  setShowNewCustomerForm(false);
+                }}
+                aria-label="Schließen"
+              >
+                ×
+              </button>
+              <h2 className="text-2xl font-bold mb-4">
+                {editingCustomer ? 'Kunden bearbeiten' : 'Neuen Kunden erstellen'}
+              </h2>
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.target);
+                  const customerData = {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    mobile: formData.get('mobile'),
+                    address: formData.get('address'),
+                    contactPerson: formData.get('contactPerson'),
+                    ustId: formData.get('ustId'),
+                    notes: formData.get('notes')
+                  };
+
+                  try {
+                    const apiUrl = getApiUrl();
+                    const url = editingCustomer 
+                      ? `${apiUrl}/admin/customers/${editingCustomer._id}`
+                      : `${apiUrl}/admin/customers`;
+                    const method = editingCustomer ? 'PUT' : 'POST';
+                    
+                    const response = await fetch(url, {
+                      method,
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Basic ${auth}`
+                      },
+                      body: JSON.stringify(customerData)
+                    });
+
+                    if (response.ok) {
+                      loadData();
+                      setEditingCustomer(null);
+                      setShowNewCustomerForm(false);
+                      showActionMessage('success', editingCustomer ? 'Kunde aktualisiert' : 'Kunde erstellt');
+                    } else {
+                      alert('Fehler beim Speichern');
+                    }
+                  } catch (err) {
+                    alert('Fehler beim Speichern');
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Name *</label>
+                  <input
+                    type="text"
+                    name="name"
+                    defaultValue={editingCustomer?.name || ''}
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Email *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    defaultValue={editingCustomer?.email || ''}
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Telefon</label>
+                    <input
+                      type="text"
+                      name="phone"
+                      defaultValue={editingCustomer?.phone || ''}
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Handy</label>
+                    <input
+                      type="text"
+                      name="mobile"
+                      defaultValue={editingCustomer?.mobile || ''}
+                      className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Adresse</label>
+                  <textarea
+                    name="address"
+                    defaultValue={editingCustomer?.address || ''}
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                    rows="3"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Ansprechpartner</label>
+                  <input
+                    type="text"
+                    name="contactPerson"
+                    defaultValue={editingCustomer?.contactPerson || ''}
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">USt-ID</label>
+                  <input
+                    type="text"
+                    name="ustId"
+                    defaultValue={editingCustomer?.ustId || ''}
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Notizen</label>
+                  <textarea
+                    name="notes"
+                    defaultValue={editingCustomer?.notes || ''}
+                    className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                    rows="3"
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition"
+                  >
+                    {editingCustomer ? 'Speichern' : 'Erstellen'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingCustomer(null);
+                      setShowNewCustomerForm(false);
+                    }}
+                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 rounded-lg transition"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Admin Dashboard</h1>
           <button
@@ -444,12 +839,24 @@ export default function Admin() {
           >
             Zeiten blockieren
           </button>
+          <button
+            onClick={() => setActiveTab('customers')}
+            className={`px-6 py-3 font-semibold ${activeTab === 'customers' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+          >
+            Kunden ({customers.length})
+          </button>
         </div>
 
         {/* Buchungen Tabelle */}
         {activeTab === 'bookings' && (
           <div>
-            <div className="mb-4 flex justify-end">
+            <div className="mb-4 flex justify-end gap-3">
+              <button
+                onClick={() => setShowFollowUpModal(true)}
+                className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg transition"
+              >
+                📋 Folgerechnung erstellen
+              </button>
               <button
                 onClick={() => setShowNewBookingForm(true)}
                 className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition"
@@ -728,6 +1135,78 @@ export default function Admin() {
                 Zeitraum blockieren
               </button>
             </form>
+          </div>
+        )}
+
+        {/* Kunden Tab */}
+        {activeTab === 'customers' && (
+          <div>
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={() => setShowNewCustomerForm(true)}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition"
+              >
+                ➕ Neuen Kunden erstellen
+              </button>
+            </div>
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefon</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Buchungen</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Umsatz</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {customers.map((customer) => (
+                    <tr key={customer._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium">{customer.name}</div>
+                        {customer.contactPerson && (
+                          <div className="text-sm text-gray-500">{customer.contactPerson}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {customer.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {customer.phone || customer.mobile || '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        {customer.address || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {customer.totalBookings || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {Number(customer.totalRevenue || 0).toFixed(2)}€
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSelectedCustomer(customer)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                          >
+                            Details
+                          </button>
+                          <button
+                            onClick={() => setEditingCustomer(customer)}
+                            className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                          >
+                            Bearbeiten
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

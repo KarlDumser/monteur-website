@@ -1,6 +1,7 @@
 import express from 'express';
 import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
+import Customer from '../models/Customer.js';
 
 const router = express.Router();
 
@@ -39,6 +40,17 @@ router.get('/bookings', async (req, res) => {
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Neue Buchung erstellen
+router.post('/bookings', async (req, res) => {
+  try {
+    const booking = new Booking(req.body);
+    await booking.save();
+    res.status(201).json(booking);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -275,4 +287,98 @@ router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
   }
 });
 
+// ============== KUNDEN-MANAGEMENT ==============
+
+// Alle Kunden abrufen
+router.get('/customers', async (req, res) => {
+  try {
+    const customers = await Customer.find({ isActive: true }).sort({ name: 1 });
+    
+    // Statistiken für jeden Kunden berechnen
+    for (const customer of customers) {
+      const bookings = await Booking.find({ customerId: customer._id, deletedAt: null });
+      customer.totalBookings = bookings.length;
+      customer.totalNights = bookings.reduce((sum, b) => sum + (b.nights || 0), 0);
+      customer.totalRevenue = bookings.reduce((sum, b) => sum + (b.total || 0), 0);
+    }
+    
+    res.json(customers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Kunden erstellen
+router.post('/customers', async (req, res) => {
+  try {
+    const customer = new Customer(req.body);
+    await customer.save();
+    res.status(201).json(customer);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Kunde aktualisieren
+router.put('/customers/:id', async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, updatedAt: new Date() },
+      { new: true, runValidators: true }
+    );
+    
+    if (!customer) {
+      return res.status(404).json({ error: 'Kunde nicht gefunden' });
+    }
+    
+    res.json(customer);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Kunde deaktivieren
+router.delete('/customers/:id', async (req, res) => {
+  try {
+    const customer = await Customer.findByIdAndUpdate(
+      req.params.id,
+      { isActive: false, updatedAt: new Date() },
+      { new: true }
+    );
+    
+    if (!customer) {
+      return res.status(404).json({ error: 'Kunde nicht gefunden' });
+    }
+    
+    res.json({ message: 'Kunde deaktiviert' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Kunde mit allen Buchungen abrufen
+router.get('/customers/:id/bookings', async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.id);
+    
+    if (!customer) {
+      return res.status(404).json({ error: 'Kunde nicht gefunden' });
+    }
+    
+    const bookings = await Booking.find({ 
+      customerId: req.params.id,
+      deletedAt: null 
+    }).sort({ startDate: -1 });
+    
+    res.json({
+      customer,
+      bookings
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
+

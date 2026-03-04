@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 
 const bookingSchema = new mongoose.Schema({
+  // Referenz zum Kunden
+  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', default: null },
+  
   // Gästedaten
   name: { type: String, required: true },
   email: { type: String, required: true },
