@@ -10,7 +10,7 @@
     "dev:clean": "./cleanup-dev.sh && npm run dev",
     "cleanup": "./cleanup-dev.sh",
     "build": "vite build",
-    "start": "node server/server.js",
+    "start": "npm run build && node server/server.js",
     "start:prod": "npm run build && node server/server.js",
     "lint": "eslint .",
     "preview": "vite preview"
