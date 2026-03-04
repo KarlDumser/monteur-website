@@ -315,6 +315,34 @@ export default function Admin() {
                   >
                     ✏️ Buchung bearbeiten
                   </button>
+                  {selectedBooking.nights >= 30 && (
+                    <button
+                      className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition"
+                      onClick={async () => {
+                        if (!confirm('Folgerechnung für die nächsten 4 Wochen erstellen?')) return;
+                        try {
+                          const apiUrl = getApiUrl();
+                          const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/create-follow-up-invoice`, {
+                            method: 'POST',
+                            headers: { Authorization: `Basic ${auth}` }
+                          });
+                          if (response.ok) {
+                            setSelectedBooking(null);
+                            loadData();
+                            showActionMessage('success', 'Folgerechnung erfolgreich erstellt');
+                          } else {
+                            const error = await response.json();
+                            alert(`Fehler: ${error.error}`);
+                          }
+                        } catch (err) {
+                          console.error('Error creating follow-up invoice:', err);
+                          alert('Fehler beim Erstellen der Folgerechnung');
+                        }
+                      }}
+                    >
+                      📋 Folgerechnung erstellen
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

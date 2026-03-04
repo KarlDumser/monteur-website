@@ -218,4 +218,61 @@ router.get('/statistics', async (req, res) => {
   }
 });
 
+// Folgerechnung erstellen für längere Buchungen
+router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
+  try {
+    const originalBooking = await Booking.findOne({ _id: req.params.id, deletedAt: null });
+    
+    if (!originalBooking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+
+    // Prüfe ob Buchung länger als einen Monat ist
+    if (originalBooking.nights < 30) {
+      return res.status(400).json({ error: 'Folgerechnung nur möglich bei Buchungen über 30 Tagen' });
+    }
+
+    // Berechne neue Daten - für die nächsten 4 Wochen
+    const newStartDate = new Date(originalBooking.endDate);
+    const newEndDate = new Date(originalBooking.endDate);
+    newEndDate.setDate(newEndDate.getDate() + 28); // 4 Wochen = 28 Tage
+
+    // Erstelle neue Buchung mit denselben Daten
+    const newBooking = new Booking({
+      name: originalBooking.name,
+      email: originalBooking.email,
+      phone: originalBooking.phone,
+      company: originalBooking.company,
+      street: originalBooking.street,
+      zip: originalBooking.zip,
+      city: originalBooking.city,
+      wohnung: originalBooking.wohnung,
+      wohnungLabel: originalBooking.wohnungLabel,
+      startDate: newStartDate,
+      endDate: newEndDate,
+      nights: 28,
+      people: originalBooking.people,
+      pricePerNight: originalBooking.pricePerNight,
+      cleaningFee: originalBooking.cleaningFee,
+      subtotal: originalBooking.pricePerNight * 28,
+      discount: 0,
+      vat: (originalBooking.pricePerNight * 28) * 0.19, // 19% MwSt
+      total: (originalBooking.pricePerNight * 28) * 1.19,
+      checkInTime: originalBooking.checkInTime,
+      checkOutTime: originalBooking.checkOutTime,
+      paymentStatus: 'pending',
+      bookingStatus: 'confirmed'
+    });
+
+    await newBooking.save();
+
+    res.status(201).json({
+      message: 'Folgerechnung erfolgreich erstellt',
+      booking: newBooking
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
