@@ -190,22 +190,29 @@ export default function BookingPage() {
 
   const handleSelectWohnung = (wohnungKey) => {
     // Redirect to payment page with booking details
-    const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
+    const totalNights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
+    const isPartialBooking = totalNights > 28;
+    const nightsForInvoice = isPartialBooking ? 28 : totalNights;
+    
     const pricePerNight = getPricePerNight(wohnungKey);
     const cleaningFee = wohnungKey === "kombi" ? 180 : 90;
-    const subtotal = Number((nights * pricePerNight + cleaningFee).toFixed(2));
+    const subtotal = Number((nightsForInvoice * pricePerNight + cleaningFee).toFixed(2));
     const discount = getEarlyBookingDiscount();
     const subtotalAfterDiscount = Number((subtotal * (1 - discount)).toFixed(2));
     const vat = Number((subtotalAfterDiscount * 0.07).toFixed(2));
     const total = Number((subtotalAfterDiscount + vat).toFixed(2));
     const wohnungLabel = wohnungen[wohnungKey]?.titel || wohnungKey;
     
+    // Berechne Daten für Teilbuchung
+    const paidThroughDate = new Date(range[0].startDate);
+    paidThroughDate.setDate(paidThroughDate.getDate() + 28);
+    
     // Store booking info and redirect to payment
     const bookingInfo = {
       wohnung: wohnungKey,
       startDate: format(range[0].startDate, "dd.MM.yyyy"),
-      endDate: format(range[0].endDate, "dd.MM.yyyy"),
-      nights,
+      endDate: isPartialBooking ? format(paidThroughDate, "dd.MM.yyyy") : format(range[0].endDate, "dd.MM.yyyy"),
+      nights: nightsForInvoice,
       people,
       name,
       email,
@@ -220,7 +227,13 @@ export default function BookingPage() {
       subtotal,
       discount,
       vat,
-      total
+      total,
+      // Teilbuchungs-Daten
+      isPartialBooking,
+      originalStartDate: isPartialBooking ? format(range[0].startDate, "dd.MM.yyyy") : null,
+      originalEndDate: isPartialBooking ? format(range[0].endDate, "dd.MM.yyyy") : null,
+      totalNights: isPartialBooking ? totalNights : null,
+      paidThroughDate: isPartialBooking ? format(paidThroughDate, "dd.MM.yyyy") : null
     };
     
     // Save to localStorage for payment page

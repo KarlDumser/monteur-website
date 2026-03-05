@@ -180,22 +180,57 @@ router.post('/', async (req, res) => {
     // Zeitraum für die Wohnung blockieren
     try {
       const BlockedDate = (await import('../models/BlockedDate.js')).default;
-      await BlockedDate.create({
-        wohnung: booking.wohnung,
-        startDate: booking.startDate,
-        endDate: booking.endDate,
-        reason: 'Buchung',
-        createdBy: booking.email || 'system'
-      });
-
-      if (!adminRequest) {
+      
+      if (booking.isPartialBooking) {
+        // Bei Teilbuchung: zwei Blockierungen erstellen
+        // 1. Bezahlter Zeitraum als "Buchung"
         await BlockedDate.create({
           wohnung: booking.wohnung,
-          startDate: addDays(booking.endDate, 1),
-          endDate: addDays(booking.endDate, 3),
-          reason: 'Reinigung',
-          createdBy: 'system-cleaning-buffer'
+          startDate: booking.startDate,
+          endDate: booking.paidThroughDate,
+          reason: 'Buchung',
+          createdBy: booking.email || 'system'
         });
+        
+        // 2. Reservierter aber noch nicht bezahlter Zeitraum als "Reservierung"
+        const reservationStart = addDays(new Date(booking.paidThroughDate), 1);
+        await BlockedDate.create({
+          wohnung: booking.wohnung,
+          startDate: reservationStart,
+          endDate: booking.originalEndDate,
+          reason: 'Reservierung',
+          createdBy: booking.email || 'system'
+        });
+        
+        // Reinigungspuffer am Ende des GESAMTEN Zeitraums
+        if (!adminRequest) {
+          await BlockedDate.create({
+            wohnung: booking.wohnung,
+            startDate: addDays(new Date(booking.originalEndDate), 1),
+            endDate: addDays(new Date(booking.originalEndDate), 3),
+            reason: 'Reinigung',
+            createdBy: 'system-cleaning-buffer'
+          });
+        }
+      } else {
+        // Standard-Buchung: ein Eintrag
+        await BlockedDate.create({
+          wohnung: booking.wohnung,
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          reason: 'Buchung',
+          createdBy: booking.email || 'system'
+        });
+
+        if (!adminRequest) {
+          await BlockedDate.create({
+            wohnung: booking.wohnung,
+            startDate: addDays(booking.endDate, 1),
+            endDate: addDays(booking.endDate, 3),
+            reason: 'Reinigung',
+            createdBy: 'system-cleaning-buffer'
+          });
+        }
       }
     } catch (blockError) {
       console.error('❌ Fehler beim Blockieren des Zeitraums:', blockError);

@@ -12,7 +12,7 @@ export default function Home() {
   const properties = [
     {
       id: 1,
-      titel: "Wohnung Hackerberg – Penthouse",
+      titel: "Wohnung Krailling, Hackerberg – Penthouse",
       beschreibung: "2,5-Zimmer Penthousewohnung im 5. Stock mit Aufzug und Panorama Balkon",
       preis: "ab 18€ pro Person/Nacht!",
       zimmer: "2,5 Zimmer",
@@ -32,7 +32,7 @@ export default function Home() {
     },
     {
       id: 2,
-      titel: "Wohnung Frühlingstraße – Neubau",
+      titel: "Wohnung Krailling, Frühlingstraße – Neubau",
       beschreibung: "2-Zimmerwohnung mit eigenem Zugang, Garten mit Grillplatz",
       preis: "ab 16€ pro Person/Nacht!",
       zimmer: "2 Zimmer",

@@ -453,6 +453,18 @@ export default function Admin() {
                   </div>
                 );
               })()}
+              
+              {selectedBooking.isPartialBooking && (
+                <div className="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-300">
+                  <h3 className="text-sm font-bold text-yellow-800 mb-2">⚠️ Teilbuchung</h3>
+                  <div className="text-xs text-gray-700 space-y-1">
+                    <p><strong>Gesamtzeitraum:</strong> {selectedBooking.originalStartDate ? new Date(selectedBooking.originalStartDate).toLocaleDateString('de-DE') : '-'} - {selectedBooking.originalEndDate ? new Date(selectedBooking.originalEndDate).toLocaleDateString('de-DE') : '-'} ({selectedBooking.totalNights} Nächte)</p>
+                    <p><strong>Bezahlt bis:</strong> {selectedBooking.paidThroughDate ? new Date(selectedBooking.paidThroughDate).toLocaleDateString('de-DE') : '-'} ({selectedBooking.nights} Nächte)</p>
+                    <p><strong>Verbleibend:</strong> {selectedBooking.totalNights - selectedBooking.nights} Nächte (reserviert)</p>
+                  </div>
+                </div>
+              )}
+              
               <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
                 <div className="col-span-2 text-sm text-gray-700"><strong>Datum:</strong> {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleDateString('de-DE') : '-'}</div>
                 <div className="col-span-2 text-sm text-gray-700"><strong>Name:</strong> {selectedBooking.name}</div>
@@ -463,8 +475,8 @@ export default function Admin() {
                 <div className="col-span-1 text-sm text-gray-700"><strong>PLZ:</strong> {selectedBooking.zip}</div>
                 <div className="col-span-1 text-sm text-gray-700"><strong>Ort:</strong> {selectedBooking.city}</div>
                 <div className="col-span-2 text-sm text-gray-700"><strong>Wohnung:</strong> {selectedBooking.wohnungLabel || selectedBooking.wohnung}</div>
-                <div className="col-span-2 text-sm text-gray-700"><strong>Zeitraum:</strong> {selectedBooking.startDate ? new Date(selectedBooking.startDate).toLocaleDateString('de-DE') : '-'} - {selectedBooking.endDate ? new Date(selectedBooking.endDate).toLocaleDateString('de-DE') : '-'}</div>
-                <div className="col-span-1 text-sm text-gray-700"><strong>Nächte:</strong> {selectedBooking.nights}</div>
+                <div className="col-span-2 text-sm text-gray-700"><strong>{selectedBooking.isPartialBooking ? 'Bezahlter Zeitraum:' : 'Zeitraum:'}</strong> {selectedBooking.startDate ? new Date(selectedBooking.startDate).toLocaleDateString('de-DE') : '-'} - {selectedBooking.endDate ? new Date(selectedBooking.endDate).toLocaleDateString('de-DE') : '-'}</div>
+                <div className="col-span-1 text-sm text-gray-700"><strong>{selectedBooking.isPartialBooking ? 'Bezahlte Nächte:' : 'Nächte:'}</strong> {selectedBooking.nights}</div>
                 <div className="col-span-1 text-sm text-gray-700"><strong>Personen:</strong> {selectedBooking.people}</div>
                 <div className="col-span-1 text-sm text-gray-700"><strong>Check-In:</strong> {selectedBooking.checkInTime || '-'}</div>
                 <div className="col-span-1 text-sm text-gray-700"><strong>Check-Out:</strong> {selectedBooking.checkOutTime || '-'}</div>
@@ -1158,7 +1170,16 @@ export default function Admin() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {new Date(booking.startDate).toLocaleDateString('de-DE')} - {new Date(booking.endDate).toLocaleDateString('de-DE')}
-                      <div className="text-gray-500">{booking.nights} Nächte</div>
+                      <div className="text-gray-500">
+                        {booking.isPartialBooking ? (
+                          <span>
+                            <span className="font-medium">{booking.nights}</span> / {booking.totalNights} Nächte
+                            <span className="ml-1 px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">Teilbuchung</span>
+                          </span>
+                        ) : (
+                          <span>{booking.nights} Nächte</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {Number(booking.total).toFixed(2).replace('.', ',')}€
@@ -1240,7 +1261,16 @@ export default function Admin() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {new Date(booking.startDate).toLocaleDateString('de-DE')} - {new Date(booking.endDate).toLocaleDateString('de-DE')}
-                      <div className="text-gray-500">{booking.nights} Naechte</div>
+                      <div className="text-gray-500">
+                        {booking.isPartialBooking ? (
+                          <span>
+                            <span className="font-medium">{booking.nights}</span> / {booking.totalNights} Naechte
+                            <span className="ml-1 px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded">Teilbuchung</span>
+                          </span>
+                        ) : (
+                          <span>{booking.nights} Naechte</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {booking.total}€

@@ -23,6 +23,13 @@ const bookingSchema = new mongoose.Schema({
   nights: { type: Number, required: true },
   people: { type: Number, required: true },
   
+  // Teilbuchung / Staffelzahlung (für Buchungen > 28 Tage)
+  isPartialBooking: { type: Boolean, default: false },
+  originalStartDate: { type: Date, default: null }, // Ursprünglicher Gesamtzeitraum Start
+  originalEndDate: { type: Date, default: null },   // Ursprünglicher Gesamtzeitraum Ende
+  totalNights: { type: Number, default: null },      // Gesamtnächte (inkl. noch nicht bezahlter)
+  paidThroughDate: { type: Date, default: null },    // Bis wann ist bezahlt (= endDate bei erster Teilzahlung)
+  
   // Preisdetails
   pricePerNight: { type: Number, required: true },
   cleaningFee: { type: Number },
