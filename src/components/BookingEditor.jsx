@@ -27,16 +27,19 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
 
   // Berechne Summen wenn Preise/Nächte/Rabatt sich ändern
   useEffect(() => {
-    const nights = formData.nights || 0;
-    const pricePerNight = formData.pricePerNight || 0;
-    const cleaningFee = formData.cleaningFee || 0;
-    const vat = formData.vat || 0;
+    const nights = Number(formData.nights) || 0;
+    const pricePerNight = Number(formData.pricePerNight) || 0;
+    const cleaningFee = Number(formData.cleaningFee) || 0;
+    const discountRate = discountPercent === '' ? 0 : Number(discountPercent) || 0;
 
     // Berechne Zwischensumme
     const subtotal = nights * pricePerNight + cleaningFee;
     
     // Berechne Rabatt basierend auf Prozentsatz
-    const discountAmount = subtotal * (discountPercent / 100);
+    const discountAmount = subtotal * (discountRate / 100);
+
+    // Berechne MwSt (immer 7%)
+    const vat = (subtotal - discountAmount) * 0.07;
     
     // Berechne Gesamtsumme
     const total = subtotal - discountAmount + vat;
@@ -45,37 +48,74 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
       ...prev,
       subtotal: Math.round(subtotal * 100) / 100,
       discount: Math.round(discountAmount * 100) / 100,
+      vat: Math.round(vat * 100) / 100,
       total: Math.round(total * 100) / 100
     }));
-  }, [formData.nights, formData.pricePerNight, formData.cleaningFee, formData.vat, discountPercent]);
+  }, [formData.nights, formData.pricePerNight, formData.cleaningFee, discountPercent]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
-    // Spezial-Handling für Zahlen-Felder mit Min/Max
-    if (name === 'people') {
-      const numValue = value === '' ? 1 : Math.max(1, Math.min(13, Number(value) || 1));
+
+    if (['people', 'pricePerNight', 'cleaningFee', 'nights'].includes(name)) {
+      if (value === '') {
+        setFormData(prev => ({
+          ...prev,
+          [name]: ''
+        }));
+        return;
+      }
+
+      const numberValue = Number(value);
+
+      if (name === 'people') {
+        setFormData(prev => ({
+          ...prev,
+          [name]: Math.max(1, Math.min(11, Math.floor(numberValue || 0)))
+        }));
+        return;
+      }
+
       setFormData(prev => ({
         ...prev,
-        [name]: numValue
+        [name]: Math.max(0, numberValue || 0)
       }));
       return;
     }
     
     setFormData(prev => ({
       ...prev,
-      [name]: name.includes('Date') ? value : (name.includes('Price') || name.includes('nights') || name.includes('vat') || name.includes('cleaningFee')) ? (isNaN(value) ? value : Number(value)) : value
+      [name]: name.includes('Date') ? value : value
     }));
   };
 
   const handleDiscountPercentChange = (e) => {
-    const percent = e.target.value === '' ? 0 : Math.max(0, Math.min(100, Number(e.target.value)));
+    const percent = e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value)));
     setDiscountPercent(percent);
   };
 
   const handleSave = async () => {
     setSaving(true);
     setError('');
+
+    const people = Number(formData.people);
+    if (!Number.isInteger(people) || people < 1 || people > 11) {
+      setError('Personenanzahl muss zwischen 1 und 11 liegen');
+      setSaving(false);
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      people,
+      nights: Number(formData.nights) || 0,
+      pricePerNight: Number(formData.pricePerNight) || 0,
+      cleaningFee: Number(formData.cleaningFee) || 0,
+      subtotal: Number(formData.subtotal) || 0,
+      discount: Number(formData.discount) || 0,
+      vat: Number(formData.vat) || 0,
+      total: Number(formData.total) || 0
+    };
+
     try {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/bookings/${booking._id}`, {
@@ -84,7 +124,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
           'Content-Type': 'application/json',
           Authorization: `Basic ${auth}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -258,14 +298,14 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Personen * (1-13)</label>
+              <label className="block text-sm font-medium mb-1">Personen * (1-11)</label>
               <input
                 type="number"
                 name="people"
                 value={formData.people}
                 onChange={handleChange}
                 min="1"
-                max="13"
+                max="11"
                 className="w-full border rounded px-3 py-2"
               />
             </div>
@@ -344,11 +384,10 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
               <label className="block text-sm font-medium mb-1">MwSt (€)</label>
               <input
                 type="number"
-                name="vat"
                 value={formData.vat || 0}
-                onChange={handleChange}
                 step="0.01"
-                className="w-full border rounded px-3 py-2"
+                disabled
+                className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
               />
             </div>
             <div className="col-span-2 bg-green-50 p-4 rounded border-2 border-green-400">
@@ -356,7 +395,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
                 Gesamtbetrag: €{formData.total?.toFixed(2) || '0.00'}
               </div>
               <div className="text-sm text-green-700 mt-2">
-                = (€{formData.subtotal?.toFixed(2) || '0.00'} - {discountPercent}% Rabatt) + MwSt €{(formData.vat || 0).toFixed(2)}
+                = (€{formData.subtotal?.toFixed(2) || '0.00'} - {discountPercent === '' ? 0 : discountPercent}% Rabatt) + MwSt (7%) €{(formData.vat || 0).toFixed(2)}
               </div>
             </div>
 

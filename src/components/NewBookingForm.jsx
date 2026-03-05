@@ -39,16 +39,19 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
 
   // Recalculate totals whenever relevant fields change
   useEffect(() => {
-    const nights = formData.nights || 0;
-    const pricePerNight = formData.pricePerNight || 0;
-    const cleaningFee = formData.cleaningFee || 0;
-    const vat = formData.vat || 0;
+    const nights = Number(formData.nights) || 0;
+    const pricePerNight = Number(formData.pricePerNight) || 0;
+    const cleaningFee = Number(formData.cleaningFee) || 0;
+    const discountRate = discountPercent === '' ? 0 : Number(discountPercent) || 0;
 
     // Berechne Zwischensumme
     const subtotal = nights * pricePerNight + cleaningFee;
     
     // Berechne Rabatt basierend auf Prozentsatz
-    const discountAmount = subtotal * (discountPercent / 100);
+    const discountAmount = subtotal * (discountRate / 100);
+
+    // Berechne MwSt (immer 7%)
+    const vat = (subtotal - discountAmount) * 0.07;
     
     // Berechne Gesamtsumme
     const total = subtotal - discountAmount + vat;
@@ -57,9 +60,10 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
       ...prev,
       subtotal: Math.round(subtotal * 100) / 100,
       discount: Math.round(discountAmount * 100) / 100,
+      vat: Math.round(vat * 100) / 100,
       total: Math.round(total * 100) / 100
     }));
-  }, [formData.startDate, formData.endDate, formData.nights, formData.pricePerNight, formData.cleaningFee, formData.vat, discountPercent]);
+  }, [formData.startDate, formData.endDate, formData.nights, formData.pricePerNight, formData.cleaningFee, discountPercent]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -77,8 +81,17 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
         const end = new Date(newData.endDate);
         newData.nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
       }
-    } else if (['people', 'pricePerNight', 'cleaningFee', 'vat'].includes(name)) {
-      newData[name] = Number(value);
+    } else if (['people', 'pricePerNight', 'cleaningFee'].includes(name)) {
+      if (value === '') {
+        newData[name] = '';
+      } else {
+        const numberValue = Number(value);
+        if (name === 'people') {
+          newData[name] = Math.max(1, Math.min(11, Math.floor(numberValue || 0)));
+        } else {
+          newData[name] = Math.max(0, numberValue || 0);
+        }
+      }
     } else {
       newData[name] = value;
     }
@@ -87,7 +100,7 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
   };
 
   const handleDiscountPercentChange = (e) => {
-    const percent = e.target.value === '' ? 0 : Math.max(0, Math.min(100, Number(e.target.value)));
+    const percent = e.target.value === '' ? '' : Math.max(0, Math.min(100, Number(e.target.value)));
     setDiscountPercent(percent);
   };
 
@@ -101,6 +114,25 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
       return;
     }
 
+    const people = Number(formData.people);
+    if (!Number.isInteger(people) || people < 1 || people > 11) {
+      setError('Personenanzahl muss zwischen 1 und 11 liegen');
+      setSaving(false);
+      return;
+    }
+
+    const payload = {
+      ...formData,
+      people,
+      nights: Number(formData.nights) || 0,
+      pricePerNight: Number(formData.pricePerNight) || 0,
+      cleaningFee: Number(formData.cleaningFee) || 0,
+      subtotal: Number(formData.subtotal) || 0,
+      discount: Number(formData.discount) || 0,
+      vat: Number(formData.vat) || 0,
+      total: Number(formData.total) || 0
+    };
+
     try {
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/bookings`, {
@@ -109,7 +141,7 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
           'Content-Type': 'application/json',
           Authorization: `Basic ${auth}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
@@ -242,6 +274,7 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
                 value={formData.people}
                 onChange={handleChange}
                 min="1"
+                max="11"
                 className="w-full border rounded px-3 py-2"
               />
             </div>
@@ -320,12 +353,10 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
               <label className="block text-sm font-medium mb-1">MwSt (€)</label>
               <input
                 type="number"
-                name="vat"
                 value={formData.vat}
-                onChange={handleChange}
                 step="0.01"
-                min="0"
-                className="w-full border rounded px-3 py-2"
+                disabled
+                className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-600 cursor-not-allowed"
               />
             </div>
 
@@ -334,7 +365,7 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
                 Gesamtbetrag: €{formData.total.toFixed(2)}
               </div>
               <div className="text-sm text-green-700 mt-2">
-                = (€{formData.subtotal.toFixed(2)} - {discountPercent}% Rabatt) + MwSt €{formData.vat.toFixed(2)}
+                = (€{formData.subtotal.toFixed(2)} - {discountPercent === '' ? 0 : discountPercent}% Rabatt) + MwSt (7%) €{formData.vat.toFixed(2)}
               </div>
             </div>
           </div>
