@@ -169,8 +169,8 @@ export default function BookingPage() {
   const handleBooking = (e) => {
     e.preventDefault();
     const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
-    if (nights < 13) {
-      setMinNightsError("Mindestbuchdauer 14 Tage (13 Nächte)");
+    if (nights < 27) {
+      setMinNightsError("Mindestbuchungsdauer 28 Tage (27 Nächte). Für kürzere Aufenthalte kontaktieren Sie uns bitte telefonisch.");
       setMinNightsErrorAnim(false); // Reset for retrigger
       setTimeout(() => setMinNightsErrorAnim(true), 10);
       // Kalenderfeld hervorheben und zum Fehler scrollen
@@ -271,7 +271,7 @@ export default function BookingPage() {
       details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
       zimmer: "2,5 Zimmer",
       flaeche: "65 m²",
-      internet: "WLAN 100 Mbit/s",
+      internet: "WLAN 150 Mbit/s",
       extras: "Großer Balkon, Panoramablick, ruhige Lage",
       features: [
         "Waschmaschine mit Trockner im Keller",
@@ -397,8 +397,8 @@ export default function BookingPage() {
                   onChange={(item) => {
                     setRange([item.selection]);
                     const nights = Math.max(0, Math.ceil((item.selection.endDate - item.selection.startDate) / (1000 * 60 * 60 * 24)));
-                    if (nights > 0 && nights < 13) {
-                      setMinNightsError("Mindestbuchdauer 14 Tage (13 Nächte)");
+                    if (nights > 0 && nights < 27) {
+                      setMinNightsError("Mindestbuchungsdauer 28 Tage (27 Nächte). Für kürzere Aufenthalte kontaktieren Sie uns bitte telefonisch.");
                       setMinNightsErrorAnim(false); // Reset for retrigger
                       setTimeout(() => setMinNightsErrorAnim(true), 10);
                     } else {
