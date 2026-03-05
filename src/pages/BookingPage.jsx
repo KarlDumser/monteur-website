@@ -122,19 +122,17 @@ export default function BookingPage() {
 
   // Hilfsfunktion: Finde das nächste freie Datum nach dem gewünschten Zeitraum
   function getNextFreeDate(dateRange, periods) {
-    // Sortiere nach Startdatum
-    const sorted = [...periods].sort((a, b) => a.start.localeCompare(b.start));
-    let next = addDays(new Date(dateRange[1]), 1);
-    for (const period of sorted) {
-      if (isAfter(new Date(period.start), next)) {
-        // Lücke gefunden
-        return next;
-      }
-      if (next <= new Date(period.end)) {
-        next = addDays(new Date(period.end), 1);
-      }
+    // Sortiere nach Enddatum
+    const sorted = [...periods].sort((a, b) => a.end.localeCompare(b.end));
+    
+    // Finde den spätesten blockierten/gebuchten Zeitraum
+    if (sorted.length === 0) {
+      return new Date(); // Sofort verfügbar
     }
-    return next;
+    
+    // Nimm das Ende des letzten Zeitraums + 1 Tag
+    const lastPeriod = sorted[sorted.length - 1];
+    return addDays(new Date(lastPeriod.end), 1);
   }
 
   const checkAvailability = () => {
