@@ -13,8 +13,8 @@ export default function Home() {
     {
       id: 1,
       titel: "Wohnung Hackerberg – Penthouse",
-      beschreibung: "2,5-Zimmer Penthousewohnung im 5. Stock mit Aufzug und großem Balkon",
-      preis: "ab 18€ pro Person/Nacht!*",
+      beschreibung: "2,5-Zimmer Penthousewohnung im 5. Stock mit Aufzug und Panorama Balkon",
+      preis: "ab 18€ pro Person/Nacht!",
       zimmer: "2,5 Zimmer",
       flaeche: "65 m²",
       folder: "Wohnung-Hackerberg",
@@ -22,7 +22,7 @@ export default function Home() {
       details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
       features: [
         "Waschmaschine mit Trockner im Keller",
-        "2 Einzelbetten im 1. Zimmer, 3 Einzelbetten im 2. Zimmer (je eines Queen size)",
+        "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
         "WLAN 150 Mbit/s frei",
         "Sat-TV",
         "Parkplätze direkt vor dem Haus",
@@ -34,7 +34,7 @@ export default function Home() {
       id: 2,
       titel: "Wohnung Frühlingstraße – Neubau",
       beschreibung: "2-Zimmerwohnung mit eigenem Zugang, Garten mit Grillplatz",
-      preis: "ab 16€ pro Person/Nacht!*",
+      preis: "ab 16€ pro Person/Nacht!",
       zimmer: "2 Zimmer",
       flaeche: "58 m²",
       folder: "Wohnung-Fruehlingstrasse",
