@@ -44,6 +44,15 @@ const bookingSchema = new mongoose.Schema({
   },
   stripePaymentIntentId: String,
   stripePaymentId: String,
+  paidAt: { type: Date, default: null },
+  paidBy: { type: String, default: null },
+  paymentProof: {
+    fileName: { type: String, default: '' },
+    mimeType: { type: String, default: '' },
+    dataUrl: { type: String, default: '' },
+    uploadedAt: { type: Date, default: null },
+    uploadedBy: { type: String, default: '' }
+  },
   
   // Status
   bookingStatus: {

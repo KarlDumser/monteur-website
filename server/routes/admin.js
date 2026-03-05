@@ -84,6 +84,43 @@ router.delete('/bookings/:id', async (req, res) => {
   }
 });
 
+// Buchung als bezahlt markieren (optional mit Zahlungsnachweis)
+router.patch('/bookings/:id/mark-paid', async (req, res) => {
+  try {
+    const booking = await Booking.findOne({ _id: req.params.id, deletedAt: null });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+
+    const paymentProof = req.body?.paymentProof;
+
+    if (paymentProof?.dataUrl && !String(paymentProof.dataUrl).startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Zahlungsnachweis muss ein Bild sein' });
+    }
+
+    booking.paymentStatus = 'paid';
+    booking.paidAt = new Date();
+    booking.paidBy = req.adminUser;
+    booking.updatedAt = new Date();
+
+    if (paymentProof?.dataUrl) {
+      booking.paymentProof = {
+        fileName: paymentProof.fileName || 'zahlungsnachweis.png',
+        mimeType: paymentProof.mimeType || 'image/png',
+        dataUrl: paymentProof.dataUrl,
+        uploadedAt: new Date(),
+        uploadedBy: req.adminUser
+      };
+    }
+
+    await booking.save();
+    res.json(booking);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Archivierte Buchungen abrufen
 router.get('/deleted-bookings', async (req, res) => {
   try {

@@ -22,6 +22,8 @@ export default function Admin() {
   const [editingBooking, setEditingBooking] = useState(null);
   const [showNewBookingForm, setShowNewBookingForm] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [paymentProofFile, setPaymentProofFile] = useState(null);
+  const [markingPaid, setMarkingPaid] = useState(false);
 
   // Kunden-Management
   const [customers, setCustomers] = useState([]);
@@ -173,6 +175,55 @@ export default function Admin() {
     }
   };
 
+  const readFileAsDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleMarkAsPaid = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      setMarkingPaid(true);
+      const apiUrl = getApiUrl();
+
+      let paymentProof = null;
+      if (paymentProofFile) {
+        const dataUrl = await readFileAsDataUrl(paymentProofFile);
+        paymentProof = {
+          fileName: paymentProofFile.name,
+          mimeType: paymentProofFile.type,
+          dataUrl
+        };
+      }
+
+      const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/mark-paid`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${auth}`
+        },
+        body: JSON.stringify({ paymentProof })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Fehler beim Markieren als bezahlt');
+
+      setBookings((prev) => prev.map((b) => (b._id === data._id ? data : b)));
+      setSelectedBooking(data);
+      setPaymentProofFile(null);
+      showActionMessage('success', 'Buchung als bezahlt markiert');
+      loadData();
+    } catch (error) {
+      alert(error.message || 'Fehler beim Markieren als bezahlt');
+    } finally {
+      setMarkingPaid(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -258,7 +309,10 @@ export default function Admin() {
             <div className="bg-white rounded-2xl shadow-lg p-6 max-w-md w-full relative overflow-y-auto" style={{ maxHeight: '90vh' }}>
               <button
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
-                onClick={() => setSelectedBooking(null)}
+                onClick={() => {
+                  setSelectedBooking(null);
+                  setPaymentProofFile(null);
+                }}
                 aria-label="Schließen"
               >
                 ×
@@ -280,9 +334,61 @@ export default function Admin() {
                 <div className="col-span-1 text-sm text-gray-700"><strong>Check-In:</strong> {selectedBooking.checkInTime || '-'}</div>
                 <div className="col-span-1 text-sm text-gray-700"><strong>Check-Out:</strong> {selectedBooking.checkOutTime || '-'}</div>
                 <div className="col-span-2 text-sm text-gray-700"><strong>Status:</strong> {selectedBooking.paymentStatus === 'paid' ? '✓ Bezahlt' : 'Ausstehend'}</div>
+                {selectedBooking.paidAt && (
+                  <div className="col-span-2 text-sm text-gray-700"><strong>Bezahlt am:</strong> {new Date(selectedBooking.paidAt).toLocaleDateString('de-DE')}</div>
+                )}
                 {selectedBooking.stripePaymentIntentId && <div className="col-span-2 text-xs text-gray-500"><strong>Stripe Payment Intent:</strong> {selectedBooking.stripePaymentIntentId}</div>}
                 {selectedBooking.stripePaymentId && <div className="col-span-2 text-xs text-gray-500"><strong>Stripe Payment ID:</strong> {selectedBooking.stripePaymentId}</div>}
               </div>
+
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Zahlungsnachweis (Screenshot, optional)</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setPaymentProofFile(e.target.files?.[0] || null)}
+                      className="block w-full text-sm text-gray-700"
+                    />
+                    {paymentProofFile && (
+                      <p className="text-xs text-gray-500 mt-1">Ausgewählt: {paymentProofFile.name}</p>
+                    )}
+                  </div>
+
+                  {selectedBooking.paymentProof?.dataUrl && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Vorhandener Zahlungsnachweis</p>
+                      <a
+                        href={selectedBooking.paymentProof.dataUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block text-blue-600 hover:text-blue-800 text-sm font-semibold"
+                      >
+                        Screenshot öffnen
+                      </a>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleMarkAsPaid}
+                    disabled={markingPaid || selectedBooking.paymentStatus === 'paid'}
+                    className={`w-full font-semibold py-2 px-4 rounded-lg transition ${
+                      selectedBooking.paymentStatus === 'paid'
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                  >
+                    {selectedBooking.paymentStatus === 'paid'
+                      ? 'Bereits als bezahlt markiert'
+                      : markingPaid
+                        ? 'Wird gespeichert...'
+                        : '✓ Als bezahlt markieren'}
+                  </button>
+                </div>
+              </div>
+
               {/* Mini-Rechnung */}
               <div className="bg-gray-50 rounded-lg p-4 mt-2 mb-2">
                 <h3 className="text-lg font-semibold mb-2">Rechnungsübersicht</h3>
