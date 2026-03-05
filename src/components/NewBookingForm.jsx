@@ -104,6 +104,51 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
     setDiscountPercent(percent);
   };
 
+  const formatDateForInput = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const fillExampleData = () => {
+    const start = new Date();
+    start.setDate(start.getDate() + 7);
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 14);
+
+    const startDate = formatDateForInput(start);
+    const endDate = formatDateForInput(end);
+    const nights = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+
+    setFormData((prev) => ({
+      ...prev,
+      name: 'Max Mustermann',
+      email: 'max.mustermann@example.com',
+      phone: '015221557400',
+      company: 'Musterbau GmbH',
+      street: 'Musterstraße 12',
+      zip: '82152',
+      city: 'Krailling',
+      wohnung: 'hackerberg',
+      wohnungLabel: wohnungen.hackerberg,
+      startDate,
+      endDate,
+      nights,
+      people: 4,
+      pricePerNight: 100,
+      cleaningFee: 100,
+      bookingStatus: 'confirmed',
+      paymentStatus: 'pending',
+      checkInTime: '15:00',
+      checkOutTime: '10:00'
+    }));
+
+    setDiscountPercent(0);
+    setError('');
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError('');
@@ -372,6 +417,14 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
         </div>
 
         <div className="sticky bottom-0 bg-gray-50 border-t p-6 flex gap-3 justify-end">
+          <button
+            onClick={fillExampleData}
+            className="bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold py-2 px-4 rounded"
+            disabled={saving}
+            type="button"
+          >
+            Beispieldaten
+          </button>
           <button
             onClick={onClose}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded"
