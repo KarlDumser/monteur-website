@@ -619,6 +619,7 @@ export default function Admin() {
               setBookings([newBooking, ...bookings]);
               setShowNewBookingForm(false);
               showActionMessage('success', 'Buchung erfolgreich erstellt');
+              loadData();
             }}
           />
         )}

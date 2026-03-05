@@ -135,7 +135,7 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
 
     try {
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/bookings`, {
+      const response = await fetch(`${apiUrl}/admin/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
