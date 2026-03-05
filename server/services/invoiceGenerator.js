@@ -17,8 +17,8 @@ export async function generateInvoice(booking) {
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
       const buffers = [];
       
-         // Rechnungsnummer für Dateinamen merken
-         const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
+             // Rechnungsnummer für Dateinamen und PDF merken
+             const invoiceNumber = buildInvoiceNumber(booking);
          const pdfFileName = `Rechnung-${invoiceNumber}.pdf`;
          doc.on('data', buffers.push.bind(buffers));
          doc.on('end', () => {
@@ -230,4 +230,13 @@ function formatGermanDate(date) {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}.${month}.${year}`;
+}
+
+function buildInvoiceNumber(booking) {
+   const createdAt = booking?.createdAt ? new Date(booking.createdAt) : new Date();
+   const year = createdAt.getFullYear();
+   const month = String(createdAt.getMonth() + 1).padStart(2, '0');
+   const day = String(createdAt.getDate()).padStart(2, '0');
+   const shortId = String(booking?._id || '').slice(-4).toUpperCase();
+   return `FD-${year}${month}${day}-${shortId}`;
 }

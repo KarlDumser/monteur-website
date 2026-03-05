@@ -305,10 +305,17 @@ export default function Admin() {
                         const res = await fetch(`${getApiUrl()}/bookings/${selectedBooking._id}/invoice`);
                         if (!res.ok) throw new Error('Fehler beim Herunterladen der Rechnung');
                         const blob = await res.blob();
+                        const contentDisposition = res.headers.get('content-disposition') || '';
+                        const headerFileNameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+                        const headerFileName = headerFileNameMatch ? headerFileNameMatch[1] : '';
+                        const bookingDate = selectedBooking.createdAt ? new Date(selectedBooking.createdAt) : new Date();
+                        const datePart = `${bookingDate.getFullYear()}${String(bookingDate.getMonth() + 1).padStart(2, '0')}${String(bookingDate.getDate()).padStart(2, '0')}`;
+                        const shortId = String(selectedBooking._id || '').slice(-4).toUpperCase();
+                        const fallbackFileName = `Rechnung-FD-${datePart}-${shortId}.pdf`;
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = `Rechnung-${selectedBooking._id}.pdf`;
+                        a.download = headerFileName || fallbackFileName;
                         document.body.appendChild(a);
                         a.click();
                         a.remove();
@@ -801,8 +808,8 @@ export default function Admin() {
               <p className="text-3xl font-bold text-blue-600">{stats.totalBookings}</p>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-gray-600 text-sm font-semibold">Bestätigte Buchungen</h3>
-              <p className="text-3xl font-bold text-green-600">{stats.confirmedBookings}</p>
+              <h3 className="text-gray-600 text-sm font-semibold">Bezahlte Buchungen</h3>
+              <p className="text-3xl font-bold text-green-600">{stats.paidBookings ?? 0}</p>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-gray-600 text-sm font-semibold">Umsatz (gesamt)</h3>

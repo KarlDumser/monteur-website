@@ -209,7 +209,7 @@ router.get('/calendar', async (req, res) => {
 router.get('/statistics', async (req, res) => {
   try {
     const totalBookings = await Booking.countDocuments({ deletedAt: null });
-    const confirmedBookings = await Booking.countDocuments({ bookingStatus: 'confirmed', deletedAt: null });
+    const paidBookings = await Booking.countDocuments({ paymentStatus: 'paid', deletedAt: null });
     const totalRevenue = await Booking.aggregate([
       { $match: { paymentStatus: 'paid', deletedAt: null } },
       { $group: { _id: null, total: { $sum: '$total' } } }
@@ -221,7 +221,7 @@ router.get('/statistics', async (req, res) => {
     
     res.json({
       totalBookings,
-      confirmedBookings,
+      paidBookings,
       totalRevenue: totalRevenue[0]?.total || 0,
       recentBookings
     });
