@@ -109,10 +109,13 @@ Folgende ENV-Variablen in der Server-Umgebung setzen:
 - `BOT_SSH_USER` (z. B. `pi`)
 - `BOT_SSH_PORT` (Standard: `22`)
 - `BOT_SSH_KEY_PATH` (Pfad zum Private Key auf dem Server)
+- `BOT_SSH_PRIVATE_KEY` (Alternative zu `BOT_SSH_KEY_PATH`, ideal für Railway als Multiline Secret)
 - `BOT_PROJECT_DIR` (z. B. `/home/pi/Projekt-Automatisierung-Kunden`)
 - `BOT_SYSTEMD_SERVICE` (z. B. `projekt-automatisierung-kunden.service`)
 
 Der SSH-User muss `systemctl start/stop <service>` ausführen dürfen (ggf. via `sudoers` ohne Passwort).
+
+Hinweis für Railway: `BOT_SSH_PRIVATE_KEY` bevorzugen, da im Container meist kein `~/.ssh` vorhanden ist.
 
 ## Deployment auf Railway
 

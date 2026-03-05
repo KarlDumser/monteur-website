@@ -1,5 +1,8 @@
 import express from 'express';
 import { spawn } from 'child_process';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
 import Customer from '../models/Customer.js';
@@ -8,13 +11,35 @@ import { findOrCreateCustomerFromBooking } from '../services/customerService.js'
 const router = express.Router();
 
 const BOT_SSH_HOST = process.env.BOT_SSH_HOST || 'raspberrypi.tailccc131.ts.net';
-const BOT_SSH_USER = process.env.BOT_SSH_USER || '';
+const BOT_SSH_USER = process.env.BOT_SSH_USER || 'karldumser';
 const BOT_SSH_PORT = process.env.BOT_SSH_PORT || '22';
 const BOT_SSH_KEY_PATH = process.env.BOT_SSH_KEY_PATH || '';
+const BOT_SSH_PRIVATE_KEY = process.env.BOT_SSH_PRIVATE_KEY || '';
 const BOT_PROJECT_DIR = process.env.BOT_PROJECT_DIR || '/home/pi/Projekt-Automatisierung-Kunden';
 const BOT_SYSTEMD_SERVICE = process.env.BOT_SYSTEMD_SERVICE || '';
 
 const isSafeServiceName = (value) => /^[a-zA-Z0-9._@-]+$/.test(value || '');
+
+let generatedSshKeyPath = BOT_SSH_KEY_PATH || '';
+
+const getSshKeyPath = () => {
+  if (generatedSshKeyPath) {
+    return generatedSshKeyPath;
+  }
+
+  if (!BOT_SSH_PRIVATE_KEY) {
+    return '';
+  }
+
+  const normalizedKey = BOT_SSH_PRIVATE_KEY.includes('\\n')
+    ? BOT_SSH_PRIVATE_KEY.replace(/\\n/g, '\n')
+    : BOT_SSH_PRIVATE_KEY;
+
+  const filePath = path.join(os.tmpdir(), 'bot_ssh_key');
+  fs.writeFileSync(filePath, normalizedKey, { mode: 0o600 });
+  generatedSshKeyPath = filePath;
+  return generatedSshKeyPath;
+};
 
 const runSshCommand = (remoteCommand, timeoutMs = 20000) =>
   new Promise((resolve, reject) => {
@@ -32,8 +57,9 @@ const runSshCommand = (remoteCommand, timeoutMs = 20000) =>
       'StrictHostKeyChecking=accept-new'
     ];
 
-    if (BOT_SSH_KEY_PATH) {
-      args.push('-i', BOT_SSH_KEY_PATH);
+    const sshKeyPath = getSshKeyPath();
+    if (sshKeyPath) {
+      args.push('-i', sshKeyPath);
     }
 
     args.push(`${BOT_SSH_USER}@${BOT_SSH_HOST}`, remoteCommand);
