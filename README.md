@@ -96,6 +96,23 @@ monteur-website/
 - `POST /api/admin/block-dates` - Zeiträume sperren
 - `GET /api/admin/blocked-dates` - Gesperrte Zeiträume
 - `DELETE /api/admin/blocked-dates/:id` - Sperrung löschen
+- `GET /api/admin/bot-console/status` - Bot Status (Raspberry Pi)
+- `POST /api/admin/bot-console/start` - Bot starten
+- `POST /api/admin/bot-console/stop` - Bot stoppen
+- `GET /api/admin/bot-console/logs` - Bot Logs anzeigen
+
+### Bot Live Konsole Setup
+
+Folgende ENV-Variablen in der Server-Umgebung setzen:
+
+- `BOT_SSH_HOST` (z. B. `raspberrypi.tailccc131.ts.net`)
+- `BOT_SSH_USER` (z. B. `pi`)
+- `BOT_SSH_PORT` (Standard: `22`)
+- `BOT_SSH_KEY_PATH` (Pfad zum Private Key auf dem Server)
+- `BOT_PROJECT_DIR` (z. B. `/home/pi/Projekt-Automatisierung-Kunden`)
+- `BOT_SYSTEMD_SERVICE` (z. B. `projekt-automatisierung-kunden.service`)
+
+Der SSH-User muss `systemctl start/stop <service>` ausführen dürfen (ggf. via `sudoers` ohne Passwort).
 
 ## Deployment auf Railway
 

@@ -42,6 +42,12 @@ export default function Admin() {
     reason: ''
   });
 
+  const [botStatus, setBotStatus] = useState('unknown');
+  const [botLogs, setBotLogs] = useState('');
+  const [botInfo, setBotInfo] = useState({ host: '', service: '', projectDir: '' });
+  const [botLoading, setBotLoading] = useState(false);
+  const [botError, setBotError] = useState('');
+
   useEffect(() => {
     return () => {
       if (messageTimeoutRef.current) {
@@ -79,6 +85,20 @@ export default function Admin() {
       window.removeEventListener('storage', syncAuth);
     };
   }, []);
+
+  useEffect(() => {
+    if (!auth || activeTab !== 'bot-console') {
+      return;
+    }
+
+    loadBotConsole();
+    const interval = setInterval(() => {
+      loadBotLogs();
+      loadBotStatus();
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [auth, activeTab]);
 
   const handleLogout = () => {
     sessionStorage.removeItem('adminAuth');
@@ -175,6 +195,68 @@ export default function Admin() {
       }
     } catch (error) {
       console.error('Error unblocking:', error);
+    }
+  };
+
+  const loadBotStatus = async () => {
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/bot-console/status`, {
+        headers: { Authorization: `Basic ${auth}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Status konnte nicht geladen werden');
+
+      setBotStatus(data.status || 'unknown');
+      setBotInfo({
+        host: data.host || '',
+        service: data.service || '',
+        projectDir: data.projectDir || ''
+      });
+      setBotError('');
+    } catch (error) {
+      setBotError(error.message);
+    }
+  };
+
+  const loadBotLogs = async () => {
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/bot-console/logs?lines=200`, {
+        headers: { Authorization: `Basic ${auth}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Logs konnten nicht geladen werden');
+      setBotLogs(data.output || '');
+      setBotError('');
+    } catch (error) {
+      setBotError(error.message);
+    }
+  };
+
+  const loadBotConsole = async () => {
+    setBotLoading(true);
+    await Promise.all([loadBotStatus(), loadBotLogs()]);
+    setBotLoading(false);
+  };
+
+  const controlBot = async (action) => {
+    try {
+      setBotLoading(true);
+      setBotError('');
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/bot-console/${action}`, {
+        method: 'POST',
+        headers: { Authorization: `Basic ${auth}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `Bot konnte nicht ${action} ausgeführt werden`);
+      setBotStatus(data.status || 'unknown');
+      await loadBotLogs();
+    } catch (error) {
+      setBotError(error.message);
+    } finally {
+      setBotLoading(false);
     }
   };
 
@@ -1123,6 +1205,12 @@ export default function Admin() {
           >
             Kunden ({customers.length})
           </button>
+          <button
+            onClick={() => setActiveTab('bot-console')}
+            className={`px-6 py-3 font-semibold ${activeTab === 'bot-console' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+          >
+            Live Konsole Bot
+          </button>
         </div>
 
         {/* Buchungen Tabelle */}
@@ -1514,6 +1602,69 @@ export default function Admin() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'bot-console' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-2xl font-bold">Bot Live Konsole</h2>
+                <p className="text-sm text-gray-600">Nur für Projekt-Automatisierung-Kunden</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => controlBot('start')}
+                  disabled={botLoading}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 text-white font-semibold px-4 py-2 rounded-lg"
+                >
+                  Start
+                </button>
+                <button
+                  onClick={() => controlBot('stop')}
+                  disabled={botLoading}
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-semibold px-4 py-2 rounded-lg"
+                >
+                  Stop
+                </button>
+                <button
+                  onClick={loadBotConsole}
+                  disabled={botLoading}
+                  className="bg-gray-700 hover:bg-gray-800 disabled:bg-gray-400 text-white font-semibold px-4 py-2 rounded-lg"
+                >
+                  Aktualisieren
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 text-sm">
+              <div className="bg-gray-50 border rounded-lg p-3">
+                <div className="text-gray-500">Status</div>
+                <div className={`font-semibold ${botStatus === 'active' ? 'text-green-700' : 'text-orange-700'}`}>{botStatus}</div>
+              </div>
+              <div className="bg-gray-50 border rounded-lg p-3">
+                <div className="text-gray-500">Host</div>
+                <div className="font-medium break-all">{botInfo.host || '-'}</div>
+              </div>
+              <div className="bg-gray-50 border rounded-lg p-3">
+                <div className="text-gray-500">Service</div>
+                <div className="font-medium break-all">{botInfo.service || '-'}</div>
+              </div>
+            </div>
+
+            <div className="mb-3 text-sm text-gray-600">
+              <strong>Ordner:</strong> {botInfo.projectDir || '-'}
+            </div>
+
+            {botError && (
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {botError}
+              </div>
+            )}
+
+            <div className="bg-black text-green-400 rounded-lg p-4 h-[480px] overflow-y-auto font-mono text-xs whitespace-pre-wrap">
+              {botLoading && !botLogs ? 'Lade Konsole...' : (botLogs || 'Keine Logs gefunden.')}
             </div>
           </div>
         )}

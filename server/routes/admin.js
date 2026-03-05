@@ -1,10 +1,70 @@
 import express from 'express';
+import { spawn } from 'child_process';
 import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
 import Customer from '../models/Customer.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 
 const router = express.Router();
+
+const BOT_SSH_HOST = process.env.BOT_SSH_HOST || 'raspberrypi.tailccc131.ts.net';
+const BOT_SSH_USER = process.env.BOT_SSH_USER || '';
+const BOT_SSH_PORT = process.env.BOT_SSH_PORT || '22';
+const BOT_SSH_KEY_PATH = process.env.BOT_SSH_KEY_PATH || '';
+const BOT_PROJECT_DIR = process.env.BOT_PROJECT_DIR || '/home/pi/Projekt-Automatisierung-Kunden';
+const BOT_SYSTEMD_SERVICE = process.env.BOT_SYSTEMD_SERVICE || '';
+
+const isSafeServiceName = (value) => /^[a-zA-Z0-9._@-]+$/.test(value || '');
+
+const runSshCommand = (remoteCommand, timeoutMs = 20000) =>
+  new Promise((resolve, reject) => {
+    if (!BOT_SSH_HOST || !BOT_SSH_USER) {
+      reject(new Error('BOT_SSH_HOST/BOT_SSH_USER nicht konfiguriert'));
+      return;
+    }
+
+    const args = [
+      '-p',
+      String(BOT_SSH_PORT),
+      '-o',
+      'BatchMode=yes',
+      '-o',
+      'StrictHostKeyChecking=accept-new'
+    ];
+
+    if (BOT_SSH_KEY_PATH) {
+      args.push('-i', BOT_SSH_KEY_PATH);
+    }
+
+    args.push(`${BOT_SSH_USER}@${BOT_SSH_HOST}`, remoteCommand);
+
+    const child = spawn('ssh', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      reject(new Error('SSH timeout'));
+    }, timeoutMs);
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ code, stdout: stdout.trim(), stderr: stderr.trim() });
+    });
+  });
 
 const requireAdminAuth = (req, res, next) => {
   const expectedUser = process.env.ADMIN_USER;
@@ -33,6 +93,83 @@ const requireAdminAuth = (req, res, next) => {
 };
 
 router.use(requireAdminAuth);
+
+router.get('/bot-console/status', async (req, res) => {
+  try {
+    if (!BOT_SYSTEMD_SERVICE || !isSafeServiceName(BOT_SYSTEMD_SERVICE)) {
+      return res.status(500).json({ error: 'BOT_SYSTEMD_SERVICE nicht konfiguriert' });
+    }
+
+    const result = await runSshCommand(`systemctl is-active ${BOT_SYSTEMD_SERVICE}`, 10000);
+    const status = result.stdout || 'unknown';
+
+    res.json({
+      status,
+      host: BOT_SSH_HOST,
+      projectDir: BOT_PROJECT_DIR,
+      service: BOT_SYSTEMD_SERVICE
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/bot-console/start', async (req, res) => {
+  try {
+    if (!BOT_SYSTEMD_SERVICE || !isSafeServiceName(BOT_SYSTEMD_SERVICE)) {
+      return res.status(500).json({ error: 'BOT_SYSTEMD_SERVICE nicht konfiguriert' });
+    }
+
+    const startResult = await runSshCommand(`sudo systemctl start ${BOT_SYSTEMD_SERVICE}`, 20000);
+    const statusResult = await runSshCommand(`systemctl is-active ${BOT_SYSTEMD_SERVICE}`, 10000);
+
+    res.json({
+      ok: startResult.code === 0,
+      status: statusResult.stdout || 'unknown',
+      stderr: startResult.stderr || null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/bot-console/stop', async (req, res) => {
+  try {
+    if (!BOT_SYSTEMD_SERVICE || !isSafeServiceName(BOT_SYSTEMD_SERVICE)) {
+      return res.status(500).json({ error: 'BOT_SYSTEMD_SERVICE nicht konfiguriert' });
+    }
+
+    const stopResult = await runSshCommand(`sudo systemctl stop ${BOT_SYSTEMD_SERVICE}`, 20000);
+    const statusResult = await runSshCommand(`systemctl is-active ${BOT_SYSTEMD_SERVICE}`, 10000);
+
+    res.json({
+      ok: stopResult.code === 0,
+      status: statusResult.stdout || 'unknown',
+      stderr: stopResult.stderr || null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/bot-console/logs', async (req, res) => {
+  try {
+    const rawLines = Number(req.query.lines || 200);
+    const lines = Number.isFinite(rawLines) ? Math.max(20, Math.min(500, rawLines)) : 200;
+    const safeProjectDir = BOT_PROJECT_DIR.replace(/"/g, '\\"');
+    const command = `cd "${safeProjectDir}" && (tail -n ${lines} log.txt 2>/dev/null || journalctl -n ${lines} --no-pager)`;
+    const result = await runSshCommand(command, 15000);
+
+    res.json({
+      host: BOT_SSH_HOST,
+      projectDir: BOT_PROJECT_DIR,
+      lines,
+      output: result.stdout || result.stderr || ''
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Alle Buchungen abrufen
 router.get('/bookings', async (req, res) => {
