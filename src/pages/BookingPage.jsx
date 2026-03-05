@@ -732,6 +732,23 @@ export default function BookingPage() {
                               <div className="bg-blue-50 rounded-lg p-3 mt-3 text-gray-700 text-sm">
                                 <strong>Gewählt:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")} ({nights} Nächte)
                               </div>
+                              {nights > 28 && (
+                                <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 mt-4">
+                                  <div className="flex items-start gap-3">
+                                    <span className="text-2xl">⚠️</span>
+                                    <div>
+                                      <p className="font-bold text-amber-900 text-sm mb-2">Teilbuchung: Rechnung wird aufgeteilt</p>
+                                      <p className="text-xs text-amber-800 mb-2">
+                                        Da Sie länger als 4 Wochen buchen, berechnen wir in zwei Schritten:
+                                      </p>
+                                      <ul className="text-xs text-amber-800 space-y-1 ml-4">
+                                        <li>• <strong>Erste Rechnung (jetzt):</strong> 28 Nächte = {(28 * pricePerNight + cleaningFee).toFixed(2).replace('.', ',')} € (inkl. Reinigung)</li>
+                                        <li>• <strong>Folgerechnungen:</strong> Für die weiteren {nights - 28} Nächte erhalten Sie rechtzeitig eine Rechnung</li>
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                               <button
                                 onClick={() => handleSelectWohnung(key)}
                                 className="mt-6 w-full font-bold py-3 px-4 rounded-xl transition shadow-lg bg-green-600 text-white hover:bg-green-700"
