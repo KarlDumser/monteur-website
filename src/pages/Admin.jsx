@@ -802,6 +802,10 @@ export default function Admin() {
               <h2 className="text-2xl font-bold mb-4">Kundendetails</h2>
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
+                  <p className="text-sm text-gray-600">Kundennummer</p>
+                  <p className="font-semibold">{selectedCustomer.customerNumber || '-'}</p>
+                </div>
+                <div>
                   <p className="text-sm text-gray-600">Name</p>
                   <p className="font-semibold">{selectedCustomer.name}</p>
                 </div>
@@ -1415,6 +1419,7 @@ export default function Admin() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kundennummer</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefon</th>
@@ -1427,6 +1432,9 @@ export default function Admin() {
                 <tbody className="divide-y divide-gray-200">
                   {customers.map((customer) => (
                     <tr key={customer._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                        {customer.customerNumber || '-'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-medium">{customer.name}</div>
                         {customer.contactPerson && (

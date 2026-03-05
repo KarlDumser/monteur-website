@@ -419,6 +419,10 @@ router.get('/customers', async (req, res) => {
     
     // Statistiken für jeden Kunden berechnen
     for (const customer of customers) {
+      if (!customer.customerNumber) {
+        await customer.save();
+      }
+
       const bookings = await Booking.find({ customerId: customer._id, deletedAt: null });
       customer.totalBookings = bookings.length;
       customer.totalNights = bookings.reduce((sum, b) => sum + (b.nights || 0), 0);

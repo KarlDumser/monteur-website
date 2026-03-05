@@ -33,19 +33,23 @@ const customerSchema = new mongoose.Schema({
 customerSchema.index({ email: 1 });
 customerSchema.index({ name: 1 });
 
+async function getNextCustomerNumber() {
+  const counter = await Counter.findOneAndUpdate(
+    { key: 'customerNumber' },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+
+  return `K-${String(counter.seq).padStart(5, '0')}`;
+}
+
 customerSchema.pre('validate', async function preValidate(next) {
   try {
-    if (!this.isNew || this.customerNumber) {
+    if (this.customerNumber) {
       return next();
     }
 
-    const counter = await Counter.findOneAndUpdate(
-      { key: 'customerNumber' },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
-
-    this.customerNumber = `K-${String(counter.seq).padStart(5, '0')}`;
+    this.customerNumber = await getNextCustomerNumber();
     next();
   } catch (error) {
     next(error);
