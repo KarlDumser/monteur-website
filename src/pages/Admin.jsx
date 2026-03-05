@@ -1343,6 +1343,7 @@ export default function Admin() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wohnung</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zeitraum</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grund</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Erstellt von</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
                 </tr>
               </thead>
@@ -1356,6 +1357,11 @@ export default function Admin() {
                       {new Date(blocked.startDate).toLocaleDateString('de-DE')} - {new Date(blocked.endDate).toLocaleDateString('de-DE')}
                     </td>
                     <td className="px-6 py-4 text-sm">{blocked.reason}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className={blocked.createdByLabel === 'Privat' ? 'text-gray-600 italic' : 'font-medium'}>
+                        {blocked.createdByLabel || 'Privat'}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={() => handleUnblock(blocked._id)}

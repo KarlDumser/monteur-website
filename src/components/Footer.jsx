@@ -18,8 +18,8 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-bold mb-4">Adresse</h3>
             <p className="text-gray-400">
-              Frühligstraße XXX<br />
-              82XXX Krailling<br />
+              Frühlingstraße 8<br />
+              82152 Krailling<br />
               Deutschland
             </p>
           </div>

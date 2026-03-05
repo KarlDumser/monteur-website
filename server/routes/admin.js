@@ -251,7 +251,39 @@ router.patch('/deleted-bookings/:id/restore', async (req, res) => {
 router.get('/blocked-dates', async (req, res) => {
   try {
     const blockedDates = await BlockedDate.find().sort({ startDate: 1 });
-    res.json(blockedDates);
+    
+    // Für jede BlockedDate die company Information hinzufügen
+    const enrichedDates = await Promise.all(blockedDates.map(async (blocked) => {
+      let createdByLabel = 'Privat';
+      
+      // Wenn createdBy eine Email ist (nicht system), suche die Buchung
+      if (blocked.createdBy && 
+          !blocked.createdBy.startsWith('system') && 
+          blocked.createdBy !== 'admin' &&
+          blocked.createdBy.includes('@')) {
+        try {
+          const booking = await Booking.findOne({ 
+            email: blocked.createdBy,
+            wohnung: blocked.wohnung,
+            startDate: { $lte: blocked.endDate },
+            endDate: { $gte: blocked.startDate }
+          }).sort({ createdAt: -1 }).limit(1);
+          
+          if (booking && booking.company) {
+            createdByLabel = booking.company;
+          }
+        } catch (e) {
+          console.error('Fehler beim Laden der Booking-Info:', e);
+        }
+      }
+      
+      return {
+        ...blocked.toObject(),
+        createdByLabel
+      };
+    }));
+    
+    res.json(enrichedDates);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
