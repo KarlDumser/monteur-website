@@ -258,25 +258,64 @@ router.post('/bookings', async (req, res) => {
       });
     }
 
+    // ========== AUTO-EMAIL: Admin-erstellte Buchungen ==========
+    console.log('\n╔═══════════════════════════════════════════════════════╗');
+    console.log('║   ADMIN BOOKING - AUTO-EMAIL CHECK                    ║');
+    console.log('╚═══════════════════════════════════════════════════════╝');
+    console.log('📋 Buchung gespeichert:', booking._id);
+    console.log('📧 Email-Adresse:', booking.email || '❌ KEINE EMAIL GESETZT');
+    console.log('👤 Kundenname:', booking.name);
+    console.log('🏠 Wohnung:', booking.wohnung);
+    
     if (booking.email) {
-      console.log('\n📧 ADMIN BUCHUNG: Starte automatischen Email-Versand...');
+      console.log('\n🚀 STARTE AUTO-EMAIL-VERSAND...');
+      console.log('   Ziel:', booking.email);
+      console.log('   Buchungs-ID:', booking._id);
+      
       sendBookingConfirmation(booking, 'confirmation')
         .then((result) => {
-          console.log('\n📬 ADMIN EMAIL-RESULT:');
-          console.log('   Status:', result.status);
+          console.log('\n╔═══════════════════════════════════════════════════════╗');
+          console.log('║   AUTO-EMAIL RESULT (ADMIN BOOKING)                   ║');
+          console.log('╚═══════════════════════════════════════════════════════╝');
+          console.log('📊 Result Object:', JSON.stringify(result, null, 2));
+          console.log('📍 Status:', result.status);
+          
           if (result.status === 'sent') {
-            console.log('✅ Admin-Buchungsbestätigung erfolgreich versendet');
-            console.log('   Message ID:', result.messageId);
+            console.log('✅✅✅ ERFOLG - Email versendet!');
+            console.log('   📬 Message ID:', result.messageId);
+            console.log('   📡 SMTP Response:', result.response);
+          } else if (result.status === 'skipped') {
+            console.warn('⚠️⚠️⚠️ Email-Versand ÜBERSPRUNGEN');
+            console.warn('   Grund:', result.reason);
+            console.warn('   Details:', result.details);
+          } else if (result.status === 'failed') {
+            console.error('❌❌❌ Email-Versand FEHLGESCHLAGEN');
+            console.error('   Error:', result.error);
+            console.error('   Code:', result.code);
+            console.error('   Response:', result.response);
           } else {
-            console.warn('⚠️ Admin-Email-Versand übersprungen/fehlgeschlagen');
-            console.warn('   Grund:', result.reason || result.error);
+            console.warn('⚠️ UNBEKANNTER STATUS:', result.status);
+            console.warn('   Full Result:', result);
           }
+          console.log('╚═══════════════════════════════════════════════════════╝\n');
         })
         .catch((err) => {
-          console.error('❌ FEHLER beim Admin-Email-Versand (Hintergrund):');
-          console.error('   Message:', err.message);
+          console.error('\n╔═══════════════════════════════════════════════════════╗');
+          console.error('║   AUTO-EMAIL EXCEPTION (ADMIN BOOKING)                ║');
+          console.error('╚═══════════════════════════════════════════════════════╝');
+          console.error('❌❌❌ EXCEPTION beim Email-Versand (Hintergrund)');
+          console.error('   Error Message:', err.message);
+          console.error('   Error Code:', err.code);
+          console.error('   Error Name:', err.name);
+          if (err.stack) {
+            console.error('   Stack Trace:', err.stack);
+          }
+          console.error('╚═══════════════════════════════════════════════════════╝\n');
         });
+    } else {
+      console.log('⏭️  ÜBERSPRINGE Email-Versand (keine Email-Adresse vorhanden)');
     }
+    console.log('╚═══════════════════════════════════════════════════════╝\n');
 
     res.status(201).json(booking);
   } catch (error) {
@@ -766,45 +805,87 @@ router.get('/customers/:id/bookings', async (req, res) => {
   }
 });
 
-// Buchungsbestätigung Email mit Rechnung versenden
+// Buchungsbestätigung Email mit Rechnung versenden (Manueller Button)
 router.post('/bookings/:id/send-confirmation', async (req, res) => {
   try {
+    console.log('\n╔═══════════════════════════════════════════════════════╗');
+    console.log('║   MANUAL EMAIL SEND - START                           ║');
+    console.log('╚═══════════════════════════════════════════════════════╝');
+    console.log('📍 Request Parameter ID:', req.params.id);
+    
     const booking = await Booking.findById(req.params.id);
     if (!booking) {
+      console.error('❌ Buchung nicht gefunden:', req.params.id);
       return res.status(404).json({ error: 'Buchung nicht gefunden' });
     }
 
-    console.log('\n📧 ADMIN: Starte Buchungsbestätigung Email-Versand');
-    console.log('   Buchung ID:', booking._id);
-    console.log('   Kunde:', booking.name);
+    console.log('✅ Buchung gefunden:', booking._id);
+    console.log('📋 Buchungsdetails:');
+    console.log('   ID:', booking._id);
+    console.log('   Kundenname:', booking.name);
     console.log('   Email:', booking.email);
+    console.log('   Wohnung:', booking.wohnung);
+    console.log('   Zeitraum:', booking.startDate, '-', booking.endDate);
 
-    // Versende Email mit Rechnung im Hintergrund
+    console.log('\n🚀 Rufe sendBookingConfirmation() auf...');
     const result = await sendBookingConfirmation(booking, 'confirmation');
+    
+    console.log('\n╔═══════════════════════════════════════════════════════╗');
+    console.log('║   MANUAL EMAIL SEND - RESULT                          ║');
+    console.log('╚═══════════════════════════════════════════════════════╝');
+    console.log('📊 Complete Result Object:', JSON.stringify(result, null, 2));
+    console.log('📍 Status:', result.status);
 
     if (result.status === 'sent') {
-      console.log('✅ Buchungsbestätigung erfolgreich versendet');
+      console.log('✅✅✅ EMAIL ERFOLGREICH VERSENDET!');
+      console.log('   Message ID:', result.messageId);
+      console.log('   SMTP Response:', result.response);
+      console.log('╚═══════════════════════════════════════════════════════╝\n');
       return res.json({ 
         success: true, 
         message: '✅ Buchungsbestätigung erfolgreich an ' + booking.email + ' versendet!',
         result 
       });
     } else if (result.status === 'skipped') {
-      console.warn('⚠️ Email-Versand übersprungen:', result.reason);
+      console.warn('⚠️⚠️⚠️ EMAIL-VERSAND ÜBERSPRUNGEN');
+      console.warn('   Grund:', result.reason);
+      console.warn('   Details:', result.details);
+      console.log('╚═══════════════════════════════════════════════════════╝\n');
       return res.status(500).json({ 
         error: 'Email-Versand nicht konfiguriert: ' + (result.reason || result.details),
         result
       });
-    } else {
-      console.error('❌ Email-Versand fehlgeschlagen:', result);
+    } else if (result.status === 'failed') {
+      console.error('❌❌❌ EMAIL-VERSAND FEHLGESCHLAGEN');
+      console.error('   Error:', result.error);
+      console.error('   Code:', result.code);
+      console.error('   Response:', result.response);
+      console.log('╚═══════════════════════════════════════════════════════╝\n');
       return res.status(500).json({ 
         error: 'Fehler beim Email-Versand: ' + (result.error || 'Unbekannter Fehler'),
         result
       });
+    } else {
+      console.error('❌ UNBEKANNTER STATUS:', result.status);
+      console.error('   Full Result:', result);
+      console.log('╚═══════════════════════════════════════════════════════╝\n');
+      return res.status(500).json({ 
+        error: 'Unbekannter Status: ' + result.status,
+        result
+      });
     }
   } catch (error) {
-    console.error('❌ FEHLER beim Send-Confirmation:', error.message);
-    res.status(500).json({ error: error.message });
+    console.error('\n╔═══════════════════════════════════════════════════════╗');
+    console.error('║   MANUAL EMAIL SEND - EXCEPTION                       ║');
+    console.error('╚═══════════════════════════════════════════════════════╝');
+    console.error('❌❌❌ EXCEPTION:', error.message);
+    console.error('   Error Name:', error.name);
+    console.error('   Error Code:', error.code);
+    if (error.stack) {
+      console.error('   Stack:', error.stack);
+    }
+    console.error('╚═══════════════════════════════════════════════════════╝\n');
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 

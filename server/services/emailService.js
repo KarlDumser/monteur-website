@@ -8,16 +8,35 @@ import { generateInvoice } from './invoiceGenerator.js';
 export async function sendBookingConfirmation(booking, type = 'confirmation') {
   try {
     // ========== DEBUG: Umgebungsvariablen prüfen ==========
-    console.log('\n═══════════════════════════════════════════════════════');
-    console.log('📧 EMAIL SERVICE - START');
-    console.log('═══════════════════════════════════════════════════════');
+    console.log('\n╔══════════════════════════════════════════════════════════╗');
+    console.log('║                 EMAIL SERVICE - START                     ║');
+    console.log('╚══════════════════════════════════════════════════════════╝');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('📍 Funktion aufgerufen mit:');
+    console.log('   Booking ID:', booking?._id || '❌ KEINE ID');
+    console.log('   Booking Email:', booking?.email || '❌ KEINE EMAIL');
+    console.log('   Type:', type);
+    console.log('   Booking Object vorhanden:', !!booking);
     
-    console.log('🔧 Umgebungsvariablen:');
-    console.log('  SMTP_HOST:', process.env.SMTP_HOST);
-    console.log('  SMTP_PORT:', process.env.SMTP_PORT);
-    console.log('  SMTP_USER:', process.env.SMTP_USER);
-    console.log('  SMTP_PASSWORD vorhanden:', !!process.env.SMTP_PASSWORD);
-    console.log('  NODE_ENV:', process.env.NODE_ENV);
+    if (!booking) {
+      console.error('❌ KRITISCHER FEHLER: Booking Object ist null/undefined!');
+      return { status: 'failed', error: 'Booking Object fehlt' };
+    }
+    
+    if (!booking.email) {
+      console.error('❌ KRITISCHER FEHLER: Booking hat keine Email-Adresse!');
+      return { status: 'failed', error: 'Keine Email-Adresse in Booking' };
+    }
+    
+    console.log('\n🔧 Umgebungsvariablen Check:');
+    console.log('  SMTP_HOST:', process.env.SMTP_HOST || '❌ NICHT GESETZT');
+    console.log('  SMTP_PORT:', process.env.SMTP_PORT || '❌ NICHT GESETZT');
+    console.log('  SMTP_USER:', process.env.SMTP_USER || '❌ NICHT GESETZT');
+    console.log('  SMTP_PASSWORD:', process.env.SMTP_PASSWORD ? '✓ gesetzt (' + process.env.SMTP_PASSWORD.length + ' Zeichen)' : '❌ NICHT GESETZT');
+    console.log('  SMTP_SECURE:', process.env.SMTP_SECURE || '(Standard)');
+    console.log('  EMAIL_FROM:', process.env.EMAIL_FROM || '(Standard)');
+    console.log('  BOOKING_OWNER_EMAIL:', process.env.BOOKING_OWNER_EMAIL || '(Fallback)');
+    console.log('  NODE_ENV:', process.env.NODE_ENV || 'development');
     
     // Prüfe ob SMTP konfiguriert ist
     const smtpPassword = process.env.SMTP_PASSWORD;
@@ -32,10 +51,11 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     const ownerInbox = process.env.BOOKING_OWNER_EMAIL || 'karl658@hotmail.de';
     
     if (!smtpPassword || !smtpUser || !smtpHost) {
-      console.error('❌ SMTP nicht vollständig konfiguriert!');
-      console.error('   Host:', smtpHost ? '✓' : '✗ FEHLT');
-      console.error('   User:', smtpUser ? '✓' : '✗ FEHLT');
-      console.error('   Password:', smtpPassword ? '✓' : '✗ FEHLT');
+      console.error('\n❌❌❌ SMTP NICHT VOLLSTÄNDIG KONFIGURIERT!');
+      console.error('   Host:', smtpHost ? '✓ vorhanden' : '✗✗✗ FEHLT');
+      console.error('   User:', smtpUser ? '✓ vorhanden' : '✗✗✗ FEHLT');
+      console.error('   Password:', smtpPassword ? '✓ vorhanden' : '✗✗✗ FEHLT');
+      console.log('╚══════════════════════════════════════════════════════════╝\n');
       return { 
         status: 'skipped', 
         reason: 'SMTP nicht konfiguriert',
@@ -43,10 +63,14 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
       };
     }
 
-    console.log('✓ SMTP-Konfiguration vollständig');
-    console.log('📧 Email-Typ:', type);
-    console.log('📧 Empfänger:', booking.email);
-    console.log('📧 Buchungs-ID:', booking._id);
+    console.log('✅ SMTP-Konfiguration vollständig');
+    console.log('📧 Berechnete Werte:');
+    console.log('   Port Number:', smtpPortNumber);
+    console.log('   Secure:', smtpSecure);
+    console.log('   From Address:', fromAddress);
+    console.log('   Owner Inbox (BCC):', ownerInbox);
+    console.log('   Email-Typ:', type);
+    console.log('   Empfänger:', booking.email);
 
     // Lade nodemailer dynamisch
     console.log('\n📦 Lade nodemailer...');
@@ -249,40 +273,55 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
         console.log('✅ EMAIL ERFOLGREICH VERSENDET!');
         console.log('   Message ID:', info.messageId);
         console.log('   SMTP Response:', info.response);
+        console.log('   Accepted:', info.accepted);
+        console.log('   Rejected:', info.rejected);
+        console.log('   Envelope:', JSON.stringify(info.envelope));
       } catch (sendError) {
-        console.error('\n❌ EMAIL-VERSAND FEHLGESCHLAGEN');
+        console.error('\n❌❌❌ EMAIL-VERSAND FEHLGESCHLAGEN');
         console.error('   Fehler:', sendError.message || sendError);
         console.error('   Code:', sendError.code);
+        console.error('   Command:', sendError.command);
         console.error('   Errno:', sendError.errno);
         console.error('   Syscall:', sendError.syscall);
         if (sendError.response) {
           console.error('   SMTP-Server Response:', sendError.response);
         }
+        if (sendError.responseCode) {
+          console.error('   SMTP Response Code:', sendError.responseCode);
+        }
         if (sendError.stack) {
           console.error('   Stack:', sendError.stack);
         }
+        console.log('╚══════════════════════════════════════════════════════════╝\n');
         return {
           status: 'failed',
           error: sendError.message,
           code: sendError.code,
           errno: sendError.errno,
           syscall: sendError.syscall,
-          response: sendError.response
+          response: sendError.response,
+          responseCode: sendError.responseCode
         };
       }
 
-      console.log('\n═══════════════════════════════════════════════════════');
-      console.log('✅ EMAIL SERVICE - ERFOLGREICH');
-      console.log('═══════════════════════════════════════════════════════\n');
+      console.log('\n╔══════════════════════════════════════════════════════════╗');
+      console.log('║            EMAIL SERVICE - ERFOLGREICH ✅✅✅             ║');
+      console.log('╚══════════════════════════════════════════════════════════╝');
+      console.log('📬 Message ID:', info.messageId);
+      console.log('📡 Response:', info.response);
+      console.log('╚══════════════════════════════════════════════════════════╝\n');
       return { status: 'sent', messageId: info.messageId, response: info.response };
     } catch (error) {
-      console.error('\n❌ EMAIL SERVICE - KRITISCHER FEHLER');
+      console.error('\n╔══════════════════════════════════════════════════════════╗');
+      console.error('║        EMAIL SERVICE - KRITISCHER FEHLER ❌❌❌           ║');
+      console.error('╚══════════════════════════════════════════════════════════╝');
       console.error('   Fehler:', error.message || error);
+      console.error('   Name:', error.name);
       console.error('   Code:', error.code);
       if (error.stack) {
         console.error('   Stack:', error.stack);
       }
-      console.log('═══════════════════════════════════════════════════════\n');
+      console.log('╚══════════════════════════════════════════════════════════╝\n');
       return {
         status: 'failed',
         error: error.message,
