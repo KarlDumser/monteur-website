@@ -6,23 +6,41 @@ import { findOrCreateCustomerFromBooking } from '../services/customerService.js'
 
 const router = express.Router();
 
-// Bot Control via HTTP (statt SSH)
-const BOT_CONTROL_URL = process.env.BOT_CONTROL_URL || 'http://100.84.86.61:5555';
+// Bot Control via HTTP (via Cloudflare Tunnel)
+const BOT_CONTROL_URL = process.env.BOT_CONTROL_URL || '';
 const BOT_CONTROL_TOKEN = process.env.BOT_CONTROL_TOKEN || '';
+
+// Log config on startup
+if (process.env.NODE_ENV === 'production') {
+  console.log('🤖 Bot Control Configuration:');
+  console.log('  URL:', BOT_CONTROL_URL ? '✓ gesetzt' : '✗ NICHT gesetzt');
+  console.log('  Token:', BOT_CONTROL_TOKEN ? '✓ gesetzt' : '✗ NICHT gesetzt');
+}
 
 /**
  * Sendet HTTP-Request an Bot Control Server auf dem Raspberry Pi
  */
 const botControlRequest = async (endpoint, method = 'GET', timeoutMs = 10000) => {
+  if (!BOT_CONTROL_URL) {
+    const err = new Error('BOT_CONTROL_URL nicht konfiguriert. Setze die ENV Variable in Railway.');
+    console.error('❌ Bot Control ERROR:', err.message);
+    throw err;
+  }
+  
   if (!BOT_CONTROL_TOKEN) {
-    throw new Error('BOT_CONTROL_TOKEN nicht konfiguriert');
+    const err = new Error('BOT_CONTROL_TOKEN nicht konfiguriert. Setze die ENV Variable in Railway.');
+    console.error('❌ Bot Control ERROR:', err.message);
+    throw err;
   }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(`${BOT_CONTROL_URL}${endpoint}`, {
+    const url = `${BOT_CONTROL_URL}${endpoint}`;
+    console.log(`🔌 Bot Request: ${method} ${endpoint}`);
+    
+    const response = await fetch(url, {
       method,
       headers: {
         'Authorization': `Bearer ${BOT_CONTROL_TOKEN}`,
@@ -38,11 +56,14 @@ const botControlRequest = async (endpoint, method = 'GET', timeoutMs = 10000) =>
       throw new Error(`HTTP ${response.status}: ${text}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log(`✓ Bot Response OK`);
+    return data;
   } catch (error) {
     clearTimeout(timeout);
+    console.error('❌ Bot Request Failed:', error.message);
     if (error.name === 'AbortError') {
-      throw new Error('Request timeout');
+      throw new Error('Bot Control Server not reachable (timeout)');
     }
     throw error;
   }

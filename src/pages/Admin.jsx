@@ -200,22 +200,24 @@ export default function Admin() {
 
   const loadBotStatus = async () => {
     try {
+      setBotError(''); // Clear previous errors
       const apiUrl = getApiUrl();
       const response = await fetch(`${apiUrl}/admin/bot-console/status`, {
         headers: { Authorization: `Basic ${auth}` }
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Status konnte nicht geladen werden');
+      if (!response.ok) throw new Error(data.error || `Fehler ${response.status}`);
 
       setBotStatus(data.status || 'unknown');
       setBotInfo({
-        host: data.host || '',
-        service: data.service || '',
+        host: data.host || '-',
+        service: data.service || '-',
         projectDir: data.projectDir || ''
       });
-      setBotError('');
     } catch (error) {
-      setBotError(error.message);
+      console.error('Bot Status Error:', error);
+      setBotError(`Status: ${error.message}`);
+      setBotStatus('unknown');
     }
   };
 
@@ -226,11 +228,12 @@ export default function Admin() {
         headers: { Authorization: `Basic ${auth}` }
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Logs konnten nicht geladen werden');
+      if (!response.ok) throw new Error(data.error || `Fehler ${response.status}`);
       setBotLogs(data.output || '');
-      setBotError('');
     } catch (error) {
-      setBotError(error.message);
+      console.error('Bot Logs Error:', error);
+      setBotError(`Logs: ${error.message}`);
+      setBotLogs('');
     }
   };
 
