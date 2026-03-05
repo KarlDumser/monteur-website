@@ -235,8 +235,21 @@ export default function BookingPage() {
       titel: "Frühlingstraße – Neubau",
       beschreibung:
         "2-Zimmerwohnung mit moderner Ausstattung, Küche, Bad, Garten mit Grillplatz. Ideal für handwerkliche Fachkräfte und Monteure.",
+      details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
+      zimmer: "2 Zimmer",
+      flaeche: "58 m²",
       internet: "WLAN 150 Mbit/s",
       extras: "Garten, Grill, ruhige Lage",
+      features: [
+        "Waschmaschine mit Trockner",
+        "2 Einzelbetten in jedem Zimmer (je eines Queen size)",
+        "WLAN 150 Mbit/s frei",
+        "Sat-TV",
+        "Parkplätze für PKW & LKW mit Hänger vor dem Haus",
+        "Gartenbenutzung mit Grillmöglichkeit",
+        "Ruhige Wohnlage",
+        "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
+      ],
       preis: "110 EUR/Nacht + 90 EUR Endreinigung",
       galerie:
         "https://www.monteurzimmer.de/gaestezimmer/82152-krailling-1422811f39",
@@ -255,8 +268,20 @@ export default function BookingPage() {
       titel: "Hackerberg – Penthouse",
       beschreibung:
         "2-Zimmer-Penthouse mit großzügigem 35m² Balkon, Küche, Bad und Panoramablick. 2 Einzelbetten in jedem Zimmer.",
+      details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
+      zimmer: "2,5 Zimmer",
+      flaeche: "65 m²",
       internet: "WLAN 100 Mbit/s",
       extras: "Großer Balkon, Panoramablick, ruhige Lage",
+      features: [
+        "Waschmaschine mit Trockner im Keller",
+        "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
+        "WLAN 150 Mbit/s frei",
+        "Sat-TV",
+        "Parkplätze direkt vor dem Haus",
+        "Ruhige Wohnlage",
+        "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
+      ],
       preis: "110 EUR/Nacht + 90 EUR Endreinigung",
       galerie:
         "https://www.monteurzimmer.de/gaestezimmer/82152-krailling-1422811f39",
@@ -576,6 +601,27 @@ export default function BookingPage() {
                       <div>
                         <h2 className="text-3xl font-bold mb-3 text-gray-800">{wohnung.titel}</h2>
                         <p className="text-gray-700 mb-4 leading-relaxed">{wohnung.beschreibung}</p>
+                        {wohnung.details && (
+                          <p className="text-sm text-gray-700 mb-4 italic">{wohnung.details}</p>
+                        )}
+
+                        {(wohnung.zimmer || wohnung.flaeche) && (
+                          <div className="space-y-2 text-sm text-gray-700 mb-4">
+                            {wohnung.zimmer && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">🏠</span>
+                                <span><strong>Zimmer:</strong> {wohnung.zimmer}</span>
+                              </div>
+                            )}
+                            {wohnung.flaeche && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">📐</span>
+                                <span><strong>Fläche:</strong> {wohnung.flaeche}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {!isAvailable && (
                           <>
                             <div className="flex items-center mb-2">
@@ -600,6 +646,13 @@ export default function BookingPage() {
                                 })()}
                               </span>
                             </div>
+
+                            <button
+                              disabled
+                              className="mt-4 w-full font-bold py-3 px-4 rounded-xl bg-gray-200 text-gray-500 cursor-not-allowed"
+                            >
+                              Ausgebucht
+                            </button>
                           </>
                         )}
                         <div className="space-y-2 text-sm text-gray-700 mb-4">
@@ -612,59 +665,72 @@ export default function BookingPage() {
                             <span><strong>Ausstattung:</strong> {wohnung.extras}</span>
                           </div>
                         </div>
+
+                        {isAvailable && wohnung.features && wohnung.features.length > 0 && (
+                          <div className="mb-6 bg-blue-50 rounded-lg p-4 border border-blue-100">
+                            <h4 className="font-semibold text-gray-800 mb-3 text-sm">Ausstattung & Services:</h4>
+                            <ul className="space-y-2 text-sm text-gray-700">
+                              {wohnung.features.map((feature, idx) => (
+                                <li key={idx} className="flex items-start gap-2">
+                                  <span className="text-blue-600 font-bold mt-0.5">•</span>
+                                  <span>{feature}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Einheitliche Image Gallery */}
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-3 text-gray-800">📸 Bildergalerie</h3>
-                        {wohnung.galleries
-                          ? wohnung.galleries.map((gallery) => (
-                              <ImageGallery
-                                key={gallery.titel}
-                                images={gallery.images}
-                                folder={gallery.folder}
-                                titel={`${wohnung.titel} – ${gallery.titel}`}
-                              />
-                            ))
-                          : (
-                              <ImageGallery
-                                images={wohnung.images}
-                                folder={wohnung.folder}
-                                titel={wohnung.titel}
-                              />
-                            )}
-                      </div>
+                      {isAvailable && (
+                        <>
+                          {/* Einheitliche Image Gallery */}
+                          <div className="mb-6">
+                            <h3 className="text-lg font-semibold mb-3 text-gray-800">📸 Bildergalerie</h3>
+                            {wohnung.galleries
+                              ? wohnung.galleries.map((gallery) => (
+                                  <ImageGallery
+                                    key={gallery.titel}
+                                    images={gallery.images}
+                                    folder={gallery.folder}
+                                    titel={`${wohnung.titel} – ${gallery.titel}`}
+                                  />
+                                ))
+                              : (
+                                  <ImageGallery
+                                    images={wohnung.images}
+                                    folder={wohnung.folder}
+                                    titel={wohnung.titel}
+                                  />
+                                )}
+                          </div>
 
-                      {/* Price Box */}
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
-                        <div>
-                          <p className="text-gray-600 text-sm mb-2">Preis pro Nacht</p>
-                          <p className="text-4xl font-bold text-blue-600 mb-4">{pricePerNight.toFixed(2).replace('.', ',')}€</p>
-                          <p className="text-xs text-gray-500 mb-4">(für {people} {parseInt(people) === 1 ? 'Person' : 'Personen'})</p>
-                          <hr className="my-2 border-blue-200" />
-                          <div className="text-lg font-semibold text-gray-800 mb-1">
-                            {nights} Nächte x {pricePerNight.toFixed(0)} € = {(nights * pricePerNight).toFixed(2).replace('.', ',')} €
+                          {/* Price Box */}
+                          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
+                            <div>
+                              <p className="text-gray-600 text-sm mb-2">Preis pro Nacht</p>
+                              <p className="text-4xl font-bold text-blue-600 mb-4">{pricePerNight.toFixed(2).replace('.', ',')}€</p>
+                              <p className="text-xs text-gray-500 mb-4">(für {people} {parseInt(people) === 1 ? 'Person' : 'Personen'})</p>
+                              <hr className="my-2 border-blue-200" />
+                              <div className="text-lg font-semibold text-gray-800 mb-1">
+                                {nights} Nächte x {pricePerNight.toFixed(0)} € = {(nights * pricePerNight).toFixed(2).replace('.', ',')} €
+                              </div>
+                              <div className="text-lg text-gray-700 mb-1">+ {cleaningFee.toFixed(2).replace('.', ',')} € Endreinigung</div>
+                              <div className="font-semibold text-gray-800 mb-1">Nettosumme = {baseSum.toFixed(2).replace('.', ',')} €</div>
+                              <div className="text-gray-700 mb-1">+ 7% MwSt: {((baseSum * 0.07).toFixed(2)).replace('.', ',')} €</div>
+                              <div className="font-bold text-2xl text-blue-800 mb-2">Bruttosumme = {(baseSum * 1.07).toFixed(2).replace('.', ',')} €</div>
+                              <div className="bg-blue-50 rounded-lg p-3 mt-3 text-gray-700 text-sm">
+                                <strong>Gewählt:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")} ({nights} Nächte)
+                              </div>
+                              <button
+                                onClick={() => handleSelectWohnung(key)}
+                                className="mt-6 w-full font-bold py-3 px-4 rounded-xl transition shadow-lg bg-green-600 text-white hover:bg-green-700"
+                              >
+                                ✓ Diese Wohnung buchen
+                              </button>
+                            </div>
                           </div>
-                          <div className="text-lg text-gray-700 mb-1">+ {cleaningFee.toFixed(2).replace('.', ',')} € Endreinigung</div>
-                          <div className="font-semibold text-gray-800 mb-1">Nettosumme = {baseSum.toFixed(2).replace('.', ',')} €</div>
-                          <div className="text-gray-700 mb-1">+ 7% MwSt: {((baseSum * 0.07).toFixed(2)).replace('.', ',')} €</div>
-                          <div className="font-bold text-2xl text-blue-800 mb-2">Bruttosumme = {(baseSum * 1.07).toFixed(2).replace('.', ',')} €</div>
-                          <div className="bg-blue-50 rounded-lg p-3 mt-3 text-gray-700 text-sm">
-                            <strong>Gewählt:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")} ({nights} Nächte)
-                          </div>
-                          <button
-                            onClick={() => handleSelectWohnung(key)}
-                            disabled={!isAvailable}
-                            className={`mt-6 w-full font-bold py-3 px-4 rounded-xl transition shadow-lg ${
-                              isAvailable
-                                ? "bg-green-600 text-white hover:bg-green-700"
-                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                            }`}
-                          >
-                            {isAvailable ? "✓ Diese Wohnung buchen" : "Ausgebucht"}
-                          </button>
-                        </div>
-                      </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
