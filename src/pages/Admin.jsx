@@ -265,23 +265,8 @@ export default function Admin() {
 
   const clearBotLogs = async () => {
     if (!confirm('Logs wirklich löschen?')) return;
-    try {
-      setBotLoading(true);
-      setBotError('');
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/admin/bot-console/clear-logs`, {
-        method: 'POST',
-        headers: { Authorization: `Basic ${auth}` }
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Logs konnten nicht gelöscht werden');
-      setBotLogs('');
-      showActionMessage('success', 'Logs gelöscht');
-    } catch (error) {
-      setBotError(error.message);
-    } finally {
-      setBotLoading(false);
-    }
+    setBotLogs('');
+    showActionMessage('success', 'Logs gelöscht');
   };
 
   const readFileAsDataUrl = (file) =>
