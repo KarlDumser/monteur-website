@@ -114,7 +114,7 @@ export default function Payment() {
                   <span>{(bookingInfo.nights * bookingInfo.pricePerNight).toFixed(2).replace('.', ',')}€</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Endreinigung:</span>
+                  <span>{bookingInfo.isPartialBooking ? 'monatliche Reinigung' : 'Endreinigung'}:</span>
                   <span>{Number(bookingInfo.cleaningFee ?? 90).toFixed(2).replace('.', ',')}€</span>
                 </div>
                 

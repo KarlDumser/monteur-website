@@ -725,7 +725,7 @@ export default function BookingPage() {
                               <div className="text-lg font-semibold text-gray-800 mb-1">
                                 {nights} Nächte x {pricePerNight.toFixed(0)} € = {(nights * pricePerNight).toFixed(2).replace('.', ',')} €
                               </div>
-                              <div className="text-lg text-gray-700 mb-1">+ {cleaningFee.toFixed(2).replace('.', ',')} € Endreinigung</div>
+                              <div className="text-lg text-gray-700 mb-1">+ {cleaningFee.toFixed(2).replace('.', ',')} € {nights > 28 ? 'monatliche Reinigung' : 'Endreinigung'}</div>
                               <div className="font-semibold text-gray-800 mb-1">Nettosumme = {baseSum.toFixed(2).replace('.', ',')} €</div>
                               <div className="text-gray-700 mb-1">+ 7% MwSt: {((baseSum * 0.07).toFixed(2)).replace('.', ',')} €</div>
                               <div className="font-bold text-2xl text-blue-800 mb-2">Bruttosumme = {(baseSum * 1.07).toFixed(2).replace('.', ',')} €</div>
