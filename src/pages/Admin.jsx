@@ -556,6 +556,13 @@ export default function Admin() {
                 </div>
               )}
               
+              {selectedBooking.adminNote && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-300">
+                  <h3 className="text-sm font-bold text-blue-800 mb-2">ℹ️ Admin-Hinweis</h3>
+                  <p className="text-xs text-gray-700">{selectedBooking.adminNote}</p>
+                </div>
+              )}
+              
               <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
                 <div className="col-span-2 text-sm text-gray-700"><strong>Datum:</strong> {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleDateString('de-DE') : '-'}</div>
                 <div className="col-span-2 text-sm text-gray-700"><strong>Name:</strong> {selectedBooking.name}</div>

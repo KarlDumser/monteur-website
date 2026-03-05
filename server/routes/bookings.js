@@ -177,37 +177,87 @@ router.post('/', async (req, res) => {
 
     await booking.save();
 
+    // Bei Teilbuchung (>28 Tage): Automatisch zweite Buchung für restliche Tage erstellen
+    let followUpBooking = null;
+    if (booking.isPartialBooking) {
+      const remainingNightsStart = addDays(new Date(booking.paidThroughDate), 1);
+      const remainingNights = booking.totalNights - booking.nights;
+      
+      // Berechne Preise für die zweite Buchung
+      const followUpSubtotal = booking.pricePerNight * remainingNights;
+      const followUpDiscount = booking.discount || 0;
+      const followUpSubtotalAfterDiscount = followUpSubtotal * (1 - followUpDiscount);
+      const followUpVat = followUpSubtotalAfterDiscount * 0.07;
+      const followUpTotal = followUpSubtotalAfterDiscount + followUpVat;
+
+      followUpBooking = new Booking({
+        customerId: customer._id,
+        name: booking.name,
+        email: booking.email,
+        phone: booking.phone,
+        company: booking.company,
+        street: booking.street,
+        zip: booking.zip,
+        city: booking.city,
+        wohnung: booking.wohnung,
+        wohnungLabel: booking.wohnungLabel,
+        startDate: remainingNightsStart,
+        endDate: booking.originalEndDate,
+        nights: remainingNights,
+        people: booking.people,
+        pricePerNight: booking.pricePerNight,
+        cleaningFee: 0, // Keine zweite Reinigungsgebühr
+        subtotal: followUpSubtotal,
+        discount: followUpDiscount,
+        vat: followUpVat,
+        total: followUpTotal,
+        paymentMethod: 'invoice',
+        paymentStatus: 'pending',
+        bookingStatus: 'confirmed',
+        isPartialBooking: false, // Diese ist nicht mehr "partial"
+        adminNote: 'Rechnung wird automatisch eine Woche vor Buchungsbeginn erstellt und dem Kunden gesendet.',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      await followUpBooking.save();
+
+      console.log('\n📋 FOLLOW-UP BUCHUNG ERSTELLT - ID:', followUpBooking._id);
+      console.log('   Zeitraum:', remainingNightsStart.toISOString().slice(0, 10), '-', booking.originalEndDate);
+      console.log('   Nächte:', remainingNights);
+      console.log('   Betrag:', followUpTotal, '€');
+    }
+
     // Zeitraum für die Wohnung blockieren
     try {
       const BlockedDate = (await import('../models/BlockedDate.js')).default;
       
-      if (booking.isPartialBooking) {
-        // Bei Teilbuchung: zwei Blockierungen erstellen
-        // 1. Bezahlter Zeitraum als "Buchung"
+      if (booking.isPartialBooking && followUpBooking) {
+        // Bei Teilbuchung mit automatischer Follow-Up Buchung:
+        // 1. Erste Buchung (28 Tage)
         await BlockedDate.create({
           wohnung: booking.wohnung,
           startDate: booking.startDate,
-          endDate: booking.paidThroughDate,
+          endDate: booking.endDate,
           reason: 'Buchung',
           createdBy: booking.email || 'system'
         });
         
-        // 2. Reservierter aber noch nicht bezahlter Zeitraum als "Reservierung"
-        const reservationStart = addDays(new Date(booking.paidThroughDate), 1);
+        // 2. Follow-Up Buchung (restliche Tage)
         await BlockedDate.create({
-          wohnung: booking.wohnung,
-          startDate: reservationStart,
-          endDate: booking.originalEndDate,
-          reason: 'Reservierung',
-          createdBy: booking.email || 'system'
+          wohnung: followUpBooking.wohnung,
+          startDate: followUpBooking.startDate,
+          endDate: followUpBooking.endDate,
+          reason: 'Buchung',
+          createdBy: followUpBooking.email || 'system'
         });
         
-        // Reinigungspuffer am Ende des GESAMTEN Zeitraums
+        // Reinigungspuffer am Ende der Follow-Up Buchung
         if (!adminRequest) {
           await BlockedDate.create({
             wohnung: booking.wohnung,
-            startDate: addDays(new Date(booking.originalEndDate), 1),
-            endDate: addDays(new Date(booking.originalEndDate), 3),
+            startDate: addDays(new Date(followUpBooking.endDate), 1),
+            endDate: addDays(new Date(followUpBooking.endDate), 3),
             reason: 'Reinigung',
             createdBy: 'system-cleaning-buffer'
           });

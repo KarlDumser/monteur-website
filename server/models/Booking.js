@@ -68,6 +68,9 @@ const bookingSchema = new mongoose.Schema({
     default: 'confirmed'
   },
 
+  // Interne Notizen (für Admin)
+  adminNote: { type: String, default: null },
+
   // Archivierte Buchungen
   deletedAt: { type: Date, default: null },
   deletedBy: { type: String, default: null },
