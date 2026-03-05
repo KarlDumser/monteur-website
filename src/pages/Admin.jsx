@@ -25,6 +25,8 @@ export default function Admin() {
   const [paymentProofFile, setPaymentProofFile] = useState(null);
   const [markingPaid, setMarkingPaid] = useState(false);
   const [markingUnpaid, setMarkingUnpaid] = useState(false);
+  const [selectedCustomerForBooking, setSelectedCustomerForBooking] = useState('');
+  const [assigningCustomer, setAssigningCustomer] = useState(false);
 
   // Kunden-Management
   const [customers, setCustomers] = useState([]);
@@ -256,6 +258,44 @@ export default function Admin() {
     }
   };
 
+  const handleAssignCustomerToBooking = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      setAssigningCustomer(true);
+      const apiUrl = getApiUrl();
+
+      const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/assign-customer`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${auth}`
+        },
+        body: JSON.stringify({ customerId: selectedCustomerForBooking || null })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Fehler bei Kundenzuordnung');
+
+      setBookings((prev) => prev.map((b) => (b._id === data._id ? data : b)));
+      setSelectedBooking(data);
+      showActionMessage('success', 'Kunde zur Buchung zugeordnet');
+      loadData();
+    } catch (error) {
+      alert(error.message || 'Fehler bei Kundenzuordnung');
+    } finally {
+      setAssigningCustomer(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedBooking?.customerId) {
+      setSelectedCustomerForBooking(String(selectedBooking.customerId));
+    } else {
+      setSelectedCustomerForBooking('');
+    }
+  }, [selectedBooking]);
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -350,6 +390,41 @@ export default function Admin() {
                 ×
               </button>
               <h2 className="text-2xl font-bold mb-4">Buchungsdetails</h2>
+              {(() => {
+                const linkedCustomer = customers.find((c) => String(c._id) === String(selectedBooking.customerId || ''));
+                return (
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Zugeordneter Kunde:</strong>{' '}
+                      {linkedCustomer
+                        ? `${linkedCustomer.customerNumber || '—'} · ${linkedCustomer.name}`
+                        : 'Noch kein Kunde zugeordnet'}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <select
+                        value={selectedCustomerForBooking}
+                        onChange={(e) => setSelectedCustomerForBooking(e.target.value)}
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      >
+                        <option value="">— Keine Zuordnung —</option>
+                        {customers.map((customer) => (
+                          <option key={customer._id} value={customer._id}>
+                            {(customer.customerNumber || '—')} · {customer.name} ({customer.email})
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleAssignCustomerToBooking}
+                        disabled={assigningCustomer}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition disabled:opacity-50"
+                      >
+                        {assigningCustomer ? 'Speichert...' : 'Kunde manuell zuordnen'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
                 <div className="col-span-2 text-sm text-gray-700"><strong>Datum:</strong> {selectedBooking.createdAt ? new Date(selectedBooking.createdAt).toLocaleDateString('de-DE') : '-'}</div>
                 <div className="col-span-2 text-sm text-gray-700"><strong>Name:</strong> {selectedBooking.name}</div>

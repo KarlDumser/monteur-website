@@ -2,6 +2,7 @@ import express from 'express';
 import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
 import Customer from '../models/Customer.js';
+import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 
 const router = express.Router();
 
@@ -47,10 +48,43 @@ router.get('/bookings', async (req, res) => {
 router.post('/bookings', async (req, res) => {
   try {
     const booking = new Booking(req.body);
+    const customer = await findOrCreateCustomerFromBooking(req.body);
+    booking.customerId = customer._id;
     await booking.save();
     res.status(201).json(booking);
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+// Bestehende Buchung manuell einem Kunden zuordnen
+router.patch('/bookings/:id/assign-customer', async (req, res) => {
+  try {
+    const { customerId } = req.body;
+    const booking = await Booking.findOne({ _id: req.params.id, deletedAt: null });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+
+    if (!customerId) {
+      booking.customerId = null;
+      booking.updatedAt = new Date();
+      await booking.save();
+      return res.json(booking);
+    }
+
+    const customer = await Customer.findById(customerId);
+    if (!customer) {
+      return res.status(404).json({ error: 'Kunde nicht gefunden' });
+    }
+
+    booking.customerId = customer._id;
+    booking.updatedAt = new Date();
+    await booking.save();
+    res.json(booking);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

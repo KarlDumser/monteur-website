@@ -4,6 +4,7 @@ import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
 import { sendBookingConfirmation } from '../services/emailService.js';
+import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 
 const router = express.Router();
 
@@ -170,6 +171,10 @@ router.post('/', async (req, res) => {
       paymentMethod: 'invoice',
       paymentStatus: req.body.paymentStatus === 'paid' ? 'pending' : (req.body.paymentStatus || 'pending')
     });
+
+    const customer = await findOrCreateCustomerFromBooking(req.body);
+    booking.customerId = customer._id;
+
     await booking.save();
 
     // Zeitraum für die Wohnung blockieren
