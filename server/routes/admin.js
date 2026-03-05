@@ -258,6 +258,26 @@ router.post('/bookings', async (req, res) => {
       });
     }
 
+    if (booking.email) {
+      console.log('\n📧 ADMIN BUCHUNG: Starte automatischen Email-Versand...');
+      sendBookingConfirmation(booking, 'confirmation')
+        .then((result) => {
+          console.log('\n📬 ADMIN EMAIL-RESULT:');
+          console.log('   Status:', result.status);
+          if (result.status === 'sent') {
+            console.log('✅ Admin-Buchungsbestätigung erfolgreich versendet');
+            console.log('   Message ID:', result.messageId);
+          } else {
+            console.warn('⚠️ Admin-Email-Versand übersprungen/fehlgeschlagen');
+            console.warn('   Grund:', result.reason || result.error);
+          }
+        })
+        .catch((err) => {
+          console.error('❌ FEHLER beim Admin-Email-Versand (Hintergrund):');
+          console.error('   Message:', err.message);
+        });
+    }
+
     res.status(201).json(booking);
   } catch (error) {
     res.status(400).json({ error: error.message });
