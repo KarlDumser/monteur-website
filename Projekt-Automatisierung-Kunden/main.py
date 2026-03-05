@@ -20,6 +20,7 @@ YOUR_EMAIL = os.getenv("EMAIL_ADDRESS", "monteur-wohnung@dumser.net")
 ALLOWED_DOMAINS = {
     "monteurzimmerguru.de",
     "dmz.de",
+    "mail.dmz.de",  # Deutschland-Monteurzimmer.de Subdomain
     "mein-monteurzimmer.de",
     "monteurzimmer.de"
 }
@@ -32,6 +33,7 @@ ANSWERED_CUSTOMERS_LOG = "logs/answered_customers.log"
 DUPLIKAT_CHECK_STRATEGIEN = {
     "monteurzimmerguru.de": "body",
     "dmz.de": "sender",  # Eindeutige Alias wie monteurzimmer.de
+    "mail.dmz.de": "sender",  # Deutschland-Monteurzimmer.de Subdomain
     "mein-monteurzimmer.de": "body",  # Generischer Sender wie monteurzimmerguru.de
     "monteurzimmer.de": "sender"
 }
