@@ -91,10 +91,26 @@ router.patch('/bookings/:id/assign-customer', async (req, res) => {
 // Alle Buchungen archivieren
 router.delete('/bookings', async (req, res) => {
   try {
+    const activeBookings = await Booking.find({ deletedAt: null }).select('wohnung startDate endDate').lean();
+
     const result = await Booking.updateMany(
       { deletedAt: null },
       { $set: { deletedAt: new Date(), deletedBy: req.adminUser } }
     );
+
+    if (activeBookings.length > 0) {
+      const blockQueries = activeBookings.map((booking) => ({
+        wohnung: booking.wohnung,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        reason: 'Buchung'
+      }));
+
+      await BlockedDate.deleteMany({
+        $or: blockQueries
+      });
+    }
+
     res.json({ archivedCount: result.modifiedCount });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -112,7 +128,15 @@ router.delete('/bookings/:id', async (req, res) => {
     if (!booking) {
       return res.status(404).json({ error: 'Buchung nicht gefunden' });
     }
-    res.json({ message: 'Buchung archiviert' });
+
+    await BlockedDate.deleteMany({
+      wohnung: booking.wohnung,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      reason: 'Buchung'
+    });
+
+    res.json({ message: 'Buchung gelöscht' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -440,17 +464,18 @@ router.put('/customers/:id', async (req, res) => {
 // Kunde deaktivieren
 router.delete('/customers/:id', async (req, res) => {
   try {
-    const customer = await Customer.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false, updatedAt: new Date() },
-      { new: true }
-    );
+    const customer = await Customer.findByIdAndDelete(req.params.id);
     
     if (!customer) {
       return res.status(404).json({ error: 'Kunde nicht gefunden' });
     }
+
+    await Booking.updateMany(
+      { customerId: customer._id },
+      { $set: { customerId: null, updatedAt: new Date() } }
+    );
     
-    res.json({ message: 'Kunde deaktiviert' });
+    res.json({ message: 'Kunde gelöscht' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

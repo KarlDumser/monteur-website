@@ -288,6 +288,34 @@ export default function Admin() {
     }
   };
 
+  const handleDeleteCustomer = async (customer) => {
+    if (!customer?._id) return;
+    if (!confirm('Wollen Sie sicher den Kunden löschen? Alle Kundenstamm Daten gehen verloren.')) return;
+
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/customers/${customer._id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Basic ${auth}` }
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Löschen fehlgeschlagen');
+
+      if (selectedCustomer?._id === customer._id) {
+        setSelectedCustomer(null);
+      }
+      if (editingCustomer?._id === customer._id) {
+        setEditingCustomer(null);
+      }
+
+      showActionMessage('success', 'Kunde gelöscht');
+      loadData();
+    } catch (error) {
+      showActionMessage('error', error.message || 'Löschen fehlgeschlagen');
+    }
+  };
+
   useEffect(() => {
     if (selectedBooking?.customerId) {
       setSelectedCustomerForBooking(String(selectedBooking.customerId));
@@ -1148,7 +1176,7 @@ export default function Admin() {
                         </button>
                         <button
                           onClick={async () => {
-                            if (!confirm('Buchung wirklich archivieren?')) return;
+                            if (!confirm('Buchung wirklich löschen?')) return;
                             try {
                               const apiUrl = getApiUrl();
                               const response = await fetch(`${apiUrl}/admin/bookings/${booking._id}`, {
@@ -1158,16 +1186,16 @@ export default function Admin() {
                               if (response.ok) {
                                 loadData();
                               } else {
-                                alert('Archivieren fehlgeschlagen');
+                                alert('Löschen fehlgeschlagen');
                               }
                             } catch (error) {
                               console.error('Error deleting booking:', error);
-                              alert('Archivieren fehlgeschlagen');
+                              alert('Löschen fehlgeschlagen');
                             }
                           }}
                           className="text-red-600 hover:text-red-800 px-3 py-1.5 rounded-md"
                         >
-                          Archivieren
+                          Buchung löschen
                         </button>
                       </div>
                     </td>
@@ -1433,6 +1461,12 @@ export default function Admin() {
                             className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
                           >
                             Bearbeiten
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCustomer(customer)}
+                            className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                          >
+                            Löschen
                           </button>
                         </div>
                       </td>
