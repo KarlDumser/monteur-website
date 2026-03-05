@@ -193,7 +193,7 @@ export default function BookingPage() {
     const nightsForInvoice = isPartialBooking ? 28 : totalNights;
     
     const pricePerNight = getPricePerNight(wohnungKey);
-    const cleaningFee = wohnungKey === "kombi" ? 180 : 90;
+    const cleaningFee = wohnungKey === "kombi" ? 180 : 100;
     const subtotal = Number((nightsForInvoice * pricePerNight + cleaningFee).toFixed(2));
     const discount = getEarlyBookingDiscount();
     const subtotalAfterDiscount = Number((subtotal * (1 - discount)).toFixed(2));
@@ -261,7 +261,7 @@ export default function BookingPage() {
         "Ruhige Wohnlage",
         "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
       ],
-      preis: "110 EUR/Nacht + 90 EUR Endreinigung",
+      preis: "110 EUR/Nacht + 100 EUR Endreinigung",
       galerie:
         "https://www.monteurzimmer.de/gaestezimmer/82152-krailling-1422811f39",
       images: [
@@ -293,7 +293,7 @@ export default function BookingPage() {
         "Ruhige Wohnlage",
         "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
       ],
-      preis: "110 EUR/Nacht + 90 EUR Endreinigung",
+      preis: "110 EUR/Nacht + 100 EUR Endreinigung",
       galerie:
         "https://www.monteurzimmer.de/gaestezimmer/82152-krailling-1422811f39",
       images: [
@@ -595,7 +595,7 @@ export default function BookingPage() {
                   Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24))
                 );
                 const pricePerNight = getPricePerNight(key);
-                const cleaningFee = key === "kombi" ? 180 : 90;
+                const cleaningFee = key === "kombi" ? 180 : 100;
                 const baseSum = nights * pricePerNight + cleaningFee;
                 const isAvailable = Boolean(availability.status?.[key]);
                 return (

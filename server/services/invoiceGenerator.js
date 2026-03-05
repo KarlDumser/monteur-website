@@ -104,7 +104,7 @@ export async function generateInvoice(booking) {
 
       // Zeile 2: Reinigung
       const cleaningRow = tableTop + 70;
-      const cleaningFee = Number(booking.cleaningFee ?? 90);
+      const cleaningFee = Number(booking.cleaningFee ?? 100);
       doc.text('', 50, cleaningRow)
          .text('Reinigung ' + wohnungName, 100, cleaningRow)
          .text('1', 350, cleaningRow)
