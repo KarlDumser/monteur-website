@@ -97,6 +97,42 @@ const requireAdminAuth = (req, res, next) => {
 
 router.use(requireAdminAuth);
 
+const addDays = (date, days) => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+const buildBlockedDateDeleteFilters = (booking) => {
+  const filters = [];
+
+  const pushFilter = (startDate, endDate, reason) => {
+    if (!startDate || !endDate) {
+      return;
+    }
+
+    filters.push({
+      wohnung: booking.wohnung,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      reason
+    });
+  };
+
+  pushFilter(booking.startDate, booking.endDate, 'Buchung');
+  pushFilter(addDays(booking.endDate, 1), addDays(booking.endDate, 3), 'Reinigung');
+
+  if (booking.isPartialBooking && booking.paidThroughDate && booking.originalEndDate) {
+    const secondPeriodStart = addDays(booking.paidThroughDate, 1);
+
+    pushFilter(secondPeriodStart, booking.originalEndDate, 'Reservierung');
+    pushFilter(secondPeriodStart, booking.originalEndDate, 'Buchung');
+    pushFilter(addDays(booking.originalEndDate, 1), addDays(booking.originalEndDate, 3), 'Reinigung');
+  }
+
+  return filters;
+};
+
 // Bot Console: Status abrufen
 router.get('/bot-console/status', async (req, res) => {
   try {
@@ -223,7 +259,9 @@ router.patch('/bookings/:id/assign-customer', async (req, res) => {
 // Alle Buchungen archivieren
 router.delete('/bookings', async (req, res) => {
   try {
-    const activeBookings = await Booking.find({ deletedAt: null }).select('wohnung startDate endDate').lean();
+    const activeBookings = await Booking.find({ deletedAt: null })
+      .select('wohnung startDate endDate isPartialBooking paidThroughDate originalEndDate')
+      .lean();
 
     const result = await Booking.updateMany(
       { deletedAt: null },
@@ -231,16 +269,13 @@ router.delete('/bookings', async (req, res) => {
     );
 
     if (activeBookings.length > 0) {
-      const blockQueries = activeBookings.map((booking) => ({
-        wohnung: booking.wohnung,
-        startDate: booking.startDate,
-        endDate: booking.endDate,
-        reason: 'Buchung'
-      }));
+      const blockQueries = activeBookings.flatMap(buildBlockedDateDeleteFilters);
 
-      await BlockedDate.deleteMany({
-        $or: blockQueries
-      });
+      if (blockQueries.length > 0) {
+        await BlockedDate.deleteMany({
+          $or: blockQueries
+        });
+      }
     }
 
     res.json({ archivedCount: result.modifiedCount });
@@ -261,12 +296,12 @@ router.delete('/bookings/:id', async (req, res) => {
       return res.status(404).json({ error: 'Buchung nicht gefunden' });
     }
 
-    await BlockedDate.deleteMany({
-      wohnung: booking.wohnung,
-      startDate: booking.startDate,
-      endDate: booking.endDate,
-      reason: 'Buchung'
-    });
+    const blockQueries = buildBlockedDateDeleteFilters(booking);
+    if (blockQueries.length > 0) {
+      await BlockedDate.deleteMany({
+        $or: blockQueries
+      });
+    }
 
     res.json({ message: 'Buchung gelöscht' });
   } catch (error) {
