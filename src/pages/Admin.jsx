@@ -1415,48 +1415,44 @@ export default function Admin() {
                 ➕ Neuen Kunden erstellen
               </button>
             </div>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white rounded-lg shadow overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kundennummer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefon</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Adresse</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Buchungen</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Umsatz</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Kundennr.</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefon</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Buchungen</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Umsatz</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {customers.map((customer) => (
                     <tr key={customer._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-700">
                         {customer.customerNumber || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <div className="font-medium">{customer.name}</div>
                         {customer.contactPerson && (
                           <div className="text-sm text-gray-500">{customer.contactPerson}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
                         {customer.email}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
                         {customer.phone || customer.mobile || '-'}
                       </td>
-                      <td className="px-6 py-4 text-sm">
-                        {customer.address || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                         {customer.totalBookings || 0}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
                         {Number(customer.totalRevenue || 0).toFixed(2)}€
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm">
                         <div className="flex gap-2">
                           <button
                             onClick={() => setSelectedCustomer(customer)}
