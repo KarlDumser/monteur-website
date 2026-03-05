@@ -121,6 +121,34 @@ router.patch('/bookings/:id/mark-paid', async (req, res) => {
   }
 });
 
+// Buchung als unbezahlt markieren (Rückgängig)
+router.patch('/bookings/:id/mark-unpaid', async (req, res) => {
+  try {
+    const booking = await Booking.findOne({ _id: req.params.id, deletedAt: null });
+
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+
+    booking.paymentStatus = 'pending';
+    booking.paidAt = null;
+    booking.paidBy = null;
+    booking.paymentProof = {
+      fileName: '',
+      mimeType: '',
+      dataUrl: '',
+      uploadedAt: null,
+      uploadedBy: ''
+    };
+    booking.updatedAt = new Date();
+
+    await booking.save();
+    res.json(booking);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Archivierte Buchungen abrufen
 router.get('/deleted-bookings', async (req, res) => {
   try {

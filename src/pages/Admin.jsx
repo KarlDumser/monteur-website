@@ -24,6 +24,7 @@ export default function Admin() {
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [paymentProofFile, setPaymentProofFile] = useState(null);
   const [markingPaid, setMarkingPaid] = useState(false);
+  const [markingUnpaid, setMarkingUnpaid] = useState(false);
 
   // Kunden-Management
   const [customers, setCustomers] = useState([]);
@@ -185,6 +186,7 @@ export default function Admin() {
 
   const handleMarkAsPaid = async () => {
     if (!selectedBooking) return;
+    if (!confirm('Sicher als bezahlt markieren?')) return;
 
     try {
       setMarkingPaid(true);
@@ -221,6 +223,36 @@ export default function Admin() {
       alert(error.message || 'Fehler beim Markieren als bezahlt');
     } finally {
       setMarkingPaid(false);
+    }
+  };
+
+  const handleMarkAsUnpaid = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      setMarkingUnpaid(true);
+      const apiUrl = getApiUrl();
+
+      const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/mark-unpaid`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${auth}`
+        }
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Fehler beim Rückgängig-Machen des Zahlungsstatus');
+
+      setBookings((prev) => prev.map((b) => (b._id === data._id ? data : b)));
+      setSelectedBooking(data);
+      setPaymentProofFile(null);
+      showActionMessage('success', 'Bezahlstatus wurde zurückgesetzt');
+      loadData();
+    } catch (error) {
+      alert(error.message || 'Fehler beim Rückgängig-Machen des Zahlungsstatus');
+    } finally {
+      setMarkingUnpaid(false);
     }
   };
 
@@ -373,7 +405,7 @@ export default function Admin() {
                   <button
                     type="button"
                     onClick={handleMarkAsPaid}
-                    disabled={markingPaid || selectedBooking.paymentStatus === 'paid'}
+                    disabled={markingPaid || markingUnpaid || selectedBooking.paymentStatus === 'paid'}
                     className={`w-full font-semibold py-2 px-4 rounded-lg transition ${
                       selectedBooking.paymentStatus === 'paid'
                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
@@ -385,6 +417,19 @@ export default function Admin() {
                       : markingPaid
                         ? 'Wird gespeichert...'
                         : '✓ Als bezahlt markieren'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleMarkAsUnpaid}
+                    disabled={markingPaid || markingUnpaid || selectedBooking.paymentStatus !== 'paid'}
+                    className={`w-full font-semibold py-2 px-4 rounded-lg transition ${
+                      selectedBooking.paymentStatus === 'paid'
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white'
+                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {markingUnpaid ? 'Wird zurückgesetzt...' : '↺ Als unbezahlt markieren'}
                   </button>
                 </div>
               </div>
