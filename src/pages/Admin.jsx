@@ -740,6 +740,29 @@ export default function Admin() {
                     📄 Rechnung herunterladen
                   </button>
                   <button
+                    className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition"
+                    onClick={async () => {
+                      if (!confirm('Buchungsbestätigung mit Rechnung an ' + selectedBooking.email + ' versenden?')) return;
+                      try {
+                        const apiUrl = getApiUrl();
+                        const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/send-confirmation`, {
+                          method: 'POST',
+                          headers: { Authorization: `Basic ${auth}` }
+                        });
+                        const data = await response.json();
+                        if (!response.ok) {
+                          throw new Error(data.error || 'Fehler beim Email-Versand');
+                        }
+                        showActionMessage('success', data.message);
+                        setSelectedBooking(null);
+                      } catch (err) {
+                        showActionMessage('error', err.message);
+                      }
+                    }}
+                  >
+                    ✉️ Bestätigung versenden
+                  </button>
+                  <button
                     className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition"
                     onClick={() => {
                       setEditingBooking(selectedBooking);

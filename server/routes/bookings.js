@@ -5,6 +5,7 @@ import BlockedDate from '../models/BlockedDate.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
 import { sendBookingConfirmation } from '../services/emailService.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
+import { sendBookingPushNotification } from '../services/pushoverService.js';
 
 const router = express.Router();
 
@@ -314,6 +315,23 @@ router.post('/', async (req, res) => {
         console.error('   Message:', err.message);
         console.error('   Stack:', err.stack);
       });
+
+    // Sende Push-Benachrichtigung im Hintergrund
+    if (process.env.PUSHOVER_API_TOKEN && process.env.PUSHOVER_USER_KEY) {
+      const baseUrl = process.env.BASE_URL || 'https://monteur-wohnung.dumser.net';
+      sendBookingPushNotification(booking, baseUrl)
+        .then(result => {
+          console.log('\n📱 PUSHOVER RESULT:');
+          console.log('   Status:', result.status);
+          if (result.status === 'sent') {
+            console.log('✅ Push-Benachrichtigung erfolgreich versendet');
+          }
+        })
+        .catch(err => {
+          console.error('❌ FEHLER beim Push-Versand:');
+          console.error('   Message:', err.message);
+        });
+    }
 
     res.status(201).json(booking);
   } catch (error) {

@@ -205,13 +205,23 @@ export async function generateInvoice(booking) {
             .text(`Adresse der Wohnung ${wohnungKuerzel}: ${wohnungAdresse}`, 50, addressBlockY)
             .text('Anreise am Anreisetag 16:00-19:00 Uhr, Abreise am Abreisetag bis 10:00 Uhr', 50, addressBlockY + 15);
 
+         // Zahlungsbedingungen
+         doc.fontSize(9)
+            .font('Helvetica-Bold')
+            .text('Zahlungsbedingungen:', 50, addressBlockY + 35);
+         doc.fontSize(8)
+            .font('Helvetica')
+            .text('• Die Rechnung muss innerhalb von 7 Tagen nach Rechnungsdatum bezahlt sein, um die Wohnung verbindlich zu reservieren.', 50, addressBlockY + 48)
+            .text('• Der Zahlungseingang muss VOR dem Check-In erfolgen.', 50, addressBlockY + 63);
+
          // Abschlusstext
          doc.fontSize(10)
-            .text('Vielen Dank für Ihren Aufenthalt!', 50, addressBlockY + 45);
+            .font('Helvetica')
+            .text('Vielen Dank für Ihren Aufenthalt!', 50, addressBlockY + 85);
 
          doc.fontSize(9)
-            .text(`Krailling, den ${invoiceDate}`, 50, addressBlockY + 70)
-            .text('Christine Dumser', 50, addressBlockY + 85);
+            .text(`Krailling, den ${invoiceDate}`, 50, addressBlockY + 110)
+            .text('Christine Dumser', 50, addressBlockY + 125);
 
       doc.end();
     } catch (error) {

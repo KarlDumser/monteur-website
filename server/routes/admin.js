@@ -3,6 +3,8 @@ import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
 import Customer from '../models/Customer.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
+import { generateInvoice } from '../services/invoiceGenerator.js';
+import { sendBookingConfirmation } from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -740,6 +742,48 @@ router.get('/customers/:id/bookings', async (req, res) => {
       bookings
     });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Buchungsbestätigung Email mit Rechnung versenden
+router.post('/bookings/:id/send-confirmation', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+
+    console.log('\n📧 ADMIN: Starte Buchungsbestätigung Email-Versand');
+    console.log('   Buchung ID:', booking._id);
+    console.log('   Kunde:', booking.name);
+    console.log('   Email:', booking.email);
+
+    // Versende Email mit Rechnung im Hintergrund
+    const result = await sendBookingConfirmation(booking, 'confirmation');
+
+    if (result.status === 'sent') {
+      console.log('✅ Buchungsbestätigung erfolgreich versendet');
+      return res.json({ 
+        success: true, 
+        message: '✅ Buchungsbestätigung erfolgreich an ' + booking.email + ' versendet!',
+        result 
+      });
+    } else if (result.status === 'skipped') {
+      console.warn('⚠️ Email-Versand übersprungen:', result.reason);
+      return res.status(500).json({ 
+        error: 'Email-Versand nicht konfiguriert: ' + (result.reason || result.details),
+        result
+      });
+    } else {
+      console.error('❌ Email-Versand fehlgeschlagen:', result);
+      return res.status(500).json({ 
+        error: 'Fehler beim Email-Versand: ' + (result.error || 'Unbekannter Fehler'),
+        result
+      });
+    }
+  } catch (error) {
+    console.error('❌ FEHLER beim Send-Confirmation:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
