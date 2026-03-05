@@ -105,6 +105,10 @@ router.get('/:id', async (req, res) => {
 // Neue Buchung erstellen
 router.post('/', async (req, res) => {
   try {
+    if (req.body.paymentMethod && req.body.paymentMethod !== 'invoice') {
+      return res.status(400).json({ error: 'Nur Zahlung auf Rechnung ist aktuell verfügbar.' });
+    }
+
     // Prüfe auf Überschneidung mit bestehenden Buchungen
     const { wohnung, startDate, endDate } = req.body;
     const start = new Date(startDate);
@@ -121,7 +125,11 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ error: 'Für diesen Zeitraum existiert bereits eine Buchung für diese Wohnung.' });
     }
 
-    const booking = new Booking(req.body);
+    const booking = new Booking({
+      ...req.body,
+      paymentMethod: 'invoice',
+      paymentStatus: req.body.paymentStatus === 'paid' ? 'pending' : (req.body.paymentStatus || 'pending')
+    });
     await booking.save();
 
     // Zeitraum für die Wohnung blockieren

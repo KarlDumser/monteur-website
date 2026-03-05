@@ -4,6 +4,7 @@ import Booking from '../models/Booking.js';
 import { sendBookingConfirmation } from '../services/emailService.js';
 
 const router = express.Router();
+const STRIPE_PAYMENT_ENABLED = process.env.ENABLE_STRIPE_PAYMENT === 'true';
 
 // Stripe nur initialisieren wenn Key vorhanden
 let stripe = null;
@@ -15,6 +16,13 @@ if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== 'sk_test_
 
 // Get Stripe Public Key (für Frontend)
 router.get('/config', (req, res) => {
+  if (!STRIPE_PAYMENT_ENABLED) {
+    return res.status(403).json({
+      error: 'Stripe-Zahlung ist deaktiviert',
+      stripeEnabled: false
+    });
+  }
+
   const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || 'pk_test_51RUCUYR3yx6JeUyEVGnkFwDjOpyyjR6ZgV9zlS1Yi5HYfkACWz0jgC3KdXkBt0gsyW1RiiEornsAe9vLvNCIPYTF00Ijw31Wzh';
   
   console.log('📋 /config aufgerufen');
@@ -35,6 +43,10 @@ router.get('/config', (req, res) => {
 // Create Payment Intent
 router.post('/create-payment-intent', async (req, res) => {
   try {
+    if (!STRIPE_PAYMENT_ENABLED) {
+      return res.status(403).json({ error: 'Stripe-Zahlung ist deaktiviert' });
+    }
+
     if (!stripe) {
       console.error('❌ Stripe nicht konfiguriert - Secret Key:', process.env.STRIPE_SECRET_KEY ? 'existiert' : 'FEHLT');
       return res.status(500).json({ error: 'Stripe nicht konfiguriert. Bitte Secret Key in Umgebungsvariablen setzen.' });
@@ -75,6 +87,10 @@ router.post('/create-payment-intent', async (req, res) => {
 // Confirm Payment
 router.post('/confirm-payment', async (req, res) => {
   try {
+    if (!STRIPE_PAYMENT_ENABLED) {
+      return res.status(403).json({ error: 'Stripe-Zahlung ist deaktiviert' });
+    }
+
     if (!stripe) {
       return res.status(500).json({ error: 'Stripe nicht konfiguriert' });
     }
@@ -161,6 +177,10 @@ router.post('/confirm-payment', async (req, res) => {
 
 // Webhook für Stripe Events
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!STRIPE_PAYMENT_ENABLED) {
+    return res.status(403).json({ error: 'Stripe-Zahlung ist deaktiviert' });
+  }
+
   const sig = req.headers['stripe-signature'];
   
   let event;

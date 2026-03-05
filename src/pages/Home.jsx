@@ -12,23 +12,44 @@ export default function Home() {
   const properties = [
     {
       id: 1,
-      titel: "Wohnung Hackerberg",
-      beschreibung: "Gemütliche Wohnung mit modernen Einrichtungen",
+      titel: "Wohnung Hackerberg – Penthouse",
+      beschreibung: "2,5-Zimmer Penthousewohnung im 5. Stock mit Aufzug und großem Balkon",
       preis: "ab 18€ pro Person/Nacht!*",
-      zimmer: "2 Zimmer",
+      zimmer: "2,5 Zimmer",
       flaeche: "65 m²",
       folder: "Wohnung-Hackerberg",
-      wohnung: "hackerberg"
+      wohnung: "hackerberg",
+      details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
+      features: [
+        "Waschmaschine mit Trockner im Keller",
+        "2 Einzelbetten im 1. Zimmer, 3 Einzelbetten im 2. Zimmer (je eines Queen size)",
+        "WLAN 150 Mbit/s frei",
+        "Sat-TV",
+        "Parkplätze direkt vor dem Haus",
+        "Ruhige Wohnlage",
+        "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
+      ]
     },
     {
       id: 2,
-      titel: "Wohnung Frühlingstraße",
-      beschreibung: "Schöne Wohnung in zentraler Lage",
+      titel: "Wohnung Frühlingstraße – Neubau",
+      beschreibung: "2-Zimmerwohnung mit eigenem Zugang, Garten mit Grillplatz",
       preis: "ab 16€ pro Person/Nacht!*",
-      zimmer: "3 Zimmer",
-      flaeche: "85 m²",
+      zimmer: "2 Zimmer",
+      flaeche: "58 m²",
       folder: "Wohnung-Fruehlingstrasse",
-      wohnung: "neubau"
+      wohnung: "neubau",
+      details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
+      features: [
+        "Waschmaschine mit Trockner",
+        "2 Einzelbetten in jedem Zimmer (je eines Queen size)",
+        "WLAN 150 Mbit/s frei",
+        "Sat-TV",
+        "Parkplätze für PKW & LKW mit Hänger vor dem Haus",
+        "Gartenbenutzung mit Grillmöglichkeit",
+        "Ruhige Wohnlage",
+        "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
+      ]
     }
   ];
 
@@ -169,7 +190,12 @@ export default function Home() {
               {/* Content */}
               <div className="p-8">
                 <h3 className="text-3xl font-bold text-gray-800 mb-2">{property.titel}</h3>
-                <p className="text-gray-600 mb-6">{property.beschreibung}</p>
+                <p className="text-gray-600 mb-4">{property.beschreibung}</p>
+                
+                {/* Details */}
+                {property.details && (
+                  <p className="text-sm text-gray-700 mb-4 italic">{property.details}</p>
+                )}
 
                 {/* Property Details */}
                 <div className="space-y-3 mb-6 text-gray-700">
@@ -187,6 +213,21 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Features List */}
+                {property.features && property.features.length > 0 && (
+                  <div className="mb-6 bg-blue-50 rounded-lg p-4 border border-blue-100">
+                    <h4 className="font-semibold text-gray-800 mb-3 text-sm">Ausstattung & Services:</h4>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      {property.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-blue-600 font-bold mt-0.5">•</span>
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <p className="text-2xl font-bold text-blue-900">{property.preis}</p>
                   <p className="mt-1 text-xs text-blue-700">
@@ -195,7 +236,7 @@ export default function Home() {
                 </div>
 
                 {/* Kalender */}
-                <div className="mt-2 mb-4">
+                <div className="mb-4">
                   <BookingCalendar periods={periods[property.wohnung] || []} />
                 </div>
 

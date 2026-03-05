@@ -1,102 +1,12 @@
 import { useEffect, useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getApiUrl } from '../utils/api.js';
-
-function CheckoutForm({ bookingInfo }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [message, setMessage] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setIsLoading(true);
-
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      redirect: 'if_required',
-    });
-
-    if (error) {
-      setMessage(error.message);
-      setIsLoading(false);
-    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-      // Zahlung erfolgreich - Buchung in DB speichern
-      try {
-        const apiUrl = getApiUrl();
-        const response = await fetch(`${apiUrl}/payment/confirm-payment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paymentIntentId: paymentIntent.id,
-            bookingData: bookingInfo
-          })
-        });
-
-        const data = await response.json();
-        
-        if (data.success) {
-          // Speichere die Booking-Info NOCHMAL (mit Response-Daten) vor dem Redirect
-          console.log('💾 Speichere Booking-Info vor Redirect...');
-          const bookingResponse = {
-            ...bookingInfo,
-            _id: data.booking?._id,
-            email: bookingInfo.email
-          };
-          localStorage.setItem('bookingInfo', JSON.stringify(bookingResponse));
-          console.log('✅ Booking-Info gespeichert:', bookingResponse);
-          // Redirect zur Erfolgsseite
-          window.location.href = '/erfolg';
-        } else {
-          setMessage('Fehler beim Speichern der Buchung');
-          setIsLoading(false);
-        }
-      } catch (err) {
-        setMessage('Fehler beim Speichern der Buchung');
-        setIsLoading(false);
-      }
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
-      
-      <button
-        disabled={isLoading || !stripe || !elements}
-        className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg text-lg"
-      >
-        {isLoading
-          ? 'Zahlung wird verarbeitet...'
-          : `Jetzt ${bookingInfo.total.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€ bezahlen`}
-      </button>
-      
-      {message && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {message}
-        </div>
-      )}
-    </form>
-  );
-}
 
 export default function Payment() {
   const [bookingInfo, setBookingInfo] = useState(null);
-  const [clientSecret, setClientSecret] = useState('');
-  const [stripePromise, setStripePromise] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('stripe');
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [invoiceError, setInvoiceError] = useState(null);
 
-  // Lade Stripe Key vom Backend UND Payment Intent - beide gleichzeitig
   useEffect(() => {
     const info = localStorage.getItem('bookingInfo');
     if (!info) {
@@ -106,75 +16,13 @@ export default function Payment() {
 
     const booking = JSON.parse(info);
     setBookingInfo(booking);
-
-    const apiUrl = getApiUrl();
-
-    // Parallel: Lade Stripe Key + erstelle Payment Intent
-    Promise.all([
-      // 1. Lade Stripe Public Key vom Backend
-      fetch(`${apiUrl}/payment/config`)
-        .then(res => {
-          if (!res.ok) throw new Error(`Config Error: ${res.status}`);
-          return res.json();
-        })
-        .then(data => {
-          console.log('📦 Stripe config erhalten:', data.stripePublishableKey ? '✅' : '❌');
-          if (!data.stripePublishableKey) {
-            throw new Error('Keine Stripe Publishable Key vom Backend');
-          }
-          return loadStripe(data.stripePublishableKey);
-        }),
-      
-      // 2. Erstelle Payment Intent
-      fetch(`${apiUrl}/payment/create-payment-intent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: booking.total,
-          bookingData: booking
-        })
-      })
-        .then(res => {
-          if (!res.ok) throw new Error(`Payment Intent Error: ${res.status}`);
-          return res.json();
-        })
-    ])
-      .then(([stripe, paymentData]) => {
-        console.log('✅ Stripe Setup erfolgreich', stripe ? '✓' : '✗');
-        console.log('✅ Payment Intent erstellt:', paymentData.clientSecret ? '✓' : '✗');
-        
-        setStripePromise(stripe);
-        setClientSecret(paymentData.clientSecret);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('❌ Error:', err);
-        setError(`Fehler beim Laden: ${err.message}`);
-        setLoading(false);
-      });
+    setLoading(false);
   }, []);
 
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <p className="text-gray-600">Zahlung wird vorbereitet...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="bg-red-50 border-2 border-red-200 text-red-700 px-6 py-4 rounded-lg">
-          <h2 className="text-xl font-bold mb-2">⚠️ Fehler beim Laden der Zahlungsmethode</h2>
-          <p className="mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.href = '/booking'}
-            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Zurück zur Buchung
-          </button>
-        </div>
       </div>
     );
   }
@@ -186,16 +34,6 @@ export default function Payment() {
       </div>
     );
   }
-
-  const options = {
-    clientSecret,
-    appearance: {
-      theme: 'stripe',
-      variables: {
-        colorPrimary: '#2563eb',
-      }
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -288,106 +126,67 @@ export default function Payment() {
             {/* Payment Form */}
             <div>
               <h2 className="text-xl font-bold text-gray-800 mb-4">Zahlungsmethode</h2>
-              <div className="mb-4 flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="stripe"
-                    checked={paymentMethod === 'stripe'}
-                    onChange={() => setPaymentMethod('stripe')}
-                  />
-                  <span>Stripe</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="invoice"
-                    checked={paymentMethod === 'invoice'}
-                    onChange={() => setPaymentMethod('invoice')}
-                  />
-                  <span>Auf Rechnung</span>
-                </label>
+              <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                Für Online-Buchungen ist aktuell nur <strong>Auf Rechnung</strong> verfügbar.
               </div>
-              {paymentMethod === 'stripe' ? (
-                clientSecret && stripePromise ? (
-                  <Elements stripe={stripePromise} options={options}>
-                    <CheckoutForm bookingInfo={bookingInfo} />
-                  </Elements>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-600">⏳ Zahlung wird vorbereitet...</p>
-                    <p className="text-sm text-gray-400 mt-2">Stripe lädt...</p>
-                  </div>
-                )
-              ) : (
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    setInvoiceLoading(true);
-                    setInvoiceError(null);
-                    try {
-                      const apiUrl = getApiUrl();
-                      // Korrekte Date-Konvertierung
-                      // Hilfsfunktion für deutsches Datum zu ISO
-                      function parseGermanDate(str) {
-                        if (typeof str === 'string' && str.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
-                          const [d, m, y] = str.split('.');
-                          return new Date(`${y}-${m}-${d}T00:00:00Z`).toISOString();
-                        }
-                        return str;
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setInvoiceLoading(true);
+                  setInvoiceError(null);
+                  try {
+                    const apiUrl = getApiUrl();
+                    function parseGermanDate(str) {
+                      if (typeof str === 'string' && str.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+                        const [d, m, y] = str.split('.');
+                        return new Date(`${y}-${m}-${d}T00:00:00Z`).toISOString();
                       }
-                      const payload = {
-                        ...bookingInfo,
-                        paymentStatus: 'pending',
-                        paymentMethod: 'invoice',
-                        startDate: parseGermanDate(bookingInfo.startDate),
-                        endDate: parseGermanDate(bookingInfo.endDate)
-                      };
-                      // Debug-Ausgabe
-                      console.log('[DEBUG] Buchung Auf Rechnung Payload:', payload);
-                      const response = await fetch(`${apiUrl}/bookings`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                      });
-                      const data = await response.json();
-                      // Debug-Antwort
-                      console.log('[DEBUG] Backend Response:', data);
-                      if (response.ok && data._id) {
-                        localStorage.setItem('bookingInfo', JSON.stringify({ ...bookingInfo, _id: data._id }));
-                        window.location.href = '/erfolg';
-                      } else {
-                        setInvoiceError(data.error || 'Fehler beim Buchen');
-                      }
-                    } catch (err) {
-                      setInvoiceError('Fehler beim Buchen');
-                      console.error('[DEBUG] Fehler beim Buchen:', err);
-                    } finally {
-                      setInvoiceLoading(false);
+                      return str;
                     }
-                  }}
-                  className="space-y-6"
+                    const payload = {
+                      ...bookingInfo,
+                      paymentStatus: 'pending',
+                      paymentMethod: 'invoice',
+                      startDate: parseGermanDate(bookingInfo.startDate),
+                      endDate: parseGermanDate(bookingInfo.endDate)
+                    };
+                    const response = await fetch(`${apiUrl}/bookings`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payload)
+                    });
+                    const data = await response.json();
+                    if (response.ok && data._id) {
+                      localStorage.setItem('bookingInfo', JSON.stringify({ ...bookingInfo, _id: data._id }));
+                      window.location.href = '/erfolg';
+                    } else {
+                      setInvoiceError(data.error || 'Fehler beim Buchen');
+                    }
+                  } catch (err) {
+                    setInvoiceError('Fehler beim Buchen');
+                  } finally {
+                    setInvoiceLoading(false);
+                  }
+                }}
+                className="space-y-6"
+              >
+                <button
+                  type="submit"
+                  disabled={invoiceLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg text-lg"
                 >
-                  <button
-                    type="submit"
-                    disabled={invoiceLoading}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg text-lg"
-                  >
-                    {invoiceLoading ? 'Buchung wird verarbeitet...' : 'Jetzt verbindlich buchen'}
-                  </button>
-                  {invoiceError && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                      {invoiceError}
-                    </div>
-                  )}
-                </form>
-              )}
+                  {invoiceLoading ? 'Buchung wird verarbeitet...' : 'Jetzt verbindlich buchen'}
+                </button>
+                {invoiceError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    {invoiceError}
+                  </div>
+                )}
+              </form>
             </div>
 
             <p className="text-xs text-gray-500 bg-gray-50 p-4 rounded-lg text-center">
-              🔒 Sichere Zahlung über Stripe. Ihre Daten werden verschlüsselt übertragen.
+              Nach Buchung erhalten Sie Ihre Rechnung per E-Mail.
             </p>
           </div>
         </div>
