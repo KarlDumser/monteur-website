@@ -491,6 +491,54 @@ export default function Admin() {
     );
   }
 
+  const neubauBlockedDates = blockedDates.filter((entry) => entry.wohnung === 'neubau');
+  const hackerbergBlockedDates = blockedDates.filter((entry) => entry.wohnung === 'hackerberg');
+
+  const renderBlockedDatesTable = (entries) => (
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      <table className="w-full">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zeitraum</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grund</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Erstellt von</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {entries.map((blocked) => (
+            <tr key={blocked._id}>
+              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                {new Date(blocked.startDate).toLocaleDateString('de-DE')} - {new Date(blocked.endDate).toLocaleDateString('de-DE')}
+              </td>
+              <td className="px-6 py-4 text-sm">{blocked.reason}</td>
+              <td className="px-6 py-4 text-sm">
+                <span className={blocked.createdByLabel === 'Privat' ? 'text-gray-600 italic' : 'font-medium'}>
+                  {blocked.createdByLabel || 'Privat'}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <button
+                  onClick={() => handleUnblock(blocked._id)}
+                  className="text-red-600 hover:text-red-800"
+                >
+                  Entfernen
+                </button>
+              </td>
+            </tr>
+          ))}
+          {entries.length === 0 && (
+            <tr>
+              <td colSpan={4} className="px-6 py-6 text-sm text-gray-500">
+                Keine blockierten Zeiten vorhanden.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
@@ -1440,44 +1488,15 @@ export default function Admin() {
 
         {/* Blockierte Zeiten */}
         {activeTab === 'blocked' && (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wohnung</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zeitraum</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grund</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Erstellt von</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {blockedDates.map((blocked) => (
-                  <tr key={blocked._id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {blocked.wohnung === 'hackerberg' ? 'Hackerberg' : 'Frühlingstr.'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {new Date(blocked.startDate).toLocaleDateString('de-DE')} - {new Date(blocked.endDate).toLocaleDateString('de-DE')}
-                    </td>
-                    <td className="px-6 py-4 text-sm">{blocked.reason}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={blocked.createdByLabel === 'Privat' ? 'text-gray-600 italic' : 'font-medium'}>
-                        {blocked.createdByLabel || 'Privat'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <button
-                        onClick={() => handleUnblock(blocked._id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Entfernen
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-bold mb-3">Hackerberg – Penthouse</h2>
+              {renderBlockedDatesTable(hackerbergBlockedDates)}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold mb-3">Neubau – Frühlingstraße</h2>
+              {renderBlockedDatesTable(neubauBlockedDates)}
+            </div>
           </div>
         )}
 

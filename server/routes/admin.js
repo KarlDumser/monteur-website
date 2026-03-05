@@ -219,6 +219,43 @@ router.post('/bookings', async (req, res) => {
     const customer = await findOrCreateCustomerFromBooking(req.body);
     booking.customerId = customer._id;
     await booking.save();
+
+    await BlockedDate.create({
+      wohnung: booking.wohnung,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      reason: 'Buchung',
+      createdBy: booking.email || 'admin'
+    });
+
+    if (booking.isPartialBooking && booking.paidThroughDate && booking.originalEndDate) {
+      const secondPeriodStart = addDays(booking.paidThroughDate, 1);
+
+      await BlockedDate.create({
+        wohnung: booking.wohnung,
+        startDate: secondPeriodStart,
+        endDate: booking.originalEndDate,
+        reason: 'Reservierung',
+        createdBy: booking.email || 'admin'
+      });
+
+      await BlockedDate.create({
+        wohnung: booking.wohnung,
+        startDate: addDays(booking.originalEndDate, 1),
+        endDate: addDays(booking.originalEndDate, 3),
+        reason: 'Reinigung',
+        createdBy: 'system-cleaning-buffer'
+      });
+    } else {
+      await BlockedDate.create({
+        wohnung: booking.wohnung,
+        startDate: addDays(booking.endDate, 1),
+        endDate: addDays(booking.endDate, 3),
+        reason: 'Reinigung',
+        createdBy: 'system-cleaning-buffer'
+      });
+    }
+
     res.status(201).json(booking);
   } catch (error) {
     res.status(400).json({ error: error.message });
