@@ -29,7 +29,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
       ? process.env.SMTP_SECURE === 'true'
       : smtpPortNumber === 465;
     const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_FROM || `Ferienwohnungen Dumser <${smtpUser}>`;
-    const ownerInbox = process.env.BOOKING_OWNER_EMAIL || 'monteur-wohnung@dumser.net';
+    const ownerInbox = process.env.BOOKING_OWNER_EMAIL || 'karl658@hotmail.de';
     
     if (!smtpPassword || !smtpUser || !smtpHost) {
       console.error('❌ SMTP nicht vollständig konfiguriert!');
@@ -207,7 +207,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
               Frühlingstr. 8<br>
               82152 Krailling b. München<br>
               Tel: +49(0)89 8571174<br>
-              Email: monteur-wohnung@dumser.net
+              Email: karl658@hotmail.de
             </p>
           </div>
         `,

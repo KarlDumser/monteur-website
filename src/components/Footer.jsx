@@ -12,7 +12,7 @@ export default function Footer() {
             <h3 className="text-lg font-bold mb-4">Kontakt</h3>
             <p className="text-gray-400">
               Tel: +49 (0) 172 3248313<br />
-              Email: monteur-wohnung@dumser.net
+              Email: karl658@hotmail.de
             </p>
           </div>
           <div>
