@@ -132,6 +132,23 @@ def logs():
             'source': 'none'
         })
 
+@app.route('/clear-logs', methods=['POST'])
+@require_token
+def clear_logs():
+    """Löscht die Log-Datei."""
+    if not os.path.exists(LOG_FILE):
+        return jsonify({'success': True, 'message': 'keine Log-Datei vorhanden'})
+    
+    try:
+        with open(LOG_FILE, 'w') as f:
+            f.write('')  # Truncate the file
+        return jsonify({'success': True, 'message': 'Logs gelöscht'})
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/info', methods=['GET'])
 @require_token
 def info():

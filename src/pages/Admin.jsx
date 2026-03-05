@@ -263,6 +263,27 @@ export default function Admin() {
     }
   };
 
+  const clearBotLogs = async () => {
+    if (!confirm('Logs wirklich löschen?')) return;
+    try {
+      setBotLoading(true);
+      setBotError('');
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/bot-console/clear-logs`, {
+        method: 'POST',
+        headers: { Authorization: `Basic ${auth}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Logs konnten nicht gelöscht werden');
+      setBotLogs('');
+      showActionMessage('success', 'Logs gelöscht');
+    } catch (error) {
+      setBotError(error.message);
+    } finally {
+      setBotLoading(false);
+    }
+  };
+
   const readFileAsDataUrl = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -1637,6 +1658,13 @@ export default function Admin() {
                   className="bg-gray-700 hover:bg-gray-800 disabled:bg-gray-400 text-white font-semibold px-4 py-2 rounded-lg"
                 >
                   Aktualisieren
+                </button>
+                <button
+                  onClick={clearBotLogs}
+                  disabled={botLoading}
+                  className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-300 text-white font-semibold px-4 py-2 rounded-lg"
+                >
+                  Clear Logs
                 </button>
               </div>
             </div>

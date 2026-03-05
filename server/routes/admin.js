@@ -166,6 +166,20 @@ router.get('/bot-console/logs', async (req, res) => {
   }
 });
 
+// Bot Console: Logs löschen
+router.post('/bot-console/clear-logs', async (req, res) => {
+  try {
+    const result = await botControlRequest('/clear-logs', 'POST');
+    
+    res.json({
+      ok: result.success,
+      message: result.message || 'Logs gelöscht'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Alle Buchungen abrufen
 router.get('/bookings', async (req, res) => {
   try {
