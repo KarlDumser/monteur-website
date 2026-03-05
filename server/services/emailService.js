@@ -24,6 +24,12 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     const smtpUser = process.env.SMTP_USER;
     const smtpHost = process.env.SMTP_HOST;
     const smtpPort = process.env.SMTP_PORT;
+    const smtpPortNumber = parseInt(smtpPort || '587', 10);
+    const smtpSecure = process.env.SMTP_SECURE
+      ? process.env.SMTP_SECURE === 'true'
+      : smtpPortNumber === 465;
+    const fromAddress = process.env.EMAIL_FROM || process.env.SMTP_FROM || `Ferienwohnungen Dumser <${smtpUser}>`;
+    const ownerInbox = process.env.BOOKING_OWNER_EMAIL || 'monteur-wohnung@dumser.net';
     
     if (!smtpPassword || !smtpUser || !smtpHost) {
       console.error('❌ SMTP nicht vollständig konfiguriert!');
@@ -71,8 +77,8 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     console.log('\n🔗 Erstelle SMTP-Transporter...');
     const transporterConfig = {
       host: smtpHost,
-      port: parseInt(smtpPort || '587'),
-      secure: false,
+      port: smtpPortNumber,
+      secure: smtpSecure,
       auth: {
         user: smtpUser,
         pass: smtpPassword
@@ -128,8 +134,10 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
         : `Buchungsbestätigung: ${wohnungName} (${startDate} - ${endDate})`;
 
       const mailOptions = {
-        from: 'Ferienwohnungen Dumser <monteur-wohnung@dumser.net>',
+        from: fromAddress,
         to: booking.email,
+        bcc: ownerInbox,
+        replyTo: ownerInbox,
         subject: subject,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -216,6 +224,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
       console.log('\n📋 Email-Einstellungen:');
       console.log('  An:', mailOptions.to);
       console.log('  Von:', mailOptions.from);
+      console.log('  BCC:', mailOptions.bcc);
       console.log('  Betreff:', mailOptions.subject);
       console.log('  HTML-Länge:', mailOptions.html?.length, 'Zeichen');
       console.log('  Anhänge:', mailOptions.attachments?.length || 0);
