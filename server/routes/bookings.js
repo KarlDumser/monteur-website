@@ -7,6 +7,31 @@ import { sendBookingConfirmation } from '../services/emailService.js';
 
 const router = express.Router();
 
+const addDays = (date, days) => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+const isAdminRequest = (req) => {
+  const expectedUser = process.env.ADMIN_USER;
+  const expectedPass = process.env.ADMIN_PASS;
+  const authHeader = req.headers.authorization || '';
+
+  if (!expectedUser || !expectedPass || !authHeader.startsWith('Basic ')) {
+    return false;
+  }
+
+  try {
+    const encoded = authHeader.slice('Basic '.length);
+    const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
+    const [user, pass] = decoded.split(':');
+    return user === expectedUser && pass === expectedPass;
+  } catch {
+    return false;
+  }
+};
+
 // Rechnung als PDF generieren und zum Download bereitstellen
 router.get('/:id/invoice', async (req, res) => {
   try {
@@ -105,6 +130,8 @@ router.get('/:id', async (req, res) => {
 // Neue Buchung erstellen
 router.post('/', async (req, res) => {
   try {
+    const adminRequest = isAdminRequest(req);
+
     if (req.body.paymentMethod && req.body.paymentMethod !== 'invoice') {
       return res.status(400).json({ error: 'Nur Zahlung auf Rechnung ist aktuell verfügbar.' });
     }
@@ -125,6 +152,19 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ error: 'Für diesen Zeitraum existiert bereits eine Buchung für diese Wohnung.' });
     }
 
+    if (!adminRequest) {
+      const overlappingBlockedDate = await BlockedDate.findOne({
+        wohnung,
+        $or: [
+          { startDate: { $lte: end }, endDate: { $gte: start } }
+        ]
+      });
+
+      if (overlappingBlockedDate) {
+        return res.status(409).json({ error: 'Für diesen Zeitraum ist die Wohnung nicht verfügbar (inkl. Reinigungszeit).' });
+      }
+    }
+
     const booking = new Booking({
       ...req.body,
       paymentMethod: 'invoice',
@@ -142,6 +182,16 @@ router.post('/', async (req, res) => {
         reason: 'Buchung',
         createdBy: booking.email || 'system'
       });
+
+      if (!adminRequest) {
+        await BlockedDate.create({
+          wohnung: booking.wohnung,
+          startDate: addDays(booking.endDate, 1),
+          endDate: addDays(booking.endDate, 3),
+          reason: 'Reinigung',
+          createdBy: 'system-cleaning-buffer'
+        });
+      }
     } catch (blockError) {
       console.error('❌ Fehler beim Blockieren des Zeitraums:', blockError);
     }
