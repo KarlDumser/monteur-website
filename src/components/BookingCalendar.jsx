@@ -47,6 +47,10 @@ export default function BookingCalendar({ periods }) {
       <Calendar 
         tileDisabled={tileDisabled}
         tileClassName={tileClassName}
+        prev2Label={null}
+        next2Label={null}
+        prevLabel="‹"
+        nextLabel="›"
       />
       <div className="calendar-legend">
         <div className="legend-item">

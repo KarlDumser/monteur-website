@@ -11,6 +11,30 @@
   background-color: #fafafa;
 }
 
+/* Nur Monatsnavigation: Pfeile deutlicher darstellen */
+.react-calendar__navigation {
+  margin-bottom: 10px;
+}
+
+.react-calendar__navigation button {
+  font-size: 28px;
+  font-weight: 700;
+  min-width: 48px;
+  background: #f0f2f5;
+  border-radius: 8px;
+  color: #1f2937;
+}
+
+.react-calendar__navigation button:hover {
+  background: #e2e8f0;
+}
+
+.react-calendar__navigation__label {
+  font-size: 26px;
+  font-weight: 700;
+  background: transparent !important;
+}
+
 /* Verfügbare Tage - Grün */
 .react-calendar__tile.available-day {
   background-color: #d4edda !important;
@@ -46,6 +70,17 @@
   display: block;
   margin-top: 2px;
   opacity: 0.8;
+}
+
+/* Tage aus Vor-/Folge-Monat: Zahl ausgegraut, Hintergrund bleibt unverändert */
+.react-calendar__tile.react-calendar__month-view__days__day--neighboringMonth,
+.react-calendar__tile.react-calendar__month-view__days__day--neighboringMonth.available-day,
+.react-calendar__tile.react-calendar__month-view__days__day--neighboringMonth.booked-day {
+  color: #9ca3af !important;
+}
+
+.react-calendar__tile.react-calendar__month-view__days__day--neighboringMonth.booked-day::after {
+  color: #9ca3af;
 }
 
 /* Styling für das aktuelle Datum (heute) */

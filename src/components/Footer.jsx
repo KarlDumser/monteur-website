@@ -3,19 +3,19 @@ export default function Footer() {
   return (
     <footer className="bg-gray-800 text-white mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 text-center">
+          <div className="flex flex-col items-center">
             <h3 className="text-lg font-bold mb-4">Monteurwohnung Dumser</h3>
             <p className="text-gray-400">Komfortable und praktische Monteurwohnungen in bester Lage.</p>
           </div>
-          <div>
+          <div className="flex flex-col items-center">
             <h3 className="text-lg font-bold mb-4">Kontakt</h3>
             <p className="text-gray-400">
               Tel: +49 (0) 172 3248313<br />
               Email: karl658@hotmail.de
             </p>
           </div>
-          <div>
+          <div className="flex flex-col items-center">
             <h3 className="text-lg font-bold mb-4">Adresse</h3>
             <p className="text-gray-400">
               Frühlingstraße 8<br />
