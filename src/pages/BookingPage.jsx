@@ -33,6 +33,10 @@ export default function BookingPage() {
   const [selectedWohnung, setSelectedWohnung] = useState(null);
   const [availability, setAvailability] = useState({ keys: [], status: {} });
   const [selectedImage, setSelectedImage] = useState(null);
+  
+  // Lokale State für Datumseingaben
+  const [startDateInput, setStartDateInput] = useState(format(new Date(), "dd.MM.yyyy"));
+  const [endDateInput, setEndDateInput] = useState(format(new Date(), "dd.MM.yyyy"));
 
   const MAX_PEOPLE_HACKERBERG = 5;
   const MAX_PEOPLE_FRUEHLING = 6;
@@ -503,21 +507,29 @@ export default function BookingPage() {
                   </label>
                   <input
                     type="text"
-                    value={format(range[0].startDate, "dd.MM.yyyy")}
-                    onChange={(e) => {
+                    value={startDateInput}
+                    onChange={(e) => setStartDateInput(e.target.value)}
+                    onBlur={(e) => {
                       try {
                         const parts = e.target.value.split('.');
-                        if (parts.length === 3) {
+                        if (parts.length === 3 && parts[0].length <= 2 && parts[1].length <= 2 && parts[2].length === 4) {
                           const day = parseInt(parts[0], 10);
                           const month = parseInt(parts[1], 10) - 1;
                           const year = parseInt(parts[2], 10);
                           const newDate = new Date(year, month, day);
-                          if (!isNaN(newDate.getTime())) {
+                          if (!isNaN(newDate.getTime()) && day >= 1 && day <= 31 && month >= 0 && month <= 11) {
                             setRange([{ ...range[0], startDate: newDate }]);
+                            setStartDateInput(format(newDate, "dd.MM.yyyy"));
+                          } else {
+                            // Ungültiges Datum - zurücksetzen
+                            setStartDateInput(format(range[0].startDate, "dd.MM.yyyy"));
                           }
+                        } else {
+                          // Falsches Format - zurücksetzen
+                          setStartDateInput(format(range[0].startDate, "dd.MM.yyyy"));
                         }
                       } catch (err) {
-                        // Fehlerhafte Eingabe ignorieren
+                        setStartDateInput(format(range[0].startDate, "dd.MM.yyyy"));
                       }
                     }}
                     placeholder="TT.MM.JJJJ"
@@ -530,21 +542,29 @@ export default function BookingPage() {
                   </label>
                   <input
                     type="text"
-                    value={format(range[0].endDate, "dd.MM.yyyy")}
-                    onChange={(e) => {
+                    value={endDateInput}
+                    onChange={(e) => setEndDateInput(e.target.value)}
+                    onBlur={(e) => {
                       try {
                         const parts = e.target.value.split('.');
-                        if (parts.length === 3) {
+                        if (parts.length === 3 && parts[0].length <= 2 && parts[1].length <= 2 && parts[2].length === 4) {
                           const day = parseInt(parts[0], 10);
                           const month = parseInt(parts[1], 10) - 1;
                           const year = parseInt(parts[2], 10);
                           const newDate = new Date(year, month, day);
-                          if (!isNaN(newDate.getTime())) {
+                          if (!isNaN(newDate.getTime()) && day >= 1 && day <= 31 && month >= 0 && month <= 11) {
                             setRange([{ ...range[0], endDate: newDate }]);
+                            setEndDateInput(format(newDate, "dd.MM.yyyy"));
+                          } else {
+                            // Ungültiges Datum - zurücksetzen
+                            setEndDateInput(format(range[0].endDate, "dd.MM.yyyy"));
                           }
+                        } else {
+                          // Falsches Format - zurücksetzen
+                          setEndDateInput(format(range[0].endDate, "dd.MM.yyyy"));
                         }
                       } catch (err) {
-                        // Fehlerhafte Eingabe ignorieren
+                        setEndDateInput(format(range[0].endDate, "dd.MM.yyyy"));
                       }
                     }}
                     placeholder="TT.MM.JJJJ"
@@ -564,6 +584,9 @@ export default function BookingPage() {
                   editableDateInputs={false}
                   onChange={(item) => {
                     setRange([item.selection]);
+                    // Aktualisiere auch die Input-Felder
+                    setStartDateInput(format(item.selection.startDate, "dd.MM.yyyy"));
+                    setEndDateInput(format(item.selection.endDate, "dd.MM.yyyy"));
                     const nights = Math.max(0, Math.ceil((item.selection.endDate - item.selection.startDate) / (1000 * 60 * 60 * 24)));
                     if (nights > 0 && nights < 27) {
                       setMinNightsError("Mindestbuchungsdauer 28 Tage (27 Nächte). Für kürzere Aufenthalte kontaktieren Sie uns bitte telefonisch.");
@@ -605,7 +628,7 @@ export default function BookingPage() {
 
             <div>
               <label className="block text-sm font-semibold mb-3 text-gray-700">
-                👥 Anzahl der Mitarbeiter
+                👥 Anzahl der Personen
               </label>
               <input
                 type="number"
