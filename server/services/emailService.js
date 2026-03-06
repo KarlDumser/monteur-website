@@ -144,7 +144,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
           Frühlingstr. 8<br>
           82152 Krailling b. München<br>
           Tel: +49(0)89 8571174<br>
-          Email: karl658@hotmail.de
+          Email: ${fromAddress}
         </p>
       </div>
     `;
