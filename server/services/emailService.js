@@ -101,17 +101,17 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
               <td>${wohnungName}</td>
             </tr>
             ${booking.originalStartDate ? `
-            <tr style="background-color: #fef3c7;">
-              <td style="padding: 8px 0;"><strong style="color: #92400e;">Gesamtzeitraum Ihrer Buchung:</strong></td>
-              <td style="color: #92400e;">${formatGermanDate(booking.originalStartDate)} bis ${formatGermanDate(booking.originalEndDate)} (${booking.totalNights} Nächte)</td>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Gesamtzeitraum Ihrer Buchung:</strong></td>
+              <td>${formatGermanDate(booking.originalStartDate)} bis ${formatGermanDate(booking.originalEndDate)} (${booking.totalNights} Nächte)</td>
             </tr>
             ` : ''}
             <tr>
-              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Diese Rechnung - Anreise:' : 'Anreise:'}</strong></td>
+              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Anreisedatum:' : 'Anreise:'}</strong></td>
               <td>${startDate} (16:00-19:00 Uhr)</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Diese Rechnung - Abreise:' : 'Abreise:'}</strong></td>
+              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Letzter Tag dieser Rechnung:' : 'Abreise:'}</strong></td>
               <td>${endDate} (bis 10:00 Uhr)</td>
             </tr>
             <tr>
