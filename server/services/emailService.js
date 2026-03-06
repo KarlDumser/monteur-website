@@ -124,17 +124,9 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
             </tr>
           </table>
         </div>
-        ${type !== 'invoice-resend' ? `
-        <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; margin: 20px 0;">
-          <p style="margin: 0;"><strong>💳 Zahlung:</strong> Der Betrag wurde bereits per Kreditkarte bezahlt.</p>
-        </div>
-        ` : ''}
         <div style="margin: 30px 0;">
-          <h3 style="color: #374151;">Adresse der Wohnung:</h3>
-          ${booking.wohnung === 'kombi'
-            ? `<p style="margin: 5px 0;">Frühlingstraße 8<br>82152 Krailling b. München</p><p style="margin: 5px 0;">Hackerbergstraße 8<br>82152 Krailling b. München</p>`
-            : `<p style="margin: 5px 0;">${booking.wohnung === 'neubau' ? 'Frühlingstraße 8' : 'Hackerbergstraße 8'}<br>82152 Krailling b. München</p>`
-          }
+          <h3 style="color: #374151;">Schlüsselübergabe:</h3>
+          <p style="margin: 5px 0;">Frühlingstraße 8<br>82152 Krailling b. München</p>
         </div>
         <div style="margin: 30px 0;">
           <h3 style="color: #374151;">Check-In / Check-Out:</h3>
