@@ -202,6 +202,25 @@ export default function BookingPage() {
   };
 
   const handleWohnungSelection = (wohnungKey) => {
+    const numPeople = parseInt(people, 10);
+    
+    // Warnung bei 7+ Personen und Einzelwohnung
+    if (numPeople >= 7 && wohnungKey !== "kombi") {
+      const maxCapacity = wohnungKey === "hackerberg" ? MAX_PEOPLE_HACKERBERG : MAX_PEOPLE_FRUEHLING;
+      const wohnungName = wohnungKey === "hackerberg" ? "Hackerberg" : "Frühlingstraße";
+      
+      const confirmed = window.confirm(
+        `⚠️ WICHTIGER HINWEIS\n\n` +
+        `Sie haben ${numPeople} Personen angegeben.\n\n` +
+        `Die Wohnung "${wohnungName}" ist allerdings nur für maximal ${maxCapacity} Personen ausgelegt.\n\n` +
+        `Möchten Sie trotzdem mit dieser Buchung fortfahren?`
+      );
+      
+      if (!confirmed) {
+        return; // Abbruch, bleibe auf Wohnungsauswahl
+      }
+    }
+    
     // Speichere Auswahl und gehe zu Schritt 3 (Kundendaten)
     setSelectedWohnung(wohnungKey);
     setStep("form");
@@ -472,12 +491,72 @@ export default function BookingPage() {
             className="bg-white shadow-xl rounded-2xl p-8 space-y-6 border border-gray-100"
           >
             <div>
-              <label className="block text-sm font-semibold mb-3 text-gray-700">
-                📅 Zeitraum wählen
+              <label className="block text-sm font-semibold mb-4 text-gray-700 text-lg">
+                📅 Zeitraum wählen den Sie reservieren möchten
               </label>
-              <div className="bg-gray-50 p-4 rounded-xl">
+              
+              {/* Manuelle Eingabefelder */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-white border-2 border-blue-300 rounded-xl p-4 shadow-sm">
+                  <label className="block text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">
+                    Von (Anreise)
+                  </label>
+                  <input
+                    type="text"
+                    value={format(range[0].startDate, "dd.MM.yyyy")}
+                    onChange={(e) => {
+                      try {
+                        const parts = e.target.value.split('.');
+                        if (parts.length === 3) {
+                          const day = parseInt(parts[0], 10);
+                          const month = parseInt(parts[1], 10) - 1;
+                          const year = parseInt(parts[2], 10);
+                          const newDate = new Date(year, month, day);
+                          if (!isNaN(newDate.getTime())) {
+                            setRange([{ ...range[0], startDate: newDate }]);
+                          }
+                        }
+                      } catch (err) {
+                        // Fehlerhafte Eingabe ignorieren
+                      }
+                    }}
+                    placeholder="TT.MM.JJJJ"
+                    className="w-full text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+                  />
+                </div>
+                <div className="bg-white border-2 border-blue-300 rounded-xl p-4 shadow-sm">
+                  <label className="block text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">
+                    Bis (Abreise)
+                  </label>
+                  <input
+                    type="text"
+                    value={format(range[0].endDate, "dd.MM.yyyy")}
+                    onChange={(e) => {
+                      try {
+                        const parts = e.target.value.split('.');
+                        if (parts.length === 3) {
+                          const day = parseInt(parts[0], 10);
+                          const month = parseInt(parts[1], 10) - 1;
+                          const year = parseInt(parts[2], 10);
+                          const newDate = new Date(year, month, day);
+                          if (!isNaN(newDate.getTime())) {
+                            setRange([{ ...range[0], endDate: newDate }]);
+                          }
+                        }
+                      } catch (err) {
+                        // Fehlerhafte Eingabe ignorieren
+                      }
+                    }}
+                    placeholder="TT.MM.JJJJ"
+                    className="w-full text-lg font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+                  />
+                </div>
+              </div>
+
+              {/* Kalender */}
+              <div className="bg-gray-50 p-6 rounded-xl">
                 <DateRange
-                  editableDateInputs={true}
+                  editableDateInputs={false}
                   onChange={(item) => {
                     setRange([item.selection]);
                     const nights = Math.max(0, Math.ceil((item.selection.endDate - item.selection.startDate) / (1000 * 60 * 60 * 24)));
@@ -492,6 +571,7 @@ export default function BookingPage() {
                   moveRangeOnFirstSelection={false}
                   ranges={range}
                   minDate={new Date()}
+                  className="scale-110"
                 />
               </div>
               <p className="text-sm text-gray-600 mt-4 bg-blue-50 p-3 rounded-lg">

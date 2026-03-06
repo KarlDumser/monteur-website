@@ -271,7 +271,7 @@ export default function Home() {
               to="/booking"
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-12 rounded-lg transition shadow-lg text-lg"
             >
-              Jetzt Zeitraum wählen & passende Wohnung(en) auswählen →
+              Jetzt Buchen! →
             </Link>
           </div>
         </div>
