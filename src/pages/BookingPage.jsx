@@ -329,7 +329,7 @@ export default function BookingPage() {
     neubau: {
       titel: "Frühlingstraße – Neubau",
       beschreibung:
-        "2-Zimmerwohnung mit moderner Ausstattung, Küche, Bad, Garten mit Grillplatz. Ideal für handwerkliche Fachkräfte und Monteure.",
+        "2-Zimmerwohnung mit vollausgestatteter Küche, Bad, Garten mit Grillplatz. Ideal für handwerkliche Fachkräfte und Monteure.",
       details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
       zimmer: "2 Zimmer",
       flaeche: "58 m²",
@@ -852,15 +852,15 @@ export default function BookingPage() {
                                 <strong>Gewählt:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")} ({nights} Nächte)
                               </div>
                               {nights > 28 && (
-                                <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 mt-4">
+                                <div className="bg-sky-50 border-2 border-sky-200 rounded-lg p-4 mt-4">
                                   <div className="flex items-start gap-3">
-                                    <span className="text-2xl">⚠️</span>
+                                    <span className="text-2xl">ℹ️</span>
                                     <div>
-                                      <p className="font-bold text-amber-900 text-sm mb-2">Teilbuchung: Rechnung wird aufgeteilt</p>
-                                      <p className="text-xs text-amber-800 mb-2">
+                                      <p className="font-bold text-sky-900 text-sm mb-2">Teilbuchung: Rechnung wird aufgeteilt</p>
+                                      <p className="text-xs text-sky-800 mb-2">
                                         Da Sie länger als 4 Wochen buchen, berechnen wir in zwei Schritten:
                                       </p>
-                                      <ul className="text-xs text-amber-800 space-y-1 ml-4">
+                                      <ul className="text-xs text-sky-800 space-y-1 ml-4">
                                         <li>• <strong>Erste Rechnung (jetzt):</strong> 28 Nächte = {(28 * pricePerNight + cleaningFee).toFixed(2).replace('.', ',')} € (inkl. Reinigung)</li>
                                         <li>• <strong>Folgerechnungen:</strong> Für die weiteren {nights - 28} Nächte erhalten Sie rechtzeitig eine Rechnung</li>
                                       </ul>

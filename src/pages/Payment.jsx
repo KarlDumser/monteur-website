@@ -39,6 +39,16 @@ export default function Payment() {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
+          <div className="flex justify-center gap-4 mb-8">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full font-bold text-white bg-green-600">✓</div>
+            <div className="w-12 h-1 bg-gray-300 mt-5"></div>
+            <div className="flex items-center justify-center w-10 h-10 rounded-full font-bold text-white bg-green-600">✓</div>
+            <div className="w-12 h-1 bg-gray-300 mt-5"></div>
+            <div className="flex items-center justify-center w-10 h-10 rounded-full font-bold text-white bg-green-600">✓</div>
+            <div className="w-12 h-1 bg-gray-300 mt-5"></div>
+            <div className="flex items-center justify-center w-10 h-10 rounded-full font-bold text-white bg-blue-600">4</div>
+          </div>
+
           <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-8 break-words text-center">Buchungsbestätigung</h1>
 
           <div className="bg-white rounded-lg shadow-lg p-8 space-y-6">
@@ -48,15 +58,13 @@ export default function Payment() {
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Buchungsdetails</h2>
               
               {bookingInfo.isPartialBooking && (
-                <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                <div className="mb-4 bg-sky-50 border-l-4 border-sky-400 p-4 rounded-r-lg">
                   <div className="flex">
                     <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
+                      <span className="text-xl">ℹ️</span>
                     </div>
                     <div className="ml-3">
-                      <p className="text-sm text-yellow-700">
+                      <p className="text-sm text-sky-800">
                         <strong>Teilbuchung:</strong> Sie reservieren den gesamten Zeitraum <strong>{bookingInfo.originalStartDate} – {bookingInfo.originalEndDate}</strong> ({bookingInfo.totalNights} Nächte).
                         <br/>
                         Die erste Rechnung ist für die <strong>ersten 4 Wochen (28 Nächte)</strong>. Für den restlichen Zeitraum erhalten Sie rechtzeitig eine Folgerechnung.
@@ -156,6 +164,9 @@ export default function Payment() {
               <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
                 Zahlungsart: <strong>Auf Rechnung</strong>
               </div>
+              <p className="text-xs text-gray-600 mb-4">
+                Hinweis: Aktuell ist ausschließlich Zahlung auf Rechnung möglich.
+              </p>
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
