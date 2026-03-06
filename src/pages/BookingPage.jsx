@@ -555,6 +555,11 @@ export default function BookingPage() {
 
               {/* Kalender */}
               <div className="bg-gray-50 p-6 rounded-xl">
+                <style>{`
+                  .rdrDateDisplayWrapper {
+                    display: none !important;
+                  }
+                `}</style>
                 <DateRange
                   editableDateInputs={false}
                   onChange={(item) => {
