@@ -33,6 +33,15 @@ export default function Success() {
         
         <h1 className="text-4xl font-bold text-green-600 mb-4">Zahlung erfolgreich!</h1>
         
+        <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4 mb-6 text-left">
+          <p className="text-red-700 font-bold flex items-center gap-2 mb-2">
+            ⚠️ Wichtig - Bitte beachten!
+          </p>
+          <p className="text-red-700 text-sm">
+            Die Buchungsbestätigung könnte im <strong>Spam- oder Junk-Ordner</strong> landen. Bitte prüfen Sie diesen Ordner und verschieben Sie die Email in Ihren Posteingang, damit Sie keine wichtigen Informationen verpassen!
+          </p>
+        </div>
+        
         <p className="text-gray-600 text-lg mb-6">
           Vielen Dank für Ihre Buchung. Wir haben eine Bestätigungsemail an <span className="font-semibold text-gray-800">{email || 'Ihre E-Mail-Adresse'}</span> gesendet.
         </p>
