@@ -29,7 +29,8 @@ export default function BookingPage() {
   const [street, setStreet] = useState("");
   const [zip, setZip] = useState("");
   const [city, setCity] = useState("");
-  const [step, setStep] = useState("form");
+  const [step, setStep] = useState("dateselect");
+  const [selectedWohnung, setSelectedWohnung] = useState(null);
   const [availability, setAvailability] = useState({ keys: [], status: {} });
   const [selectedImage, setSelectedImage] = useState(null);
 
@@ -155,7 +156,13 @@ export default function BookingPage() {
     // Zeige immer alle Keys, aber markiere sie ggf. als ausgebucht
     let keys = [];
     if (numPeople >= 7 && numPeople <= MAX_PEOPLE) {
-      keys = ["kombi"];
+      // NEU: Zeige Einzelwohnungen wenn Kombi ausgebucht
+      if (status.kombi) {
+        keys = ["kombi"];
+      } else {
+        // Fallback: Zeige verfügbare Einzelwohnungen mit Disclaimer
+        keys = ["neubau", "hackerberg"];
+      }
     } else if (numPeople === MAX_PEOPLE_FRUEHLING) {
       keys = ["neubau"];
     } else {
@@ -164,7 +171,7 @@ export default function BookingPage() {
     return { keys, status };
   };
 
-  const handleBooking = (e) => {
+  const handleDateSelection = (e) => {
     e.preventDefault();
     
     // Validierung: Personen
@@ -173,6 +180,35 @@ export default function BookingPage() {
       alert(`Bitte geben Sie eine gültige Personenzahl zwischen 1 und ${MAX_PEOPLE} ein.`);
       return;
     }
+
+    const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
+    if (nights < 27) {
+      setMinNightsError("Mindestbuchungsdauer 28 Tage (27 Nächte). Für kürzere Aufenthalte kontaktieren Sie uns bitte telefonisch.");
+      setMinNightsErrorAnim(false); // Reset for retrigger
+      setTimeout(() => setMinNightsErrorAnim(true), 10);
+      // Kalenderfeld hervorheben und zum Fehler scrollen
+      const calendar = document.querySelector('.rdrCalendarWrapper');
+      if (calendar) {
+        calendar.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        calendar.focus?.();
+      }
+      return;
+    } else {
+      setMinNightsError("");
+    }
+    const ergebnis = checkAvailability();
+    setAvailability(ergebnis);
+    setStep("select");
+  };
+
+  const handleWohnungSelection = (wohnungKey) => {
+    // Speichere Auswahl und gehe zu Schritt 3 (Kundendaten)
+    setSelectedWohnung(wohnungKey);
+    setStep("form");
+  };
+
+  const handleCustomerDataSubmit = (e) => {
+    e.preventDefault();
     
     // Validierung: Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -207,27 +243,11 @@ export default function BookingPage() {
       return;
     }
     
-    const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
-    if (nights < 27) {
-      setMinNightsError("Mindestbuchungsdauer 28 Tage (27 Nächte). Für kürzere Aufenthalte kontaktieren Sie uns bitte telefonisch.");
-      setMinNightsErrorAnim(false); // Reset for retrigger
-      setTimeout(() => setMinNightsErrorAnim(true), 10);
-      // Kalenderfeld hervorheben und zum Fehler scrollen
-      const calendar = document.querySelector('.rdrCalendarWrapper');
-      if (calendar) {
-        calendar.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        calendar.focus?.();
-      }
-      return;
-    } else {
-      setMinNightsError("");
-    }
-    const ergebnis = checkAvailability();
-    setAvailability(ergebnis);
-    setStep("select");
+    // Alle Validierungen bestanden - weiter zur Payment
+    proceedToPayment(selectedWohnung);
   };
 
-  const handleSelectWohnung = (wohnungKey) => {
+  const proceedToPayment = (wohnungKey) => {
     // Redirect to payment page with booking details
     const totalNights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
     const isPartialBooking = totalNights > 28;
@@ -421,22 +441,34 @@ export default function BookingPage() {
   return (
     <div className="space-y-8">
       <div className="flex justify-center gap-4 mb-8">
-        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-white ${step === 'form' ? 'bg-blue-600' : 'bg-green-600'}`}>
-          ✓
+        {/* Schritt 1: Datumsauswahl */}
+        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-white ${step === 'dateselect' ? 'bg-blue-600' : 'bg-green-600'}`}>
+          {step === 'dateselect' ? '1' : '✓'}
         </div>
         <div className="w-12 h-1 bg-gray-300 mt-5"></div>
-        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-white ${step === 'select' ? 'bg-blue-600' : 'bg-gray-300'}`}>
-          2
+        {/* Schritt 2: Wohnungsauswahl */}
+        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-white ${step === 'select' ? 'bg-blue-600' : step === 'form' ? 'bg-green-600' : 'bg-gray-300'}`}>
+          {(step === 'dateselect') ? '2' : (step === 'select' ? '2' : '✓')}
+        </div>
+        <div className="w-12 h-1 bg-gray-300 mt-5"></div>
+        {/* Schritt 3: Kundendaten */}
+        <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-white ${step === 'form' ? 'bg-blue-600' : 'bg-gray-300'}`}>
+          3
+        </div>
+        <div className="w-12 h-1 bg-gray-300 mt-5"></div>
+        {/* Schritt 4: Zahlung (nicht aktiv) */}
+        <div className="flex items-center justify-center w-10 h-10 rounded-full font-bold text-gray-400 bg-gray-300">
+          4
         </div>
       </div>
 
-      {step === "form" && (
+      {step === "dateselect" && (
         <div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Wohnung buchen</h1>
           <p className="text-gray-600 mb-8">Schritt 1: Wählen Sie Ihre Anreisedaten</p>
 
           <form
-            onSubmit={handleBooking}
+            onSubmit={handleDateSelection}
             className="bg-white shadow-xl rounded-2xl p-8 space-y-6 border border-gray-100"
           >
             <div>
@@ -517,106 +549,6 @@ export default function BookingPage() {
               </p>
             </div>
 
-            <div className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-xl">
-                <h3 className="text-sm font-bold text-gray-800 mb-3">🏢 Firmendaten (für Rechnung)</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold mb-2 text-gray-700">Firmenname</label>
-                    <input
-                      type="text"
-                      value={company}
-                      onChange={(e) => setCompany(e.target.value)}
-                      minLength="2"
-                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      placeholder="z.B. Müller Haustechnik GmbH"
-                      required
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-semibold mb-2 text-gray-700">Straße & Hausnummer</label>
-                    <input
-                      type="text"
-                      value={street}
-                      onChange={(e) => setStreet(e.target.value)}
-                      minLength="3"
-                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      placeholder="z.B. Ottostraße 8"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-700">PLZ</label>
-                    <input
-                      type="text"
-                      value={zip}
-                      onChange={(e) => setZip(e.target.value)}
-                      minLength="4"
-                      pattern="[0-9A-Za-z\s\-]+"
-                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      placeholder="z.B. 83521"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-700">Ort</label>
-                    <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      minLength="2"
-                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      placeholder="z.B. Berghausen"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <h3 className="text-sm font-bold text-gray-800 mb-3">👤 Kontaktdaten</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-700">Ansprechpartner</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      minLength="2"
-                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      placeholder="z.B. Max Mustermann"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-700">E-Mail</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
-                      title="Bitte geben Sie eine gültige E-Mail-Adresse ein (z.B. name@firma.de)"
-                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold mb-2 text-gray-700">Telefon</label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      minLength="5"
-                      pattern="[0-9+\s\-\(\)]+"
-                      title="Bitte geben Sie eine gültige Telefonnummer ein (z.B. 0172 1234567)"
-                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <button
               type="submit"
               className="w-full bg-blue-600 text-white font-semibold py-4 rounded-xl hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
@@ -638,15 +570,26 @@ export default function BookingPage() {
 
           {(() => {
             const numPeople = parseInt(people, 10);
-            const displayKeys = numPeople >= 7
+            const kombiNotAvailableButNeeded = numPeople >= 7 && !availability.status?.kombi;
+            const fallbackKeys = numPeople >= 7
               ? ["kombi"]
               : numPeople === MAX_PEOPLE_FRUEHLING
                 ? ["neubau"]
                 : ["hackerberg", "neubau"];
+            const displayKeys = availability.keys?.length ? availability.keys : fallbackKeys;
             const hasAnyAvailable = displayKeys.some((key) => availability.status?.[key]);
 
             return (
             <div className="space-y-6">
+              {kombiNotAvailableButNeeded && (
+                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 text-yellow-900">
+                  <p className="font-semibold mb-1">Hinweis zur Kapazität</p>
+                  <p className="text-sm">
+                    Für {numPeople} Personen wäre das Kombi-Paket erforderlich, ist im gewählten Zeitraum aber nicht verfügbar.
+                    Einzelwohnungen sind verfügbar, haben jedoch jeweils eine geringere Kapazität.
+                  </p>
+                </div>
+              )}
               {/* Frühe Erklärung der Rechnungslogik */}
               <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-5">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">💳 So funktioniert die Rechnungsabwicklung bei Langzeitbuchungen:</h3>
@@ -818,7 +761,7 @@ export default function BookingPage() {
                                 </div>
                               )}
                               <button
-                                onClick={() => handleSelectWohnung(key)}
+                                onClick={() => handleWohnungSelection(key)}
                                 className="mt-6 w-full font-bold py-3 px-4 rounded-xl transition shadow-lg bg-green-600 text-white hover:bg-green-700"
                               >
                                 ✓ Diese Wohnung buchen
@@ -832,7 +775,7 @@ export default function BookingPage() {
                 );
               })}
               <button
-                onClick={() => setStep("form")}
+                onClick={() => setStep("dateselect")}
                 className="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition"
               >
                 ← Zurück zur Datumsauswahl
@@ -840,6 +783,140 @@ export default function BookingPage() {
             </div>
           );
           })()}
+        </div>
+      )}
+
+      {step === "form" && (
+        <div>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Ihre Daten</h1>
+          <p className="text-gray-600 mb-8">Schritt 3: Firmendaten und Kontaktinformationen</p>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm text-gray-700">
+            <h3 className="font-semibold text-gray-800 mb-2">Auswahlübersicht</h3>
+            <p><strong>Wohnung:</strong> {selectedWohnung ? wohnungen[selectedWohnung]?.titel : "-"}</p>
+            <p><strong>Zeitraum:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")}</p>
+            <p><strong>Nächte:</strong> {Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)))}</p>
+            <p><strong>Personen:</strong> {people}</p>
+          </div>
+
+          <form
+            onSubmit={handleCustomerDataSubmit}
+            className="bg-white shadow-xl rounded-2xl p-8 space-y-6 border border-gray-100"
+          >
+            <div className="bg-blue-50 p-4 rounded-xl">
+              <h3 className="text-sm font-bold text-gray-800 mb-3">🏢 Firmendaten (für Rechnung)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Firmenname</label>
+                  <input
+                    type="text"
+                    value={company}
+                    onChange={(e) => setCompany(e.target.value)}
+                    minLength="2"
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="z.B. Müller Haustechnik GmbH"
+                    required
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Straße & Hausnummer</label>
+                  <input
+                    type="text"
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                    minLength="3"
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="z.B. Ottostraße 8"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">PLZ</label>
+                  <input
+                    type="text"
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value)}
+                    minLength="4"
+                    pattern="[0-9A-Za-z\s\-]+"
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="z.B. 83521"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Ort</label>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    minLength="2"
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="z.B. Berghausen"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-xl">
+              <h3 className="text-sm font-bold text-gray-800 mb-3">👤 Kontaktdaten</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Ansprechpartner</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    minLength="2"
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="z.B. Max Mustermann"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">E-Mail</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                    title="Bitte geben Sie eine gültige E-Mail-Adresse ein (z.B. name@firma.de)"
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Telefon</label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    minLength="5"
+                    pattern="[0-9+\s\-\(\)]+"
+                    title="Bitte geben Sie eine gültige Telefonnummer ein (z.B. 0172 1234567)"
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={() => setStep("select")}
+                className="sm:w-auto bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-xl hover:bg-gray-300 transition"
+              >
+                ← Zurück zur Wohnungsauswahl
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-blue-700 transition"
+              >
+                Weiter zur verbindlichen Buchung →
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
