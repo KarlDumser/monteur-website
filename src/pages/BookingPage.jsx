@@ -647,6 +647,15 @@ export default function BookingPage() {
 
             return (
             <div className="space-y-6">
+              {/* Frühe Erklärung der Rechnungslogik */}
+              <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-5">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">💳 So funktioniert die Rechnungsabwicklung bei Langzeitbuchungen:</h3>
+                <div className="text-sm text-blue-800 space-y-2">
+                  <p><strong>✓ Rechnung alle 4 Wochen (28 Tage):</strong> Sie erhalten immer eine Rechnung für die nächsten 28 Tage im Voraus.</p>
+                  <p><strong>✓ Automatische Folgezahlungen:</strong> Etwa eine Woche <em>vor</em> Ablauf des 4-Wochen-Zyklus erhalten Sie automatisch die nächste Rechnung – ohne Aufforderung.</p>
+                  <p><strong>✓ Transparent:</strong> Sie sehen immer, wie lange noch bezahlt ist und wann die nächste Rechnung kommt.</p>
+                </div>
+              </div>
               {!hasAnyAvailable && (
                 <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 text-center">
                   <h3 className="text-xl font-bold text-red-800 mb-2">Keine Verfuegbarkeit</h3>
@@ -790,10 +799,7 @@ export default function BookingPage() {
                               <div className="text-lg font-semibold text-gray-800 mb-1">
                                 {nights} Nächte x {pricePerNight.toFixed(0)} € = {(nights * pricePerNight).toFixed(2).replace('.', ',')} €
                               </div>
-                              <div className="text-lg text-gray-700 mb-1">+ {cleaningFee.toFixed(2).replace('.', ',')} € {nights > 28 ? 'monatliche Reinigung' : 'Endreinigung'}</div>
-                              <div className="font-semibold text-gray-800 mb-1">Nettosumme = {baseSum.toFixed(2).replace('.', ',')} €</div>
-                              <div className="text-gray-700 mb-1">+ 7% MwSt: {((baseSum * 0.07).toFixed(2)).replace('.', ',')} €</div>
-                              <div className="font-bold text-2xl text-blue-800 mb-2">Bruttosumme = {(baseSum * 1.07).toFixed(2).replace('.', ',')} €</div>
+                              <div className="text-lg text-gray-700 mb-2">+ {cleaningFee.toFixed(2).replace('.', ',')} € {nights > 28 ? 'monatliche Reinigung' : 'Endreinigung'}</div>
                               <div className="bg-blue-50 rounded-lg p-3 mt-3 text-gray-700 text-sm">
                                 <strong>Gewählt:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")} ({nights} Nächte)
                               </div>

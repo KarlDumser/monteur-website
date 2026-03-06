@@ -79,10 +79,12 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     const endDate = formatGermanDate(booking.endDate);
     const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
 
-    // Betreff je nach Typ
+    // Betreff je nach Typ - zeige Gesamtzeitraum für Teilbuchungen
+    const displayStartDate = booking.originalStartDate ? formatGermanDate(booking.originalStartDate) : startDate;
+    const displayEndDate = booking.originalEndDate ? formatGermanDate(booking.originalEndDate) : endDate;
     const subject = type === 'invoice-resend'
       ? `Aktualisierte Rechnung: ${wohnungName} (${startDate} - ${endDate})`
-      : `Buchungsbestätigung: ${wohnungName} (${startDate} - ${endDate})`;
+      : `Buchungsbestätigung: ${wohnungName} (${displayStartDate} - ${displayEndDate})`;
 
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -98,16 +100,22 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
               <td style="padding: 8px 0;"><strong>Wohnung:</strong></td>
               <td>${wohnungName}</td>
             </tr>
+            ${booking.originalStartDate ? `
+            <tr style="background-color: #fef3c7;">
+              <td style="padding: 8px 0;"><strong style="color: #92400e;">Gesamtzeitraum Ihrer Buchung:</strong></td>
+              <td style="color: #92400e;">${formatGermanDate(booking.originalStartDate)} bis ${formatGermanDate(booking.originalEndDate)} (${booking.totalNights} Nächte)</td>
+            </tr>
+            ` : ''}
             <tr>
-              <td style="padding: 8px 0;"><strong>Anreise:</strong></td>
+              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Diese Rechnung - Anreise:' : 'Anreise:'}</strong></td>
               <td>${startDate} (16:00-19:00 Uhr)</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0;"><strong>Abreise:</strong></td>
+              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Diese Rechnung - Abreise:' : 'Abreise:'}</strong></td>
               <td>${endDate} (bis 10:00 Uhr)</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0;"><strong>Nächte:</strong></td>
+              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Nächte dieser Rechnung:' : 'Nächte:'}</strong></td>
               <td>${booking.nights}</td>
             </tr>
             <tr>
@@ -115,7 +123,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
               <td>${booking.people}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0;"><strong>Gesamtbetrag:</strong></td>
+              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Betrag dieser Rechnung:' : 'Gesamtbetrag:'}</strong></td>
               <td><strong>${booking.total.toFixed(2)} €</strong></td>
             </tr>
             <tr>
@@ -123,6 +131,15 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
               <td>${invoiceNumber}</td>
             </tr>
           </table>
+          ${booking.originalStartDate ? `
+          <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #f59e0b;">
+            <p style="margin: 0 0 10px 0; color: #92400e; font-weight: bold;">ℹ️ Hinweis zu Ihrer Langzeitbuchung:</p>
+            <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.5;">
+              Diese erste Rechnung gilt für die ersten 4 Wochen (28 Nächte). Für die verbleibenden ${booking.totalNights - 28} Nächte erhalten Sie etwa eine Woche vor Ablauf dieser 4 Wochen automatisch die nächste Rechnung.<br><br>
+              <strong>Wiederholungsrechnungen werden jeweils 1 Woche vor Ablauf eines jeden 4-Wochen-Zyklus erstellt.</strong>
+            </p>
+          </div>
+          ` : ''}
         </div>
         <div style="margin: 30px 0;">
           <h3 style="color: #374151;">Schlüsselübergabe:</h3>
