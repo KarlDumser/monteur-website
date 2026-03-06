@@ -31,16 +31,7 @@ export default function Success() {
           </svg>
         </div>
         
-        <h1 className="text-4xl font-bold text-green-600 mb-4">Zahlung erfolgreich!</h1>
-        
-        <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4 mb-6 text-left">
-          <p className="text-red-700 font-bold flex items-center gap-2 mb-2">
-            ⚠️ Wichtig - Bitte beachten!
-          </p>
-          <p className="text-red-700 text-sm">
-            Die Buchungsbestätigung könnte im <strong>Spam- oder Junk-Ordner</strong> landen. Bitte prüfen Sie diesen Ordner und verschieben Sie die Email in Ihren Posteingang, damit Sie keine wichtigen Informationen verpassen!
-          </p>
-        </div>
+        <h1 className="text-4xl font-bold text-green-600 mb-4">Buchung bestätigt!</h1>
         
         <p className="text-gray-600 text-lg mb-6">
           Vielen Dank für Ihre Buchung. Wir haben eine Bestätigungsemail an <span className="font-semibold text-gray-800">{email || 'Ihre E-Mail-Adresse'}</span> gesendet.
@@ -67,10 +58,17 @@ export default function Success() {
 
         <Link
           to="/"
-          className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition"
+          className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition mb-8"
         >
           Zurück zur Startseite
         </Link>
+
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 text-left mt-6 pt-6 border-t-2">
+          <p className="text-yellow-800 text-sm flex items-start gap-2">
+            <span className="text-lg">ℹ️</span>
+            <span><strong>Tipp:</strong> Falls Sie die Email nicht finden, schauen Sie bitte auch in Ihrem Spam- oder Junk-Ordner nach.</span>
+          </p>
+        </div>
       </div>
     </div>
   );
