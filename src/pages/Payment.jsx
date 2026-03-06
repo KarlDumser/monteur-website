@@ -72,6 +72,14 @@ export default function Payment() {
                   <strong>{bookingInfo.wohnungLabel || bookingInfo.wohnung}</strong>
                 </div>
                 <div className="flex justify-between">
+                  <span>Reservierungszeitraum:</span>
+                  <strong>
+                    {bookingInfo.isPartialBooking
+                      ? `${bookingInfo.originalStartDate} – ${bookingInfo.originalEndDate} (${bookingInfo.totalNights} Nächte)`
+                      : `${bookingInfo.startDate} – ${bookingInfo.endDate} (${bookingInfo.nights} Nächte)`}
+                  </strong>
+                </div>
+                <div className="flex justify-between">
                   <span>{bookingInfo.isPartialBooking ? 'Jetzt zu zahlen (Erste 4 Wochen):' : 'Zeitraum:'}</span>
                   <strong>{bookingInfo.startDate} – {bookingInfo.endDate}</strong>
                 </div>
