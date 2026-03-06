@@ -248,23 +248,32 @@ export default function Home() {
                 </div>
 
                 {/* Buttons */}
-                <div className="flex gap-3">
+                <div>
                   <button
                     onClick={() => openGallery(property, 0)}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
                   >
-                    Galerie ({getImages(property.folder).length} Bilder)
+                    📷 Galerie ({getImages(property.folder).length} Bilder)
                   </button>
-                  <Link
-                    to="/booking"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg text-center transition"
-                  >
-                    Buchen
-                  </Link>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Zentraler Buchungsbutton */}
+        <div className="mt-12 text-center">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-8 mb-6">
+            <p className="text-gray-700 text-lg mb-6">
+              📅 <strong>Buchung starten:</strong> Wählen Sie im nächsten Schritt Ihren gewünschten Zeitraum aus und prüfen Sie die Verfügbarkeit beider Wohnungen.
+            </p>
+            <Link
+              to="/booking"
+              className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-12 rounded-lg transition shadow-lg text-lg"
+            >
+              Jetzt Zeitraum wählen & passende Wohnung(en) auswählen →
+            </Link>
+          </div>
         </div>
       </div>
 
