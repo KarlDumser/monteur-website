@@ -166,6 +166,47 @@ export default function BookingPage() {
 
   const handleBooking = (e) => {
     e.preventDefault();
+    
+    // Validierung: Personen
+    const numPeople = parseInt(people, 10);
+    if (isNaN(numPeople) || numPeople < 1 || numPeople > MAX_PEOPLE) {
+      alert(`Bitte geben Sie eine gültige Personenzahl zwischen 1 und ${MAX_PEOPLE} ein.`);
+      return;
+    }
+    
+    // Validierung: Email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+      return;
+    }
+    
+    // Validierung: Adressfelder
+    if (company.trim().length < 2) {
+      alert('Bitte geben Sie einen gültigen Firmennamen ein (mindestens 2 Zeichen).');
+      return;
+    }
+    if (street.trim().length < 3) {
+      alert('Bitte geben Sie eine gültige Straße ein (mindestens 3 Zeichen).');
+      return;
+    }
+    if (zip.trim().length < 4) {
+      alert('Bitte geben Sie eine gültige PLZ ein (mindestens 4 Zeichen).');
+      return;
+    }
+    if (city.trim().length < 2) {
+      alert('Bitte geben Sie einen gültigen Ort ein (mindestens 2 Zeichen).');
+      return;
+    }
+    if (name.trim().length < 2) {
+      alert('Bitte geben Sie einen gültigen Namen ein (mindestens 2 Zeichen).');
+      return;
+    }
+    if (phone.trim().length < 5) {
+      alert('Bitte geben Sie eine gültige Telefonnummer ein (mindestens 5 Zeichen).');
+      return;
+    }
+    
     const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
     if (nights < 27) {
       setMinNightsError("Mindestbuchungsdauer 28 Tage (27 Nächte). Für kürzere Aufenthalte kontaktieren Sie uns bitte telefonisch.");
@@ -454,7 +495,19 @@ export default function BookingPage() {
                 min={1}
                 max={MAX_PEOPLE}
                 value={people}
-                onChange={(e) => setPeople(e.target.value)}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (val >= 1 && val <= MAX_PEOPLE) {
+                    setPeople(e.target.value);
+                  } else if (e.target.value === '') {
+                    setPeople('');
+                  }
+                }}
+                onBlur={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (isNaN(val) || val < 1) setPeople('1');
+                  if (val > MAX_PEOPLE) setPeople(String(MAX_PEOPLE));
+                }}
                 className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                 required
               />
@@ -474,6 +527,7 @@ export default function BookingPage() {
                       type="text"
                       value={company}
                       onChange={(e) => setCompany(e.target.value)}
+                      minLength="2"
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                       placeholder="z.B. Müller Haustechnik GmbH"
                       required
@@ -485,6 +539,7 @@ export default function BookingPage() {
                       type="text"
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
+                      minLength="3"
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                       placeholder="z.B. Ottostraße 8"
                       required
@@ -496,6 +551,8 @@ export default function BookingPage() {
                       type="text"
                       value={zip}
                       onChange={(e) => setZip(e.target.value)}
+                      minLength="4"
+                      pattern="[0-9A-Za-z\s\-]+"
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                       placeholder="z.B. 83521"
                       required
@@ -507,6 +564,7 @@ export default function BookingPage() {
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
+                      minLength="2"
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                       placeholder="z.B. Berghausen"
                       required
@@ -524,7 +582,9 @@ export default function BookingPage() {
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      minLength="2"
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                      placeholder="z.B. Max Mustermann"
                       required
                     />
                   </div>
@@ -534,6 +594,8 @@ export default function BookingPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
+                      title="Bitte geben Sie eine gültige E-Mail-Adresse ein (z.B. name@firma.de)"
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                       required
                     />
@@ -544,6 +606,9 @@ export default function BookingPage() {
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
+                      minLength="5"
+                      pattern="[0-9+\s\-\(\)]+"
+                      title="Bitte geben Sie eine gültige Telefonnummer ein (z.B. 0172 1234567)"
                       className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                       required
                     />

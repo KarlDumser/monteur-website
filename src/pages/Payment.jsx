@@ -146,7 +146,7 @@ export default function Payment() {
             <div>
               <h2 className="text-xl font-bold text-gray-800 mb-4">Zahlungsmethode</h2>
               <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-                Für Online-Buchungen ist aktuell nur <strong>Auf Rechnung</strong> verfügbar.
+                Zahlungsart: <strong>Auf Rechnung</strong>
               </div>
               <form
                 onSubmit={async (e) => {
@@ -184,10 +184,13 @@ export default function Payment() {
                       localStorage.setItem('bookingInfo', JSON.stringify({ ...bookingInfo, _id: data._id }));
                       window.location.href = '/erfolg';
                     } else {
-                      setInvoiceError(data.error || 'Fehler beim Buchen');
+                      // Show specific error message from API
+                      const errorMsg = data.error || data.message || 'Buchung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.';
+                      setInvoiceError(errorMsg);
                     }
                   } catch (err) {
-                    setInvoiceError('Fehler beim Buchen');
+                    // Network or parsing error
+                    setInvoiceError('Verbindungsfehler. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.');
                   } finally {
                     setInvoiceLoading(false);
                   }
