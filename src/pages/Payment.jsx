@@ -59,7 +59,7 @@ export default function Payment() {
                       <p className="text-sm text-yellow-700">
                         <strong>Teilbuchung:</strong> Sie reservieren den gesamten Zeitraum <strong>{bookingInfo.originalStartDate} – {bookingInfo.originalEndDate}</strong> ({bookingInfo.totalNights} Nächte).
                         <br/>
-                        Die erste Rechnung ist für die <strong>ersten 4 Wochen (28 Nächte)</strong>. Folgerechnungen für die weiteren Wochen erhalten Sie rechtzeitig.
+                        Die erste Rechnung ist für die <strong>ersten 4 Wochen (28 Nächte)</strong>. Für den restlichen Zeitraum erhalten Sie rechtzeitig eine Folgerechnung.
                       </p>
                     </div>
                   </div>
