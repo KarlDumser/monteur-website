@@ -192,9 +192,16 @@ export default function Home() {
                 <h3 className="text-3xl font-bold text-gray-800 mb-2">{property.titel}</h3>
                 <p className="text-gray-600 mb-4">{property.beschreibung}</p>
                 
-                {/* Details */}
+                {/* Wichtiges Merkmal deutlich hervorheben */}
                 {property.details && (
-                  <p className="text-sm text-gray-700 mb-4 italic">{property.details}</p>
+                  <div className="mb-5 rounded-lg border-2 border-emerald-300 bg-emerald-50 p-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-emerald-800 mb-1">
+                      Besonders wichtig
+                    </p>
+                    <p className="text-base font-semibold text-emerald-900">
+                      {property.details}
+                    </p>
+                  </div>
                 )}
 
                 {/* Property Details */}
