@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getApiUrl } from '../utils/api';
 
 export default function NewBookingForm({ auth, onClose, onSuccess }) {
@@ -30,12 +30,27 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [countdownOpen, setCountdownOpen] = useState(false);
+  const [countdown, setCountdown] = useState(20);
+  const countdownIntervalRef = useRef(null);
+  const countdownTimeoutRef = useRef(null);
 
   const wohnungen = {
     hackerberg: 'Wohnung Hackerberg',
     neubau: 'Wohnung Frühlingstraße',
     kombi: 'Kombi (beide)'
   };
+
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      if (countdownTimeoutRef.current) {
+        clearTimeout(countdownTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Recalculate totals whenever relevant fields change
   useEffect(() => {
@@ -149,7 +164,20 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
     setError('');
   };
 
-  const handleSave = async () => {
+  const clearCountdown = () => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    if (countdownTimeoutRef.current) {
+      clearTimeout(countdownTimeoutRef.current);
+      countdownTimeoutRef.current = null;
+    }
+  };
+
+  const executeSave = async () => {
+    clearCountdown();
+    setCountdownOpen(false);
     setSaving(true);
     setError('');
 
@@ -204,12 +232,46 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
     }
   };
 
+  const startSaveCountdown = () => {
+    setError('');
+
+    if (!formData.name || !formData.email || !formData.startDate || !formData.endDate) {
+      setError('Bitte füllen Sie alle erforderlichen Felder aus');
+      return;
+    }
+
+    const people = Number(formData.people);
+    if (!Number.isInteger(people) || people < 1 || people > 11) {
+      setError('Personenanzahl muss zwischen 1 und 11 liegen');
+      return;
+    }
+
+    setCountdown(20);
+    setCountdownOpen(true);
+    clearCountdown();
+
+    countdownIntervalRef.current = setInterval(() => {
+      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    countdownTimeoutRef.current = setTimeout(() => {
+      clearCountdown();
+      executeSave();
+    }, 20000);
+  };
+
+  const cancelSaveCountdown = () => {
+    clearCountdown();
+    setCountdownOpen(false);
+    setCountdown(20);
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold">Neue Buchung erstellen</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+          <button onClick={() => { cancelSaveCountdown(); onClose(); }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
         </div>
 
         <div className="p-6 space-y-4">
@@ -310,6 +372,26 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
                 <option value="neubau">Wohnung Frühlingstraße</option>
                 <option value="kombi">Kombi (beide)</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Check-in</label>
+              <input
+                type="time"
+                name="checkInTime"
+                value={formData.checkInTime}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Check-out</label>
+              <input
+                type="time"
+                name="checkOutTime"
+                value={formData.checkOutTime}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Personen *</label>
@@ -426,21 +508,58 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
             Beispieldaten
           </button>
           <button
-            onClick={onClose}
+            onClick={() => {
+              cancelSaveCountdown();
+              onClose();
+            }}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded"
             disabled={saving}
           >
             Abbrechen
           </button>
           <button
-            onClick={handleSave}
+            onClick={startSaveCountdown}
             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded"
             disabled={saving}
           >
-            {saving ? 'Erstellt...' : 'Buchung erstellen'}
+            {saving ? 'Erstellt...' : 'Jetzt Buchung speichern und E-Mail versenden'}
           </button>
         </div>
       </div>
+
+      {countdownOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-2">Sicherheits-Countdown</h3>
+            <p className="text-gray-700 mb-3">
+              Die Buchung wird in <strong>{countdown} Sekunden</strong> gespeichert und die Buchungsbestätigung per E-Mail versendet.
+            </p>
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+              Falls ein Fehler vorliegt, jetzt abbrechen. Nach Ausführung wird die Buchung sofort erstellt und die E-Mail gesendet.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={cancelSaveCountdown}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => {
+                  clearCountdown();
+                  executeSave();
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-2 px-4 rounded-lg"
+              >
+                Jetzt sofort ausführen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -55,6 +55,12 @@ export default function Admin() {
   const [botLoading, setBotLoading] = useState(false);
   const [botError, setBotError] = useState('');
 
+  const wohnungen = {
+    hackerberg: 'Wohnung Hackerberg',
+    neubau: 'Wohnung Frühlingstraße',
+    kombi: 'Kombi (beide)'
+  };
+
   useEffect(() => {
     return () => {
       if (messageTimeoutRef.current) {
@@ -72,7 +78,7 @@ export default function Admin() {
   const calculateNights = (startDate, endDate) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     return Math.max(1, diffDays || 1);
   };
 
@@ -98,8 +104,10 @@ export default function Admin() {
 
     const nights = calculateNights(newStartDate, newEndDate);
     const pricePerNight = Number(lastBooking.pricePerNight || 0);
-    const subtotal = pricePerNight * nights;
-    const vat = subtotal * 0.19;
+    const cleaningFee = Number(lastBooking.cleaningFee || 0);
+    const subtotal = pricePerNight * nights + cleaningFee;
+    const discount = 0;
+    const vat = (subtotal - discount) * 0.07;
 
     setFollowUpDraft({
       customerId: customer._id,
@@ -112,29 +120,39 @@ export default function Admin() {
       zip: lastBooking.zip || '',
       city: lastBooking.city || '',
       wohnung: lastBooking.wohnung,
-      wohnungLabel: lastBooking.wohnungLabel,
+      wohnungLabel: lastBooking.wohnungLabel || wohnungen[lastBooking.wohnung] || 'Wohnung Hackerberg',
       startDate: newStartDate.toISOString().slice(0, 10),
       endDate: newEndDate.toISOString().slice(0, 10),
       nights,
       people: Number(lastBooking.people || 1),
       pricePerNight,
-      cleaningFee: Number(lastBooking.cleaningFee || 0),
+      cleaningFee,
+      discountPercent: 0,
       checkInTime: lastBooking.checkInTime || '15:00',
       checkOutTime: lastBooking.checkOutTime || '10:00',
       paymentStatus: 'pending',
       bookingStatus: 'confirmed',
       subtotal,
-      discount: 0,
+      discount,
       vat,
-      total: subtotal + vat
+      total: subtotal - discount + vat
     });
   };
 
   const recomputeFollowUpTotals = (draft) => {
-    const subtotal = Number(draft.pricePerNight || 0) * Number(draft.nights || 0);
-    const vat = subtotal * 0.19;
-    const total = subtotal + vat;
-    return { ...draft, subtotal, vat, total };
+    const subtotal = (Number(draft.pricePerNight || 0) * Number(draft.nights || 0)) + Number(draft.cleaningFee || 0);
+    const discount = subtotal * (Number(draft.discountPercent || 0) / 100);
+    const vat = (subtotal - discount) * 0.07;
+    const total = subtotal - discount + vat;
+
+    return {
+      ...draft,
+      wohnungLabel: wohnungen[draft.wohnung] || draft.wohnungLabel,
+      subtotal,
+      discount,
+      vat,
+      total
+    };
   };
 
   const updateFollowUpDraft = (field, value) => {
@@ -146,7 +164,15 @@ export default function Admin() {
         next.nights = calculateNights(next.startDate, next.endDate);
       }
 
-      if (field === 'pricePerNight' || field === 'nights' || field === 'startDate' || field === 'endDate') {
+      if (
+        field === 'pricePerNight' ||
+        field === 'nights' ||
+        field === 'startDate' ||
+        field === 'endDate' ||
+        field === 'cleaningFee' ||
+        field === 'discountPercent' ||
+        field === 'wohnung'
+      ) {
         return recomputeFollowUpTotals(next);
       }
 
@@ -174,7 +200,15 @@ export default function Admin() {
       const payload = {
         ...followUpDraft,
         startDate: new Date(followUpDraft.startDate).toISOString(),
-        endDate: new Date(followUpDraft.endDate).toISOString()
+        endDate: new Date(followUpDraft.endDate).toISOString(),
+        people: Number(followUpDraft.people) || 1,
+        nights: Number(followUpDraft.nights) || 0,
+        pricePerNight: Number(followUpDraft.pricePerNight) || 0,
+        cleaningFee: Number(followUpDraft.cleaningFee) || 0,
+        subtotal: Number(followUpDraft.subtotal) || 0,
+        discount: Number(followUpDraft.discount) || 0,
+        vat: Number(followUpDraft.vat) || 0,
+        total: Number(followUpDraft.total) || 0
       };
 
       const response = await fetch(`${apiUrl}/admin/bookings`, {
@@ -877,8 +911,8 @@ export default function Admin() {
                 <div className="flex flex-col gap-1 text-sm">
                   {selectedBooking.pricePerNight !== undefined && <div><span className="font-medium">Preis/Nacht:</span> {selectedBooking.pricePerNight}€</div>}
                   {selectedBooking.nights !== undefined && <div><span className="font-medium">Nächte:</span> {selectedBooking.nights}</div>}
-                  {selectedBooking.subtotal !== undefined && <div><span className="font-medium">Zwischensumme:</span> {selectedBooking.subtotal}€</div>}
                   {selectedBooking.cleaningFee !== undefined && <div><span className="font-medium">Reinigungsgebühr:</span> {selectedBooking.cleaningFee}€</div>}
+                  {selectedBooking.subtotal !== undefined && <div><span className="font-medium">Zwischensumme:</span> {selectedBooking.subtotal}€</div>}
                   {selectedBooking.discount !== undefined && <div><span className="font-medium">Rabatt:</span> {selectedBooking.discount}€</div>}
                   {selectedBooking.vat !== undefined && <div><span className="font-medium">Mehrwertsteuer:</span> {selectedBooking.vat}€</div>}
                   <div className="border-t border-gray-300 my-2"></div>
@@ -1012,11 +1046,16 @@ export default function Admin() {
                 ×
               </button>
               <h2 className="text-2xl font-bold mb-4">Folgerechnung erstellen</h2>
-              <p className="text-gray-600 mb-2">Wählen Sie einen Kunden aus. Danach können Sie alle Buchungsdetails manuell bearbeiten.</p>
+              <p className="text-gray-600 mb-2">
+                {followUpDraft
+                  ? 'Kunde ausgewählt. Bitte prüfen und bearbeiten Sie nun die Buchungsdetails.'
+                  : 'Wählen Sie einen Kunden aus. Danach können Sie alle Buchungsdetails manuell bearbeiten.'}
+              </p>
               <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
                 Hinweis: Nach dem finalen Speichern wird automatisch eine Buchungsbestätigung mit Rechnung an den Kunden versendet.
               </p>
-              
+
+              {!followUpDraft && (
               <div className="space-y-2">
                 {customers
                   .filter(c => c.isActive && c.totalBookings > 0)
@@ -1056,6 +1095,7 @@ export default function Admin() {
                   <p className="text-center text-gray-500 py-8">Keine Kunden mit Buchungen gefunden</p>
                 )}
               </div>
+              )}
               
               <button
                 onClick={() => {
@@ -1071,6 +1111,18 @@ export default function Admin() {
 
               {followUpDraft && (
                 <div className="mt-6 border-t pt-6">
+                  <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                    <p className="text-sm text-blue-900">
+                      Ausgewählter Kunde: <strong>{followUpDraft.customerName || followUpDraft.name}</strong>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setFollowUpDraft(null)}
+                      className="text-sm font-semibold text-blue-700 hover:text-blue-900"
+                    >
+                      Anderen Kunden wählen
+                    </button>
+                  </div>
                   <h3 className="text-xl font-bold mb-4">Buchungsdetails manuell prüfen und bearbeiten</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -1112,6 +1164,22 @@ export default function Admin() {
                       <input type="date" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.endDate} onChange={(e) => updateFollowUpDraft('endDate', e.target.value)} />
                     </div>
                     <div>
+                      <label className="block text-sm font-semibold mb-1">Wohnung</label>
+                      <select className="w-full border rounded-lg px-3 py-2" value={followUpDraft.wohnung} onChange={(e) => updateFollowUpDraft('wohnung', e.target.value)}>
+                        <option value="hackerberg">Wohnung Hackerberg</option>
+                        <option value="neubau">Wohnung Frühlingstraße</option>
+                        <option value="kombi">Kombi (beide)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Check-in</label>
+                      <input type="time" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.checkInTime} onChange={(e) => updateFollowUpDraft('checkInTime', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Check-out</label>
+                      <input type="time" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.checkOutTime} onChange={(e) => updateFollowUpDraft('checkOutTime', e.target.value)} />
+                    </div>
+                    <div>
                       <label className="block text-sm font-semibold mb-1">Nächte</label>
                       <input type="number" min="1" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.nights} onChange={(e) => updateFollowUpDraft('nights', Number(e.target.value) || 1)} />
                     </div>
@@ -1128,18 +1196,23 @@ export default function Admin() {
                       <input type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.cleaningFee} onChange={(e) => updateFollowUpDraft('cleaningFee', Number(e.target.value) || 0)} />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold mb-1">Check-in</label>
-                      <input type="time" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.checkInTime} onChange={(e) => updateFollowUpDraft('checkInTime', e.target.value)} />
+                      <label className="block text-sm font-semibold mb-1">Rabatt (%)</label>
+                      <input type="number" step="0.1" min="0" max="100" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.discountPercent ?? 0} onChange={(e) => updateFollowUpDraft('discountPercent', Number(e.target.value) || 0)} />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold mb-1">Check-out</label>
-                      <input type="time" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.checkOutTime} onChange={(e) => updateFollowUpDraft('checkOutTime', e.target.value)} />
+                      <label className="block text-sm font-semibold mb-1">Rabatt (€) - Berechnet</label>
+                      <input type="number" disabled className="w-full border rounded-lg px-3 py-2 bg-gray-100 text-gray-600" value={Number(followUpDraft.discount || 0).toFixed(2)} />
                     </div>
+                  </div>
+
+                  <div className="mt-3 text-sm text-gray-600">
+                    Nächte: {followUpDraft.nights} | Zwischensumme: €{Number(followUpDraft.subtotal || 0).toFixed(2)}
                   </div>
 
                   <div className="mt-4 p-3 rounded-lg bg-gray-50 border text-sm">
                     <p><strong>Zwischensumme:</strong> {Number(followUpDraft.subtotal || 0).toFixed(2).replace('.', ',')} €</p>
-                    <p><strong>MwSt. (19%):</strong> {Number(followUpDraft.vat || 0).toFixed(2).replace('.', ',')} €</p>
+                    <p><strong>Rabatt:</strong> {Number(followUpDraft.discount || 0).toFixed(2).replace('.', ',')} €</p>
+                    <p><strong>MwSt. (7%):</strong> {Number(followUpDraft.vat || 0).toFixed(2).replace('.', ',')} €</p>
                     <p><strong>Gesamt:</strong> {Number(followUpDraft.total || 0).toFixed(2).replace('.', ',')} €</p>
                   </div>
 
