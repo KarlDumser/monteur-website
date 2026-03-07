@@ -39,7 +39,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     const mailjetApiKey = process.env.MAILJET_API_KEY;
     const mailjetSecretKey = process.env.MAILJET_SECRET_KEY;
     const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
-    const ownerInbox = process.env.BOOKING_OWNER_EMAIL || 'karl658@hotmail.de';
+    const ownerInbox = process.env.BOOKING_OWNER_EMAIL || 'monteur-wohnung@dumser.net';
     
     if (!mailjetApiKey || !mailjetSecretKey) {
       console.error('\n❌❌❌ MAILJET API NICHT KONFIGURIERT!');
