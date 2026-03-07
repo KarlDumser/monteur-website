@@ -56,7 +56,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     console.log('✅ Mailjet API vollständig konfiguriert');
     console.log('📧 Berechnete Werte:');
     console.log('   From Address:', fromAddress);
-    console.log('   Owner Inbox (BCC):', ownerInbox);
+    console.log('   Owner Inbox (Kopie):', ownerInbox);
     console.log('   Email-Typ:', type);
     console.log('   Empfänger:', booking.email);
 
@@ -195,6 +195,8 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
       </div>
     `;
 
+    const sendOwnerCopy = ownerInbox && ownerInbox.toLowerCase() !== String(booking.email || '').toLowerCase();
+
     // Mailjet API Payload
     const mailjetPayload = {
       Messages: [
@@ -209,12 +211,6 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
               Name: booking.name || ""
             }
           ],
-          Bcc: [
-            {
-              Email: ownerInbox,
-              Name: "Owner Copy"
-            }
-          ],
           Subject: subject,
           HTMLPart: htmlContent,
           Attachments: [
@@ -224,14 +220,37 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
               Base64Content: invoicePDF.buffer.toString('base64')
             }
           ]
-        }
+        },
+        ...(sendOwnerCopy
+          ? [{
+              From: {
+                Email: fromAddress,
+                Name: "Ferienwohnungen Dumser"
+              },
+              To: [
+                {
+                  Email: ownerInbox,
+                  Name: "Owner Copy"
+                }
+              ],
+              Subject: `[Kopie] ${subject}`,
+              HTMLPart: htmlContent,
+              Attachments: [
+                {
+                  ContentType: "application/pdf",
+                  Filename: invoicePDF.fileName,
+                  Base64Content: invoicePDF.buffer.toString('base64')
+                }
+              ]
+            }]
+          : [])
       ]
     };
 
     console.log('\n📋 Email-Einstellungen:');
     console.log('  An:', booking.email, '(' + (booking.name || 'kein Name') + ')');
     console.log('  Von:', fromAddress);
-    console.log('  BCC:', ownerInbox);
+    console.log('  Interne Kopie an:', sendOwnerCopy ? ownerInbox : 'deaktiviert (gleich wie Empfänger oder leer)');
     console.log('  Betreff:', subject);
     console.log('  HTML-Länge:', htmlContent.length, 'Zeichen');
     console.log('  Anhänge: 1');
