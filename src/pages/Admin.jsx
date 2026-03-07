@@ -22,6 +22,10 @@ export default function Admin() {
   const [editingBooking, setEditingBooking] = useState(null);
   const [showNewBookingForm, setShowNewBookingForm] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+  const [followUpDraft, setFollowUpDraft] = useState(null);
+  const [followUpBusy, setFollowUpBusy] = useState(false);
+  const [followUpCountdownOpen, setFollowUpCountdownOpen] = useState(false);
+  const [followUpCountdown, setFollowUpCountdown] = useState(20);
   const [paymentProofFile, setPaymentProofFile] = useState(null);
   const [markingPaid, setMarkingPaid] = useState(false);
   const [markingUnpaid, setMarkingUnpaid] = useState(false);
@@ -33,6 +37,9 @@ export default function Admin() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+
+  const followUpIntervalRef = useRef(null);
+  const followUpTimeoutRef = useRef(null);
 
   // Form für Zeitblockierung
   const [blockForm, setBlockForm] = useState({
@@ -53,8 +60,177 @@ export default function Admin() {
       if (messageTimeoutRef.current) {
         clearTimeout(messageTimeoutRef.current);
       }
+      if (followUpIntervalRef.current) {
+        clearInterval(followUpIntervalRef.current);
+      }
+      if (followUpTimeoutRef.current) {
+        clearTimeout(followUpTimeoutRef.current);
+      }
     };
   }, []);
+
+  const calculateNights = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+    return Math.max(1, diffDays || 1);
+  };
+
+  const buildFollowUpDraftFromCustomer = async (customer) => {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/admin/customers/${customer._id}/bookings`, {
+      headers: { Authorization: `Basic ${auth}` }
+    });
+
+    if (!response.ok) {
+      throw new Error('Fehler beim Laden der Buchungen');
+    }
+
+    const { bookings: customerBookings } = await response.json();
+    if (!customerBookings || customerBookings.length === 0) {
+      throw new Error('Keine Buchungen für diesen Kunden gefunden');
+    }
+
+    const lastBooking = customerBookings.sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
+    const newStartDate = new Date(lastBooking.endDate);
+    const newEndDate = new Date(lastBooking.endDate);
+    newEndDate.setDate(newEndDate.getDate() + 28);
+
+    const nights = calculateNights(newStartDate, newEndDate);
+    const pricePerNight = Number(lastBooking.pricePerNight || 0);
+    const subtotal = pricePerNight * nights;
+    const vat = subtotal * 0.19;
+
+    setFollowUpDraft({
+      customerId: customer._id,
+      customerName: customer.name,
+      name: customer.name || lastBooking.name || '',
+      email: customer.email || lastBooking.email || '',
+      phone: customer.phone || customer.mobile || lastBooking.phone || '',
+      company: customer.name || lastBooking.company || '',
+      street: lastBooking.street || '',
+      zip: lastBooking.zip || '',
+      city: lastBooking.city || '',
+      wohnung: lastBooking.wohnung,
+      wohnungLabel: lastBooking.wohnungLabel,
+      startDate: newStartDate.toISOString().slice(0, 10),
+      endDate: newEndDate.toISOString().slice(0, 10),
+      nights,
+      people: Number(lastBooking.people || 1),
+      pricePerNight,
+      cleaningFee: Number(lastBooking.cleaningFee || 0),
+      checkInTime: lastBooking.checkInTime || '15:00',
+      checkOutTime: lastBooking.checkOutTime || '10:00',
+      paymentStatus: 'pending',
+      bookingStatus: 'confirmed',
+      subtotal,
+      discount: 0,
+      vat,
+      total: subtotal + vat
+    });
+  };
+
+  const recomputeFollowUpTotals = (draft) => {
+    const subtotal = Number(draft.pricePerNight || 0) * Number(draft.nights || 0);
+    const vat = subtotal * 0.19;
+    const total = subtotal + vat;
+    return { ...draft, subtotal, vat, total };
+  };
+
+  const updateFollowUpDraft = (field, value) => {
+    setFollowUpDraft((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, [field]: value };
+
+      if (field === 'startDate' || field === 'endDate') {
+        next.nights = calculateNights(next.startDate, next.endDate);
+      }
+
+      if (field === 'pricePerNight' || field === 'nights' || field === 'startDate' || field === 'endDate') {
+        return recomputeFollowUpTotals(next);
+      }
+
+      return next;
+    });
+  };
+
+  const clearFollowUpCountdown = () => {
+    if (followUpIntervalRef.current) {
+      clearInterval(followUpIntervalRef.current);
+      followUpIntervalRef.current = null;
+    }
+    if (followUpTimeoutRef.current) {
+      clearTimeout(followUpTimeoutRef.current);
+      followUpTimeoutRef.current = null;
+    }
+  };
+
+  const executeFollowUpBooking = async () => {
+    if (!followUpDraft || followUpBusy) return;
+
+    try {
+      setFollowUpBusy(true);
+      const apiUrl = getApiUrl();
+      const payload = {
+        ...followUpDraft,
+        startDate: new Date(followUpDraft.startDate).toISOString(),
+        endDate: new Date(followUpDraft.endDate).toISOString()
+      };
+
+      const response = await fetch(`${apiUrl}/admin/bookings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${auth}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Erstellen der Folgerechnung');
+      }
+
+      clearFollowUpCountdown();
+      setFollowUpCountdownOpen(false);
+      setFollowUpDraft(null);
+      setShowFollowUpModal(false);
+      loadData();
+      showActionMessage('success', `Folgerechnung für ${payload.name} erstellt und E-Mail versendet`);
+    } catch (err) {
+      showActionMessage('error', err.message || 'Fehler beim Erstellen der Folgerechnung');
+    } finally {
+      setFollowUpBusy(false);
+    }
+  };
+
+  const startFollowUpCountdown = () => {
+    if (!followUpDraft) return;
+
+    if (!followUpDraft.name || !followUpDraft.email || !followUpDraft.startDate || !followUpDraft.endDate) {
+      alert('Bitte prüfen Sie Name, E-Mail und Zeitraum.');
+      return;
+    }
+
+    setFollowUpCountdown(20);
+    setFollowUpCountdownOpen(true);
+    clearFollowUpCountdown();
+
+    followUpIntervalRef.current = setInterval(() => {
+      setFollowUpCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    followUpTimeoutRef.current = setTimeout(() => {
+      executeFollowUpBooking();
+    }, 20000);
+  };
+
+  const cancelFollowUpCountdown = () => {
+    clearFollowUpCountdown();
+    setFollowUpCountdownOpen(false);
+    setFollowUpCountdown(20);
+    showActionMessage('success', 'Folgerechnung und E-Mail-Versand wurden abgebrochen');
+  };
 
   const showActionMessage = (type, text) => {
     if (messageTimeoutRef.current) {
@@ -760,7 +936,7 @@ export default function Admin() {
                       }
                     }}
                   >
-                    ✉️ Bestätigung versenden
+                    ✉️ Buchungsbestätigung per Mail manuell senden
                   </button>
                   <button
                     className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition"
@@ -774,29 +950,15 @@ export default function Admin() {
                   {selectedBooking.nights >= 30 && (
                     <button
                       className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition"
-                      onClick={async () => {
-                        if (!confirm('Folgerechnung für die nächsten 4 Wochen erstellen?')) return;
-                        try {
-                          const apiUrl = getApiUrl();
-                          const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/create-follow-up-invoice`, {
-                            method: 'POST',
-                            headers: { Authorization: `Basic ${auth}` }
-                          });
-                          if (response.ok) {
-                            setSelectedBooking(null);
-                            loadData();
-                            showActionMessage('success', 'Folgerechnung erfolgreich erstellt');
-                          } else {
-                            const error = await response.json();
-                            alert(`Fehler: ${error.error}`);
-                          }
-                        } catch (err) {
-                          console.error('Error creating follow-up invoice:', err);
-                          alert('Fehler beim Erstellen der Folgerechnung');
-                        }
+                      onClick={() => {
+                        setSelectedBooking(null);
+                        clearFollowUpCountdown();
+                        setFollowUpCountdownOpen(false);
+                        setFollowUpDraft(null);
+                        setShowFollowUpModal(true);
                       }}
                     >
-                      📋 Folgerechnung erstellen
+                      📋 Folgerechnung sicher erstellen
                     </button>
                   )}
                 </div>
@@ -839,13 +1001,21 @@ export default function Admin() {
             <div className="bg-white rounded-2xl shadow-lg p-6 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
               <button
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-xl"
-                onClick={() => setShowFollowUpModal(false)}
+                onClick={() => {
+                  clearFollowUpCountdown();
+                  setFollowUpCountdownOpen(false);
+                  setFollowUpDraft(null);
+                  setShowFollowUpModal(false);
+                }}
                 aria-label="Schließen"
               >
                 ×
               </button>
               <h2 className="text-2xl font-bold mb-4">Folgerechnung erstellen</h2>
-              <p className="text-gray-600 mb-6">Wählen Sie einen Kunden aus:</p>
+              <p className="text-gray-600 mb-2">Wählen Sie einen Kunden aus. Danach können Sie alle Buchungsdetails manuell bearbeiten.</p>
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
+                Hinweis: Nach dem finalen Speichern wird automatisch eine Buchungsbestätigung mit Rechnung an den Kunden versendet.
+              </p>
               
               <div className="space-y-2">
                 {customers
@@ -855,85 +1025,13 @@ export default function Admin() {
                     <div
                       key={customer._id}
                       onClick={async () => {
-                        // Finde die letzte Buchung dieses Kunden
                         try {
-                          const apiUrl = getApiUrl();
-                          const response = await fetch(`${apiUrl}/admin/customers/${customer._id}/bookings`, {
-                            headers: { Authorization: `Basic ${auth}` }
-                          });
-                          
-                          if (!response.ok) throw new Error('Fehler beim Laden der Buchungen');
-                          
-                          const { bookings: customerBookings } = await response.json();
-                          
-                          if (customerBookings.length === 0) {
-                            alert('Keine Buchungen für diesen Kunden gefunden');
-                            return;
-                          }
-                          
-                          // Sortiere nach endDate (neueste zuerst)
-                          const lastBooking = customerBookings.sort((a, b) => 
-                            new Date(b.endDate) - new Date(a.endDate)
-                          )[0];
-                          
-                          const lastEndDate = new Date(lastBooking.endDate);
-                          const newStartDate = new Date(lastEndDate);
-                          const newEndDate = new Date(lastEndDate);
-                          newEndDate.setDate(newEndDate.getDate() + 28); // 4 Wochen
-                          
-                          const confirmMsg = `Folgerechnung für ${customer.name} erstellen?\n\nNeue Buchung:\n${newStartDate.toLocaleDateString('de-DE')} - ${newEndDate.toLocaleDateString('de-DE')}\n(28 Nächte)`;
-                          
-                          if (!confirm(confirmMsg)) return;
-                          
-                          // Erstelle neue Buchung basierend auf der letzten
-                          const newBookingData = {
-                            customerId: customer._id,
-                            name: customer.name,
-                            email: customer.email,
-                            phone: customer.phone || customer.mobile || lastBooking.phone,
-                            company: customer.name,
-                            street: lastBooking.street,
-                            zip: lastBooking.zip,
-                            city: lastBooking.city,
-                            wohnung: lastBooking.wohnung,
-                            wohnungLabel: lastBooking.wohnungLabel,
-                            startDate: newStartDate.toISOString(),
-                            endDate: newEndDate.toISOString(),
-                            nights: 28,
-                            people: lastBooking.people,
-                            pricePerNight: lastBooking.pricePerNight,
-                            cleaningFee: lastBooking.cleaningFee || 0,
-                            subtotal: lastBooking.pricePerNight * 28,
-                            discount: 0,
-                            vat: (lastBooking.pricePerNight * 28) * 0.19,
-                            total: (lastBooking.pricePerNight * 28) * 1.19,
-                            checkInTime: lastBooking.checkInTime,
-                            checkOutTime: lastBooking.checkOutTime,
-                            paymentStatus: 'pending',
-                            bookingStatus: 'confirmed'
-                          };
-                          
-                          // Sende die neue Buchung an den Server
-                          const createResponse = await fetch(`${apiUrl}/admin/bookings`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              Authorization: `Basic ${auth}`
-                            },
-                            body: JSON.stringify(newBookingData)
-                          });
-                          
-                          if (createResponse.ok) {
-                            setShowFollowUpModal(false);
-                            loadData();
-                            showActionMessage('success', `Folgerechnung für ${customer.name} erstellt`);
-                          } else {
-                            const error = await createResponse.json();
-                            alert(`Fehler: ${error.error || 'Unbekannter Fehler'}`);
-                          }
+                          setFollowUpBusy(true);
+                          await buildFollowUpDraftFromCustomer(customer);
                         } catch (err) {
-                          console.error('Error creating follow-up invoice:', err);
-                          alert('Fehler beim Erstellen der Folgerechnung');
+                          alert(err.message || 'Fehler beim Vorbereiten der Folgerechnung');
+                        } finally {
+                          setFollowUpBusy(false);
                         }
                       }}
                       className="p-4 border border-gray-200 rounded-lg hover:bg-orange-50 cursor-pointer transition"
@@ -960,11 +1058,136 @@ export default function Admin() {
               </div>
               
               <button
-                onClick={() => setShowFollowUpModal(false)}
+                onClick={() => {
+                  clearFollowUpCountdown();
+                  setFollowUpCountdownOpen(false);
+                  setFollowUpDraft(null);
+                  setShowFollowUpModal(false);
+                }}
                 className="mt-6 w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition"
               >
                 Abbrechen
               </button>
+
+              {followUpDraft && (
+                <div className="mt-6 border-t pt-6">
+                  <h3 className="text-xl font-bold mb-4">Buchungsdetails manuell prüfen und bearbeiten</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Name</label>
+                      <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.name} onChange={(e) => updateFollowUpDraft('name', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">E-Mail</label>
+                      <input type="email" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.email} onChange={(e) => updateFollowUpDraft('email', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Telefon</label>
+                      <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.phone} onChange={(e) => updateFollowUpDraft('phone', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Firma</label>
+                      <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.company} onChange={(e) => updateFollowUpDraft('company', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Straße</label>
+                      <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.street} onChange={(e) => updateFollowUpDraft('street', e.target.value)} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">PLZ</label>
+                        <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.zip} onChange={(e) => updateFollowUpDraft('zip', e.target.value)} />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold mb-1">Ort</label>
+                        <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.city} onChange={(e) => updateFollowUpDraft('city', e.target.value)} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Startdatum</label>
+                      <input type="date" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.startDate} onChange={(e) => updateFollowUpDraft('startDate', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Enddatum</label>
+                      <input type="date" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.endDate} onChange={(e) => updateFollowUpDraft('endDate', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Nächte</label>
+                      <input type="number" min="1" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.nights} onChange={(e) => updateFollowUpDraft('nights', Number(e.target.value) || 1)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Personen</label>
+                      <input type="number" min="1" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.people} onChange={(e) => updateFollowUpDraft('people', Number(e.target.value) || 1)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Preis pro Nacht</label>
+                      <input type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.pricePerNight} onChange={(e) => updateFollowUpDraft('pricePerNight', Number(e.target.value) || 0)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Reinigungsgebühr</label>
+                      <input type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.cleaningFee} onChange={(e) => updateFollowUpDraft('cleaningFee', Number(e.target.value) || 0)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Check-in</label>
+                      <input type="time" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.checkInTime} onChange={(e) => updateFollowUpDraft('checkInTime', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Check-out</label>
+                      <input type="time" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.checkOutTime} onChange={(e) => updateFollowUpDraft('checkOutTime', e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 rounded-lg bg-gray-50 border text-sm">
+                    <p><strong>Zwischensumme:</strong> {Number(followUpDraft.subtotal || 0).toFixed(2).replace('.', ',')} €</p>
+                    <p><strong>MwSt. (19%):</strong> {Number(followUpDraft.vat || 0).toFixed(2).replace('.', ',')} €</p>
+                    <p><strong>Gesamt:</strong> {Number(followUpDraft.total || 0).toFixed(2).replace('.', ',')} €</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={followUpBusy}
+                    onClick={startFollowUpCountdown}
+                    className="mt-4 w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-3 px-4 rounded-lg transition"
+                  >
+                    {followUpBusy ? 'Bitte warten...' : 'Jetzt Buchung speichern und E-Mail versenden'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Follow-Up Sicherheits-Countdown */}
+        {followUpCountdownOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold mb-2">Sicherheits-Countdown</h3>
+              <p className="text-gray-700 mb-3">
+                Die Buchung wird in <strong>{followUpCountdown} Sekunden</strong> gespeichert und die Buchungsbestätigung per E-Mail versendet.
+              </p>
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+                Falls ein Fehler vorliegt, jetzt abbrechen. Nach Ausführung wird die Buchung sofort erstellt und die E-Mail gesendet.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={cancelFollowUpCountdown}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  disabled={followUpBusy}
+                  onClick={() => {
+                    clearFollowUpCountdown();
+                    executeFollowUpBooking();
+                  }}
+                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-2 px-4 rounded-lg"
+                >
+                  Jetzt sofort ausführen
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1088,20 +1311,29 @@ export default function Admin() {
                       : `${apiUrl}/admin/customers`;
                     const method = editingCustomer ? 'PUT' : 'POST';
                     
+                    const updateBookings = editingCustomer
+                      ? confirm('Bearbeitete Daten auch bei den Buchungen updaten?')
+                      : false;
+
                     const response = await fetch(url, {
                       method,
                       headers: {
                         'Content-Type': 'application/json',
                         Authorization: `Basic ${auth}`
                       },
-                      body: JSON.stringify(customerData)
+                      body: JSON.stringify({ ...customerData, updateBookings })
                     });
 
                     if (response.ok) {
+                      const result = await response.json().catch(() => ({}));
                       loadData();
                       setEditingCustomer(null);
                       setShowNewCustomerForm(false);
-                      showActionMessage('success', editingCustomer ? 'Kunde aktualisiert' : 'Kunde erstellt');
+                      if (editingCustomer && updateBookings) {
+                        showActionMessage('success', `Kunde aktualisiert, ${result.updatedBookingsCount || 0} Buchungen übernommen`);
+                      } else {
+                        showActionMessage('success', editingCustomer ? 'Kunde aktualisiert' : 'Kunde erstellt');
+                      }
                     } else {
                       alert('Fehler beim Speichern');
                     }
@@ -1305,7 +1537,12 @@ export default function Admin() {
           <div>
             <div className="mb-4 flex justify-end gap-3">
               <button
-                onClick={() => setShowFollowUpModal(true)}
+                onClick={() => {
+                  clearFollowUpCountdown();
+                  setFollowUpCountdownOpen(false);
+                  setFollowUpDraft(null);
+                  setShowFollowUpModal(true);
+                }}
                 className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg transition"
               >
                 📋 Folgerechnung erstellen

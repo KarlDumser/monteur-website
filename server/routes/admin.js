@@ -746,9 +746,11 @@ router.post('/customers', async (req, res) => {
 // Kunde aktualisieren
 router.put('/customers/:id', async (req, res) => {
   try {
+    const { updateBookings = false, ...customerPayload } = req.body || {};
+
     const customer = await Customer.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, updatedAt: new Date() },
+      { ...customerPayload, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
     
@@ -756,7 +758,29 @@ router.put('/customers/:id', async (req, res) => {
       return res.status(404).json({ error: 'Kunde nicht gefunden' });
     }
     
-    res.json(customer);
+    let updatedBookingsCount = 0;
+
+    if (updateBookings) {
+      const bookingUpdate = {
+        name: customer.name,
+        email: customer.email,
+        company: customer.name,
+        updatedAt: new Date()
+      };
+
+      if (customer.phone || customer.mobile) {
+        bookingUpdate.phone = customer.phone || customer.mobile;
+      }
+
+      const updateResult = await Booking.updateMany(
+        { customerId: customer._id, deletedAt: null },
+        { $set: bookingUpdate }
+      );
+
+      updatedBookingsCount = updateResult.modifiedCount || 0;
+    }
+
+    res.json({ customer, updatedBookingsCount });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
