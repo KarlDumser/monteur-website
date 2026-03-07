@@ -13,7 +13,7 @@ export default function Impressum() {
               <p><strong>Name:</strong> Christine Dumser</p>
               <p><strong>Adresse:</strong> Frühlingstraße 8, 82152 Krailling</p>
               <p><strong>Telefon:</strong> +49 (0) 172 3248313</p>
-              <p><strong>E-Mail:</strong> montuer-wohnung@dumser.net</p>
+              <p><strong>E-Mail:</strong> monteur-wohnung@dumser.net</p>
             </div>
           </section>
 
@@ -57,12 +57,6 @@ export default function Impressum() {
               Unsere Website enthält Links zu fremden Websites. Für den Inhalt dieser Websites sind wir nicht verantwortlich.
             </p>
           </section>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-8">
-            <p className="text-sm text-gray-700">
-              <strong>Hinweis:</strong> Test-Build! - Impressum noch überarbeiten!
-            </p>
-          </div>
 
           </div>
         </div>

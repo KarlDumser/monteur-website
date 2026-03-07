@@ -1,4 +1,6 @@
 import { APP_VERSION } from '../config';
+import { Link } from 'react-router-dom';
+
 export default function Footer() {
   return (
     <footer className="bg-gray-800 text-white mt-16">
@@ -25,11 +27,23 @@ export default function Footer() {
             </p>
           </div>
         </div>
+
+        {/* Legal Links */}
+        <div className="border-t border-gray-700 pt-6 mb-6 text-center">
+          <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-300">
+            <Link to="/impressum" className="hover:text-white transition">Impressum</Link>
+            <span className="text-gray-600">•</span>
+            <Link to="/datenschutz" className="hover:text-white transition">Datenschutz</Link>
+            <span className="text-gray-600">•</span>
+            <Link to="/agb" className="hover:text-white transition">AGB</Link>
+            <span className="text-gray-600">•</span>
+            <Link to="/widerruf" className="hover:text-white transition">Widerrufsrecht</Link>
+          </div>
+        </div>
+
         <div className="border-t border-gray-700 pt-6 text-center text-gray-400">
           <p>&copy; 2026 Monteurwohnung Dumser. Alle Rechte vorbehalten.</p>
-        </div>
-        <div className="text-xs text-blue-300 text-center py-2 sm:hidden">
-          v{APP_VERSION} {/* safe-state marker */}
+          <p className="text-xs text-gray-500 mt-2">v{APP_VERSION}</p>
         </div>
       </div>
     </footer>

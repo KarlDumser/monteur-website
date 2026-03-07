@@ -74,9 +74,6 @@ export default function Header() {
               </Link>
             )}
             {/* ...Navigation Buttons... */}
-            <span className="text-xs bg-white text-blue-600 px-2 py-1 rounded font-semibold ml-4 whitespace-nowrap">
-              v{APP_VERSION}
-            </span>
           </div>
         </div>
       </nav>

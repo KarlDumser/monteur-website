@@ -6,6 +6,9 @@ import Success from "./pages/Success";
 import Cancel from "./pages/Cancel";
 import Anfahrt from "./pages/Anfahrt";
 import Impressum from "./pages/Impressum";
+import Datenschutz from "./pages/Datenschutz";
+import AGB from "./pages/AGB";
+import Widerruf from "./pages/Widerruf";
 import Payment from "./pages/Payment";
 import Admin from "./pages/Admin";
 
@@ -22,6 +25,9 @@ export default function App() {
           <Route path="/abgebrochen" element={<Cancel />} />
           <Route path="/anfahrt" element={<Anfahrt />} />
           <Route path="/impressum" element={<Impressum />} />
+          <Route path="/datenschutz" element={<Datenschutz />} />
+          <Route path="/agb" element={<AGB />} />
+          <Route path="/widerruf" element={<Widerruf />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </Layout>

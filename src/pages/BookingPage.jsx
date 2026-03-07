@@ -34,6 +34,8 @@ export default function BookingPage() {
   const [selectedWohnung, setSelectedWohnung] = useState(null);
   const [availability, setAvailability] = useState({ keys: [], status: {} });
   const [selectedImage, setSelectedImage] = useState(null);
+  const [dataConsent, setDataConsent] = useState(false);
+  const [agbConsent, setAgbConsent] = useState(false);
   
   // Lokale State für Datumseingaben
   const [startDateInput, setStartDateInput] = useState(format(new Date(), "dd.MM.yyyy"));
@@ -233,6 +235,16 @@ export default function BookingPage() {
 
   const handleCustomerDataSubmit = (e) => {
     e.preventDefault();
+    
+    // Validierung: Consent Checkboxen
+    if (!dataConsent) {
+      alert('Bitte akzeptieren Sie die Datenschutzerklärung.');
+      return;
+    }
+    if (!agbConsent) {
+      alert('Bitte akzeptieren Sie die AGB.');
+      return;
+    }
     
     // Validierung: Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1021,6 +1033,45 @@ export default function BookingPage() {
                     required
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Legal Consents */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="dataConsent"
+                  checked={dataConsent}
+                  onChange={(e) => setDataConsent(e.target.checked)}
+                  className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 mt-1 cursor-pointer"
+                  required
+                />
+                <label htmlFor="dataConsent" className="text-sm text-gray-700 cursor-pointer">
+                  <span className="font-semibold">Ich akzeptiere die </span>
+                  <a href="/datenschutz" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    Datenschutzerklärung
+                  </a>
+                  <span> und erkläre mich einverstanden, dass meine Daten zur Buchungsabwicklung verarbeitet werden.</span>
+                </label>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="agbConsent"
+                  checked={agbConsent}
+                  onChange={(e) => setAgbConsent(e.target.checked)}
+                  className="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 mt-1 cursor-pointer"
+                  required
+                />
+                <label htmlFor="agbConsent" className="text-sm text-gray-700 cursor-pointer">
+                  <span className="font-semibold">Ich habe die </span>
+                  <a href="/agb" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    AGB und das Widerrufsrecht
+                  </a>
+                  <span> zur Kenntnis genommen und akzeptiert.</span>
+                </label>
               </div>
             </div>
 

@@ -8,7 +8,7 @@ import { APP_VERSION } from '../config';
 const NAV_SECTIONS = [
   { id: 'routen-berechnung', label: 'Routen Berechnung' },
   { id: 'wohnungsdetails', label: 'Wohnungsdetails' },
-  { id: 'verfuegbarkeit', label: 'Verfuegbarkeit' },
+  { id: 'verfuegbarkeit', label: 'Verfügbarkeit' },
   { id: 'jetzt-buchen', label: 'Jetzt Buchen!' }
 ];
 
@@ -190,19 +190,28 @@ export default function Home() {
   }, []);
 
   const jumpToSection = (sectionId) => {
+    console.log('Jumping to section:', sectionId);
     const section = document.getElementById(sectionId);
-    if (!section) return;
+    
+    if (!section) {
+      console.error('Section not found:', sectionId);
+      return;
+    }
 
+    console.log('Section found, scrolling...');
     manualScrollTargetRef.current = sectionId;
     if (manualScrollReleaseTimerRef.current) {
       clearTimeout(manualScrollReleaseTimerRef.current);
     }
 
-    const targetY = section.getBoundingClientRect().top + window.scrollY - 96;
-    window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+    // Use native scrollIntoView instead of window.scrollTo for better compatibility
+    section.scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'start'
+    });
+    
     setActiveSection(sectionId);
 
-    // Fallback release if browser scroll events are throttled.
     manualScrollReleaseTimerRef.current = setTimeout(() => {
       manualScrollTargetRef.current = null;
     }, 1100);
@@ -213,7 +222,7 @@ export default function Home() {
       {/* Desktop dot navigation */}
       <nav
         aria-label="Homepage Bereiche"
-        className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 lg:flex lg:flex-col lg:gap-3"
+        className="fixed right-6 top-1/2 z-50 hidden -translate-y-1/2 lg:flex lg:flex-col lg:gap-4"
       >
         {NAV_SECTIONS.map((section) => {
           const isActive = activeSection === section.id;
@@ -235,21 +244,8 @@ export default function Home() {
                 }`}
               />
 
-              {isActive && (
-                <span className="pointer-events-none absolute left-6 top-1/2 flex -translate-y-1/2 items-center">
-                  <span className="h-px w-4 bg-blue-600" />
-                  <span className="ml-1 inline-flex -rotate-90 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-700 shadow-sm">
-                    {section.label}
-                  </span>
-                </span>
-              )}
-
               <span
-                className={`pointer-events-none absolute left-6 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm transition ${
-                  isActive
-                    ? 'opacity-0'
-                    : 'translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
-                }`}
+                className="pointer-events-none absolute right-full top-1/2 mr-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm transition opacity-0 translate-x-2 group-hover:translate-x-0 group-hover:opacity-100"
               >
                 {section.label}
               </span>
@@ -294,16 +290,6 @@ export default function Home() {
           <h3 className="text-2xl font-bold text-gray-900 mb-3">Wohnungsdetails</h3>
           <p className="text-gray-600 mb-6">
             Vergleichen Sie beide Wohnungen inklusive Ausstattung, Preis und Bildergalerie.
-          </p>
-        </div>
-
-        <div
-          id="verfuegbarkeit"
-          className="mb-8 rounded-xl border border-blue-200 bg-blue-50 p-5 scroll-mt-24"
-        >
-          <h3 className="text-xl font-bold text-blue-900">Verfuegbarkeit</h3>
-          <p className="mt-1 text-blue-800">
-            Die Kalender in den Karten zeigen Ihnen direkt gesperrte und freie Zeitraume.
           </p>
         </div>
         
@@ -383,7 +369,8 @@ export default function Home() {
                 </div>
 
                 {/* Kalender */}
-                <div className="mb-4">
+                <div id={property.id === 1 ? "verfuegbarkeit" : undefined} className="mb-4 scroll-mt-24">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Verfügbarkeiten</h3>
                   <BookingCalendar periods={periods[property.wohnung] || []} />
                 </div>
 

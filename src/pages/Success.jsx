@@ -22,6 +22,22 @@ export default function Success() {
       console.error('❌ Fehler beim Laden von booking info:', error);
     }
   }, []);
+
+  // Cleanup sensitive data from localStorage nach 5 Sekunden
+  useEffect(() => {
+    const cleanupTimer = setTimeout(() => {
+      try {
+        localStorage.removeItem('bookingInfo');
+        localStorage.removeItem('selectedWohnung');
+        localStorage.removeItem('bookingData');
+        console.log('🧹 Sensitive booking data cleared from localStorage');
+      } catch (error) {
+        console.error('⚠️ Error clearing localStorage:', error);
+      }
+    }, 5000);
+
+    return () => clearTimeout(cleanupTimer);
+  }, []);
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="bg-white rounded-2xl shadow-lg p-12 text-center max-w-md">
