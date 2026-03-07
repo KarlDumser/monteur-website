@@ -1,22 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import BookingCalendar from '../components/BookingCalendar';
 import CommuteCalculator from '../components/CommuteCalculator';
 import { apiCall } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { APP_VERSION } from '../config';
 
+const NAV_SECTIONS = [
+  { id: 'routen-berechnung', label: 'Routen Berechnung' },
+  { id: 'wohnungsdetails', label: 'Wohnungsdetails' },
+  { id: 'verfuegbarkeit', label: 'Verfuegbarkeit' },
+  { id: 'jetzt-buchen', label: 'Jetzt Buchen!' }
+];
+
 export default function Home() {
-  const navSections = [
-    { id: 'routen-berechnung', label: 'Routen Berechnung' },
-    { id: 'wohnungsdetails', label: 'Wohnungsdetails' },
-    { id: 'verfuegbarkeit', label: 'Verfuegbarkeit' },
-    { id: 'jetzt-buchen', label: 'Jetzt Buchen!' }
-  ];
 
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [activeSection, setActiveSection] = useState(navSections[0].id);
+  const [activeSection, setActiveSection] = useState(NAV_SECTIONS[0].id);
+  const manualScrollTargetRef = useRef(null);
+  const manualScrollReleaseTimerRef = useRef(null);
   
   const properties = [
     {
@@ -147,40 +150,62 @@ export default function Home() {
   }, [galleryOpen, selectedProperty, currentImageIndex]);
 
   useEffect(() => {
-    const sectionNodes = navSections
-      .map((section) => document.getElementById(section.id))
-      .filter(Boolean);
-
-    if (sectionNodes.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-
-        if (visibleEntries.length > 0) {
-          setActiveSection(visibleEntries[0].target.id);
+    const updateActiveSection = () => {
+      if (manualScrollTargetRef.current) {
+        const targetNode = document.getElementById(manualScrollTargetRef.current);
+        if (targetNode) {
+          const distance = Math.abs(targetNode.getBoundingClientRect().top - 96);
+          if (distance <= 18) {
+            setActiveSection(manualScrollTargetRef.current);
+            manualScrollTargetRef.current = null;
+          }
         }
-      },
-      {
-        root: null,
-        rootMargin: '-20% 0px -55% 0px',
-        threshold: [0.2, 0.4, 0.7]
+        return;
       }
-    );
 
-    sectionNodes.forEach((node) => observer.observe(node));
+      const sectionSwitchLine = window.innerHeight * 0.35;
+      let currentSectionId = NAV_SECTIONS[0].id;
 
-    return () => observer.disconnect();
+      NAV_SECTIONS.forEach((section) => {
+        const node = document.getElementById(section.id);
+        if (node && node.getBoundingClientRect().top <= sectionSwitchLine) {
+          currentSectionId = section.id;
+        }
+      });
+
+      setActiveSection((previous) => (previous === currentSectionId ? previous : currentSectionId));
+    };
+
+    updateActiveSection();
+    window.addEventListener('scroll', updateActiveSection, { passive: true });
+    window.addEventListener('resize', updateActiveSection);
+
+    return () => {
+      window.removeEventListener('scroll', updateActiveSection);
+      window.removeEventListener('resize', updateActiveSection);
+      if (manualScrollReleaseTimerRef.current) {
+        clearTimeout(manualScrollReleaseTimerRef.current);
+      }
+    };
   }, []);
 
   const jumpToSection = (sectionId) => {
     const section = document.getElementById(sectionId);
     if (!section) return;
 
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    manualScrollTargetRef.current = sectionId;
+    if (manualScrollReleaseTimerRef.current) {
+      clearTimeout(manualScrollReleaseTimerRef.current);
+    }
+
+    const targetY = section.getBoundingClientRect().top + window.scrollY - 96;
+    window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
     setActiveSection(sectionId);
+
+    // Fallback release if browser scroll events are throttled.
+    manualScrollReleaseTimerRef.current = setTimeout(() => {
+      manualScrollTargetRef.current = null;
+    }, 1100);
   };
 
   return (
@@ -188,9 +213,9 @@ export default function Home() {
       {/* Desktop dot navigation */}
       <nav
         aria-label="Homepage Bereiche"
-        className="fixed right-5 top-1/2 z-40 hidden -translate-y-1/2 lg:flex lg:flex-col lg:gap-3"
+        className="fixed right-6 top-1/2 z-40 hidden -translate-y-1/2 lg:flex lg:flex-col lg:gap-3"
       >
-        {navSections.map((section) => {
+        {NAV_SECTIONS.map((section) => {
           const isActive = activeSection === section.id;
 
           return (
@@ -209,10 +234,20 @@ export default function Home() {
                     : 'border-blue-300 bg-white hover:border-blue-500 hover:bg-blue-100'
                 }`}
               />
+
+              {isActive && (
+                <span className="pointer-events-none absolute left-6 top-1/2 flex -translate-y-1/2 items-center">
+                  <span className="h-px w-4 bg-blue-600" />
+                  <span className="ml-1 inline-flex -rotate-90 rounded-md border border-blue-200 bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-blue-700 shadow-sm">
+                    {section.label}
+                  </span>
+                </span>
+              )}
+
               <span
-                className={`pointer-events-none absolute right-6 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm transition ${
+                className={`pointer-events-none absolute left-6 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm transition ${
                   isActive
-                    ? 'translate-x-0 opacity-100'
+                    ? 'opacity-0'
                     : 'translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
                 }`}
               >
@@ -388,7 +423,7 @@ export default function Home() {
         className="fixed bottom-3 left-1/2 z-40 w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 lg:hidden"
       >
         <div className="grid grid-cols-4 gap-2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur-sm">
-          {navSections.map((section) => {
+          {NAV_SECTIONS.map((section) => {
             const isActive = activeSection === section.id;
 
             return (
