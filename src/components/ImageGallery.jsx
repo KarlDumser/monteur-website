@@ -1,8 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { APP_VERSION } from '../config';
 
 export default function ImageGallery({ images, folder, titel }) {
   const [selectedIndex, setSelectedIndex] = useState(null);
+
+  const closeGallery = () => setSelectedIndex(null);
+
+  const navigateGallery = (direction) => {
+    if (selectedIndex === null) return;
+    if (direction === 'next') {
+      setSelectedIndex((selectedIndex + 1) % images.length);
+    } else {
+      setSelectedIndex((selectedIndex - 1 + images.length) % images.length);
+    }
+  };
+
+  // Tastatur-Navigation analog zur Homepage-Galerie
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (selectedIndex === null) return;
+
+      if (e.key === 'ArrowLeft') {
+        navigateGallery('prev');
+      } else if (e.key === 'ArrowRight') {
+        navigateGallery('next');
+      } else if (e.key === 'Escape') {
+        closeGallery();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [selectedIndex, images.length]);
 
   if (!images || images.length === 0) return null;
 
@@ -25,52 +54,73 @@ export default function ImageGallery({ images, folder, titel }) {
         ))}
       </div>
       {selectedIndex !== null && (
-        <div 
-          className="fixed top-0 left-0 w-screen h-screen bg-black bg-opacity-90 flex items-center justify-center p-0 m-0 z-50"
-          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', minHeight: '100vh' }}
-          onClick={() => setSelectedIndex(null)}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50"
+            onClick={closeGallery}
         >
-          <div className="max-w-5xl w-full relative" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">{titel}</h3>
+            <div className="relative w-full h-full flex items-center justify-center p-4" onClick={e => e.stopPropagation()}>
               <button
-                onClick={() => setSelectedIndex(null)}
-                className="text-white hover:text-gray-300 text-3xl"
+                onClick={closeGallery}
+                className="absolute top-4 right-4 text-white hover:text-gray-300 text-4xl z-10 bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center"
               >
                 ✕
               </button>
-            </div>
-            <div className="relative">
+
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 text-white text-lg bg-black bg-opacity-50 px-4 py-2 rounded-lg">
+                {selectedIndex + 1} / {images.length}
+              </div>
+
               <button
-                className="absolute left-[-60px] top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full z-50"
-                type="button"
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedIndex((selectedIndex - 1 + images.length) % images.length);
+                  navigateGallery('prev');
                 }}
+                className="absolute left-4 text-white hover:text-gray-300 text-5xl z-10 bg-black bg-opacity-50 rounded-full w-14 h-14 flex items-center justify-center hover:bg-opacity-70 transition"
+                style={{ top: '50%', transform: 'translateY(-50%)' }}
+                type="button"
               >
-                ◀
+                ←
               </button>
-              <img
-                src={`/${folder}/${images[selectedIndex]}?v=${APP_VERSION}`}
-                alt={`${titel} ${selectedIndex + 1}`}
-                className="mx-auto object-contain rounded-lg max-h-[80vh] max-w-[90vw]"
-                style={{ background: '#fff', boxShadow: '0 2px 16px rgba(0,0,0,0.2)' }}
-              />
+
+              <div className="max-w-6xl max-h-[90vh] flex items-center justify-center">
+                <img
+                  src={`/${folder}/${images[selectedIndex]}?v=${APP_VERSION}`}
+                  alt={`${titel} ${selectedIndex + 1}`}
+                  className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                />
+              </div>
+
               <button
-                className="absolute right-[-60px] top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 text-black p-2 rounded-full z-50"
-                type="button"
-                onClick={e => {
+                onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedIndex((selectedIndex + 1) % images.length);
+                  navigateGallery('next');
                 }}
+                className="absolute right-4 text-white hover:text-gray-300 text-5xl z-10 bg-black bg-opacity-50 rounded-full w-14 h-14 flex items-center justify-center hover:bg-opacity-70 transition"
+                style={{ top: '50%', transform: 'translateY(-50%)' }}
+                type="button"
               >
-                ▶
+                →
               </button>
+
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[90vw] px-4 py-2 bg-black bg-opacity-50 rounded-lg">
+                {images.map((image, index) => (
+                  <img
+                    key={index}
+                    src={`/${folder}/${image}?v=${APP_VERSION}`}
+                    alt={`Thumbnail ${index + 1}`}
+                    className={`h-16 w-16 object-cover rounded cursor-pointer transition ${
+                      index === selectedIndex ? 'ring-4 ring-blue-500' : 'opacity-60 hover:opacity-100'
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedIndex(index);
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </>
-  );
-}
+        )}
+      </>
+    );
+  }
