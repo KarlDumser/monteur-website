@@ -132,6 +132,7 @@ export default function Admin() {
       checkOutTime: lastBooking.checkOutTime || '10:00',
       paymentStatus: 'pending',
       bookingStatus: 'confirmed',
+      sendConfirmationEmail: true,
       subtotal,
       discount,
       vat,
@@ -251,7 +252,12 @@ export default function Admin() {
       setFollowUpDraft(null);
       setShowFollowUpModal(false);
       loadData();
-      showActionMessage('success', `Folgerechnung für ${payload.name} erstellt und E-Mail versendet`);
+      showActionMessage(
+        'success',
+        payload.sendConfirmationEmail
+          ? `Folgerechnung für ${payload.name} erstellt und E-Mail versendet`
+          : `Folgerechnung für ${payload.name} ohne E-Mail-Versand erstellt`
+      );
     } catch (err) {
       showActionMessage('error', err.message || 'Fehler beim Erstellen der Folgerechnung');
     } finally {
@@ -1237,13 +1243,29 @@ export default function Admin() {
                     <p><strong>Gesamt:</strong> {Number(followUpDraft.total || 0).toFixed(2).replace('.', ',')} €</p>
                   </div>
 
+                  <div className="mt-4 bg-gray-50 border border-gray-200 rounded p-3">
+                    <label className="flex items-start gap-3 text-sm text-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={!!followUpDraft.sendConfirmationEmail}
+                        onChange={(e) => updateFollowUpDraft('sendConfirmationEmail', e.target.checked)}
+                        className="mt-1"
+                      />
+                      <span>Buchungsbestätigung per E-Mail automatisch versenden</span>
+                    </label>
+                  </div>
+
                   <button
                     type="button"
                     disabled={followUpBusy}
                     onClick={startFollowUpCountdown}
                     className="mt-4 w-full bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-3 px-4 rounded-lg transition"
                   >
-                    {followUpBusy ? 'Bitte warten...' : 'Jetzt Buchung speichern und E-Mail versenden'}
+                    {followUpBusy
+                      ? 'Bitte warten...'
+                      : followUpDraft.sendConfirmationEmail
+                        ? 'Jetzt Buchung speichern und E-Mail versenden'
+                        : 'Jetzt Buchung ohne E-Mail speichern'}
                   </button>
                 </div>
               )}
@@ -1257,10 +1279,12 @@ export default function Admin() {
             <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
               <h3 className="text-xl font-bold mb-2">Sicherheits-Countdown</h3>
               <p className="text-gray-700 mb-3">
-                Die Buchung wird in <strong>{followUpCountdown} Sekunden</strong> gespeichert und die Buchungsbestätigung per E-Mail versendet.
+                Die Buchung wird in <strong>{followUpCountdown} Sekunden</strong> gespeichert
+                {followUpDraft?.sendConfirmationEmail ? ' und die Buchungsbestätigung per E-Mail versendet.' : ', ohne E-Mail-Versand.'}
               </p>
               <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 mb-4">
-                Falls ein Fehler vorliegt, jetzt abbrechen. Nach Ausführung wird die Buchung sofort erstellt und die E-Mail gesendet.
+                Falls ein Fehler vorliegt, jetzt abbrechen. Nach Ausführung wird die Buchung sofort erstellt
+                {followUpDraft?.sendConfirmationEmail ? ' und die E-Mail gesendet.' : '.'}
               </p>
               <div className="flex gap-3">
                 <button

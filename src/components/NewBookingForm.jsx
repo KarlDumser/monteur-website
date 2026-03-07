@@ -24,6 +24,7 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
     total: 0,
     bookingStatus: 'confirmed',
     paymentStatus: 'pending',
+    sendConfirmationEmail: true,
     checkInTime: '15:00',
     checkOutTime: '10:00'
   });
@@ -81,8 +82,14 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
   }, [formData.startDate, formData.endDate, formData.nights, formData.pricePerNight, formData.cleaningFee, discountPercent]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     const newData = { ...formData };
+
+    if (type === 'checkbox') {
+      newData[name] = checked;
+      setFormData(newData);
+      return;
+    }
     
     if (name === 'wohnung') {
       newData.wohnung = value;
@@ -495,6 +502,21 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
                 = (€{formData.subtotal.toFixed(2)} - {discountPercent === '' ? 0 : discountPercent}% Rabatt) + MwSt (7%) €{formData.vat.toFixed(2)}
               </div>
             </div>
+
+            <div className="col-span-2 bg-gray-50 border border-gray-200 rounded p-3">
+              <label className="flex items-start gap-3 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="sendConfirmationEmail"
+                  checked={!!formData.sendConfirmationEmail}
+                  onChange={handleChange}
+                  className="mt-1"
+                />
+                <span>
+                  Buchungsbestätigung per E-Mail automatisch versenden
+                </span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -522,7 +544,11 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded"
             disabled={saving}
           >
-            {saving ? 'Erstellt...' : 'Jetzt Buchung speichern und E-Mail versenden'}
+            {saving
+              ? 'Erstellt...'
+              : formData.sendConfirmationEmail
+                ? 'Jetzt Buchung speichern und E-Mail versenden'
+                : 'Jetzt Buchung ohne E-Mail speichern'}
           </button>
         </div>
       </div>
@@ -532,10 +558,12 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
             <h3 className="text-xl font-bold mb-2">Sicherheits-Countdown</h3>
             <p className="text-gray-700 mb-3">
-              Die Buchung wird in <strong>{countdown} Sekunden</strong> gespeichert und die Buchungsbestätigung per E-Mail versendet.
+              Die Buchung wird in <strong>{countdown} Sekunden</strong> gespeichert
+              {formData.sendConfirmationEmail ? ' und die Buchungsbestätigung per E-Mail versendet.' : ', ohne E-Mail-Versand.'}
             </p>
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 mb-4">
-              Falls ein Fehler vorliegt, jetzt abbrechen. Nach Ausführung wird die Buchung sofort erstellt und die E-Mail gesendet.
+              Falls ein Fehler vorliegt, jetzt abbrechen. Nach Ausführung wird die Buchung sofort erstellt
+              {formData.sendConfirmationEmail ? ' und die E-Mail gesendet.' : '.'}
             </p>
             <div className="flex gap-3">
               <button

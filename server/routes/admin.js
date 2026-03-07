@@ -217,8 +217,9 @@ router.get('/bookings', async (req, res) => {
 // Neue Buchung erstellen
 router.post('/bookings', async (req, res) => {
   try {
-    const booking = new Booking(req.body);
-    const customer = await findOrCreateCustomerFromBooking(req.body);
+    const { sendConfirmationEmail = true, ...bookingPayload } = req.body || {};
+    const booking = new Booking(bookingPayload);
+    const customer = await findOrCreateCustomerFromBooking(bookingPayload);
     booking.customerId = customer._id;
     await booking.save();
 
@@ -267,7 +268,7 @@ router.post('/bookings', async (req, res) => {
     console.log('👤 Kundenname:', booking.name);
     console.log('🏠 Wohnung:', booking.wohnung);
     
-    if (booking.email) {
+    if (sendConfirmationEmail && booking.email) {
       console.log('\n🚀 STARTE AUTO-EMAIL-VERSAND...');
       console.log('   Ziel:', booking.email);
       console.log('   Buchungs-ID:', booking._id);
@@ -313,7 +314,11 @@ router.post('/bookings', async (req, res) => {
           console.error('╚═══════════════════════════════════════════════════════╝\n');
         });
     } else {
-      console.log('⏭️  ÜBERSPRINGE Email-Versand (keine Email-Adresse vorhanden)');
+      if (!sendConfirmationEmail) {
+        console.log('⏭️  ÜBERSPRINGE Email-Versand (manuell deaktiviert)');
+      } else {
+        console.log('⏭️  ÜBERSPRINGE Email-Versand (keine Email-Adresse vorhanden)');
+      }
     }
     console.log('╚═══════════════════════════════════════════════════════╝\n');
 
