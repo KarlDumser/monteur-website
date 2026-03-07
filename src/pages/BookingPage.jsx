@@ -25,6 +25,7 @@ export default function BookingPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [landlinePhone, setLandlinePhone] = useState("");
   const [company, setCompany] = useState("");
   const [street, setStreet] = useState("");
   const [zip, setZip] = useState("");
@@ -262,7 +263,7 @@ export default function BookingPage() {
       return;
     }
     if (phone.trim().length < 5) {
-      alert('Bitte geben Sie eine gültige Telefonnummer ein (mindestens 5 Zeichen).');
+      alert('Bitte geben Sie eine gültige Mobilnummer ein (mindestens 5 Zeichen).');
       return;
     }
     
@@ -299,6 +300,8 @@ export default function BookingPage() {
       name,
       email,
       phone,
+      mobilePhone: phone,
+      landlinePhone,
       company,
       street,
       zip,
@@ -968,7 +971,7 @@ export default function BookingPage() {
 
             <div className="bg-gray-50 p-4 rounded-xl">
               <h3 className="text-sm font-bold text-gray-800 mb-3">👤 Kontaktdaten</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold mb-2 text-gray-700">Ansprechpartner</label>
                   <input
@@ -994,14 +997,26 @@ export default function BookingPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Telefon</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Festnetz (optional)</label>
+                  <input
+                    type="tel"
+                    value={landlinePhone}
+                    onChange={(e) => setLandlinePhone(e.target.value)}
+                    pattern="[0-9+\s\-\(\)]*"
+                    title="Bitte geben Sie eine gültige Telefonnummer ein (z.B. 089 8571174)"
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    placeholder="z.B. 089 8571174"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Mobil</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     minLength="5"
                     pattern="[0-9+\s\-\(\)]+"
-                    title="Bitte geben Sie eine gültige Telefonnummer ein (z.B. 0172 1234567)"
+                    title="Bitte geben Sie eine gültige Mobilnummer ein (z.B. 0172 1234567)"
                     className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                     required
                   />

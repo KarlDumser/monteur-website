@@ -200,10 +200,20 @@ export async function generateInvoice(booking) {
 
          let addressBlockY = sumTop + 100;
          if (addressBlockY > 700) addressBlockY = 700;
+             const isSplitBooking = Boolean(booking.originalStartDate);
+             const isFinalInvoiceCycle = Number(booking.nights || 0) < 28;
+             const showCheckoutTime = !isSplitBooking || isFinalInvoiceCycle;
+
          doc.fontSize(10)
             .font('Helvetica')
             .text(`Adresse der Wohnung ${wohnungKuerzel}: ${wohnungAdresse}`, 50, addressBlockY)
-            .text('Anreise am Anreisetag 16:00-19:00 Uhr, Abreise am Abreisetag bis 10:00 Uhr', 50, addressBlockY + 15);
+                  .text(
+                     showCheckoutTime
+                        ? 'Anreise am Anreisetag 16:00-19:00 Uhr, Abreise am Abreisetag bis 10:00 Uhr'
+                        : 'Anreise am Anreisetag 16:00-19:00 Uhr',
+                     50,
+                     addressBlockY + 15
+                  );
 
          // Zahlungsbedingungen
          doc.fontSize(9)

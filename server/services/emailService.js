@@ -82,6 +82,9 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     // Betreff je nach Typ - zeige Gesamtzeitraum für Teilbuchungen
     const displayStartDate = booking.originalStartDate ? formatGermanDate(booking.originalStartDate) : startDate;
     const displayEndDate = booking.originalEndDate ? formatGermanDate(booking.originalEndDate) : endDate;
+    const isSplitBooking = Boolean(booking.originalStartDate);
+    const isFinalInvoiceCycle = Number(booking.nights || 0) < 28;
+    const showCheckoutTime = !isSplitBooking || isFinalInvoiceCycle;
     const subject = type === 'invoice-resend'
       ? `Aktualisierte Rechnung: ${wohnungName} (${startDate} - ${endDate})`
       : `Buchungsbestätigung: ${wohnungName} (${displayStartDate} - ${displayEndDate})`;
@@ -112,7 +115,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
             </tr>
             <tr>
               <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Letzter Tag dieser Rechnung:' : 'Abreise:'}</strong></td>
-              <td>${endDate} (bis 10:00 Uhr)</td>
+              <td>${booking.originalStartDate ? endDate : `${endDate} (bis 10:00 Uhr)`}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Nächte dieser Rechnung:' : 'Nächte:'}</strong></td>
@@ -132,11 +135,11 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
             </tr>
           </table>
           ${booking.originalStartDate ? `
-          <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #f59e0b;">
-            <p style="margin: 0 0 10px 0; color: #92400e; font-weight: bold;">ℹ️ Hinweis zu Ihrer Langzeitbuchung:</p>
-            <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.5;">
-              Diese erste Rechnung gilt für die ersten 4 Wochen (28 Nächte). Für die verbleibenden ${booking.totalNights - 28} Nächte erhalten Sie etwa eine Woche vor Ablauf dieser 4 Wochen automatisch die nächste Rechnung.<br><br>
-              <strong>Wiederholungsrechnungen werden jeweils 1 Woche vor Ablauf eines jeden 4-Wochen-Zyklus erstellt.</strong>
+          <div style="background-color: #eef6ff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #60a5fa;">
+            <p style="margin: 0 0 10px 0; color: #1e3a8a; font-weight: bold;">💡 Gut zu wissen zu Ihrer Langzeitbuchung:</p>
+            <p style="margin: 0; color: #1e3a8a; font-size: 13px; line-height: 1.5;">
+              Wir rechnen längere Aufenthalte in 28-Tage-Zyklen ab. Diese erste Rechnung deckt die ersten 4 Wochen (28 Nächte) ab.<br><br>
+              Für die verbleibenden ${booking.totalNights - 28} Nächte erhalten Sie rechtzeitig automatisch eine Folgerechnung - Sie müssen nichts weiter tun.
             </p>
           </div>
           ` : ''}
@@ -148,8 +151,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
         <div style="margin: 30px 0;">
           <h3 style="color: #374151;">Check-In / Check-Out:</h3>
           <p style="margin: 5px 0;">
-            <strong>Anreise:</strong> 16:00 - 19:00 Uhr<br>
-            <strong>Abreise:</strong> bis 10:00 Uhr
+            <strong>Anreise:</strong> 16:00 - 19:00 Uhr${showCheckoutTime ? '<br><strong>Abreise:</strong> bis 10:00 Uhr' : ''}
           </p>
         </div>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
