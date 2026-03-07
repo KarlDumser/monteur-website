@@ -1,8 +1,14 @@
+import CommuteCalculator from '../components/CommuteCalculator';
+
 export default function Anfahrt() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-12">
         <h1 className="text-4xl font-bold mb-8">Anfahrt</h1>
+
+        <div className="mb-8">
+          <CommuteCalculator title="Baustelle eingeben und Route berechnen" />
+        </div>
 
         <div className="grid grid-cols-1 gap-8">
           {/* Wohnung Frühlingstrasse */}

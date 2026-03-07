@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import BookingCalendar from '../components/BookingCalendar';
+import CommuteCalculator from '../components/CommuteCalculator';
 import { apiCall } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { APP_VERSION } from '../config';
@@ -165,6 +166,10 @@ export default function Home() {
           <h3 className="text-2xl font-bold text-green-800 mb-2">Frühbucher Sparen!</h3>
           <p className="text-lg text-green-700 mb-3">Buchen Sie mindestens <strong>2 Monate im Voraus</strong> und erhalten Sie <strong>10% Rabatt</strong>!</p>
           <p className="text-green-600">von 100 €/Nacht auf nur 90 €/Nacht</p>
+        </div>
+
+        <div className="mb-12">
+          <CommuteCalculator title="Wie weit ist die Wohnung von Ihrer Baustelle entfernt?" />
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
