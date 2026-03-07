@@ -132,6 +132,7 @@ export default function Admin() {
       checkOutTime: lastBooking.checkOutTime || '10:00',
       paymentStatus: 'pending',
       bookingStatus: 'confirmed',
+      isFollowUpInvoice: true,
       sendConfirmationEmail: true,
       subtotal,
       discount,

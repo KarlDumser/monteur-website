@@ -29,6 +29,7 @@ const bookingSchema = new mongoose.Schema({
   originalEndDate: { type: Date, default: null },   // Ursprünglicher Gesamtzeitraum Ende
   totalNights: { type: Number, default: null },      // Gesamtnächte (inkl. noch nicht bezahlter)
   paidThroughDate: { type: Date, default: null },    // Bis wann ist bezahlt (= endDate bei erster Teilzahlung)
+  isFollowUpInvoice: { type: Boolean, default: false }, // Manuell im Admin erstellte Folgerechnung
   
   // Preisdetails
   pricePerNight: { type: Number, required: true },

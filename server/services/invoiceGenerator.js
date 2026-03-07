@@ -105,8 +105,11 @@ export async function generateInvoice(booking) {
       // Zeile 2: Reinigung
       const cleaningRow = tableTop + 70;
       const cleaningFee = Number(booking.cleaningFee ?? 100);
+      const isFollowUpInvoice = Boolean(booking.isFollowUpInvoice);
+      const isFinalFollowUpInvoice = isFollowUpInvoice && Number(booking.nights || 0) < 28;
+      const cleaningLabel = isFinalFollowUpInvoice ? 'Endreinigung' : 'Reinigung';
       doc.text('', 50, cleaningRow)
-         .text('Reinigung ' + wohnungName, 100, cleaningRow)
+         .text(`${cleaningLabel} ` + wohnungName, 100, cleaningRow)
          .text('1', 350, cleaningRow)
          .text(Number(cleaningFee).toFixed(2), 410, cleaningRow)
          .text(Number(cleaningFee).toFixed(2), 490, cleaningRow);
@@ -201,37 +204,73 @@ export async function generateInvoice(booking) {
          let addressBlockY = sumTop + 100;
          if (addressBlockY > 700) addressBlockY = 700;
              const isSplitBooking = Boolean(booking.originalStartDate);
-             const isFinalInvoiceCycle = Number(booking.nights || 0) < 28;
-             const showCheckoutTime = !isSplitBooking || isFinalInvoiceCycle;
+             const showCheckoutTime = !isSplitBooking || isFinalFollowUpInvoice;
 
          doc.fontSize(10)
             .font('Helvetica')
-            .text(`Adresse der Wohnung ${wohnungKuerzel}: ${wohnungAdresse}`, 50, addressBlockY)
-                  .text(
-                     showCheckoutTime
-                        ? 'Anreise am Anreisetag 16:00-19:00 Uhr, Abreise am Abreisetag bis 10:00 Uhr'
-                        : 'Anreise am Anreisetag 16:00-19:00 Uhr',
-                     50,
-                     addressBlockY + 15
-                  );
+            .text(
+               isFollowUpInvoice
+                  ? `Buchungsbeginn: ${startDateStr}`
+                  : `Anreise/Abreise: ${startDateStr} - ${endDateStr}`,
+               50,
+               addressBlockY
+            );
+
+         if (isFollowUpInvoice) {
+            doc.text(`Buchungsende: ${endDateStr}`, 50, addressBlockY + 15);
+         }
+
+         if (!isFollowUpInvoice) {
+            doc.text(`Adresse der Wohnung ${wohnungKuerzel}: ${wohnungAdresse}`, 50, addressBlockY + 15)
+               .text(
+                  showCheckoutTime
+                     ? 'Anreise am Anreisetag 16:00-19:00 Uhr, Abreise am Abreisetag bis 10:00 Uhr'
+                     : 'Anreise am Anreisetag 16:00-19:00 Uhr',
+                  50,
+                  addressBlockY + 30
+               );
+         }
+
+         if (isFollowUpInvoice) {
+            doc.font('Helvetica-Bold')
+               .text('Hinweis: Diese Rechnung betrifft eine Folgebuchung.', 50, addressBlockY + 30)
+               .font('Helvetica');
+         }
+
+         if (isFinalFollowUpInvoice) {
+            doc.text('Buchungsende (Check-out): bis 10:00 Uhr.', 50, addressBlockY + 45)
+               .text('Bitte lassen Sie den Schlüssel beim Check-out auf dem Tisch liegen.', 50, addressBlockY + 60);
+         }
 
          // Zahlungsbedingungen
+         const paymentBlockY = isFinalFollowUpInvoice
+            ? addressBlockY + 80
+            : isFollowUpInvoice
+               ? addressBlockY + 60
+               : addressBlockY + 35;
+
          doc.fontSize(9)
             .font('Helvetica-Bold')
-            .text('Zahlungsbedingungen:', 50, addressBlockY + 35);
+            .text('Zahlungsbedingungen:', 50, paymentBlockY);
          doc.fontSize(8)
             .font('Helvetica')
-            .text('• Die Rechnung muss innerhalb von 7 Tagen nach Rechnungsdatum bezahlt sein, um die Wohnung verbindlich zu reservieren.', 50, addressBlockY + 48)
-            .text('• Der Zahlungseingang muss VOR dem Check-In erfolgen.', 50, addressBlockY + 63);
+            .text('• Die Rechnung muss innerhalb von 7 Tagen nach Rechnungsdatum bezahlt sein, um die Wohnung verbindlich zu reservieren.', 50, paymentBlockY + 13)
+            .text(
+               isFollowUpInvoice
+                  ? '• Der Zahlungseingang muss VOR Beginn des neuen Buchungszeitraumes erfolgen.'
+                  : '• Der Zahlungseingang muss VOR dem Check-In erfolgen.',
+               50,
+               paymentBlockY + 28
+            );
 
          // Abschlusstext
          doc.fontSize(10)
             .font('Helvetica')
-            .text('Vielen Dank für Ihren Aufenthalt!', 50, addressBlockY + 85);
+            .text('Vielen Dank für Ihren Aufenthalt!', 50, paymentBlockY + 50);
 
          doc.fontSize(9)
-            .text(`Krailling, den ${invoiceDate}`, 50, addressBlockY + 110)
-            .text('Christine Dumser', 50, addressBlockY + 125);
+            .text(`Krailling, den ${invoiceDate}`, 50, paymentBlockY + 75)
+            .text('Christine Dumser', 50, paymentBlockY + 90);
 
       doc.end();
     } catch (error) {

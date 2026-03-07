@@ -83,21 +83,35 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     const displayStartDate = booking.originalStartDate ? formatGermanDate(booking.originalStartDate) : startDate;
     const displayEndDate = booking.originalEndDate ? formatGermanDate(booking.originalEndDate) : endDate;
     const isSplitBooking = Boolean(booking.originalStartDate);
-    const isFinalInvoiceCycle = Number(booking.nights || 0) < 28;
-    const showCheckoutTime = !isSplitBooking || isFinalInvoiceCycle;
+    const isFollowUpInvoice = Boolean(booking.isFollowUpInvoice);
+    const isFinalFollowUpInvoice = isFollowUpInvoice && Number(booking.nights || 0) < 28;
+    const showCheckoutTime = !isSplitBooking || isFinalFollowUpInvoice;
+    const periodStartLabel = isFollowUpInvoice ? 'Buchungsbeginn:' : (booking.originalStartDate ? 'Anreisedatum:' : 'Anreise:');
+    const periodEndLabel = isFollowUpInvoice ? 'Buchungsende:' : (booking.originalStartDate ? 'Letzter Tag dieser Rechnung:' : 'Abreise:');
+    const periodStartValue = isFollowUpInvoice ? startDate : `${startDate} (16:00-19:00 Uhr)`;
+    const periodEndValue = isFollowUpInvoice
+      ? (isFinalFollowUpInvoice ? `${endDate} (Check-out bis 10:00 Uhr)` : endDate)
+      : (booking.originalStartDate ? endDate : `${endDate} (bis 10:00 Uhr)`);
     const subject = type === 'invoice-resend'
       ? `Aktualisierte Rechnung: ${wohnungName} (${startDate} - ${endDate})`
-      : `Buchungsbestätigung: ${wohnungName} (${displayStartDate} - ${displayEndDate})`;
+      : `${isFollowUpInvoice ? 'Folgebuchung bestätigt' : 'Buchungsbestätigung'}: ${wohnungName} (${displayStartDate} - ${displayEndDate})`;
 
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">${type === 'invoice-resend' ? 'Aktualisierte Rechnung' : 'Vielen Dank für Ihre Buchung!'}</h2>
         <p>Sehr geehrte Damen und Herren${booking.company ? ' von ' + booking.company : ''},</p>
-        <p>${type === 'invoice-resend' 
+        <p>${type === 'invoice-resend'
           ? 'anbei erhalten Sie die aktualisierten Rechnungsdaten. Die Rechnung ist dieser E-Mail als PDF-Anhang beigefügt.'
-          : 'Ihre Buchung wurde erfolgreich bestätigt. Anbei finden Sie die Rechnung als PDF.'}</p>
+          : (isFollowUpInvoice
+            ? 'Ihre Folgebuchung wurde erfolgreich erstellt. Anbei finden Sie die Rechnung als PDF.'
+            : 'Ihre Buchung wurde erfolgreich bestätigt. Anbei finden Sie die Rechnung als PDF.')}</p>
         <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0; color: #374151;">Buchungsdetails</h3>
+          ${isFollowUpInvoice ? `
+          <div style="background-color: #eef6ff; padding: 12px; border-radius: 8px; margin-bottom: 14px; border-left: 4px solid #60a5fa; color: #1e3a8a;">
+            <strong>Hinweis:</strong> Diese Rechnung betrifft eine Folgebuchung.
+          </div>
+          ` : ''}
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px 0;"><strong>Wohnung:</strong></td>
@@ -110,12 +124,12 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
             </tr>
             ` : ''}
             <tr>
-              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Anreisedatum:' : 'Anreise:'}</strong></td>
-              <td>${startDate} (16:00-19:00 Uhr)</td>
+              <td style="padding: 8px 0;"><strong>${periodStartLabel}</strong></td>
+              <td>${periodStartValue}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Letzter Tag dieser Rechnung:' : 'Abreise:'}</strong></td>
-              <td>${booking.originalStartDate ? endDate : `${endDate} (bis 10:00 Uhr)`}</td>
+              <td style="padding: 8px 0;"><strong>${periodEndLabel}</strong></td>
+              <td>${periodEndValue}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0;"><strong>${booking.originalStartDate ? 'Nächte dieser Rechnung:' : 'Nächte:'}</strong></td>
@@ -136,7 +150,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
           </table>
           ${booking.originalStartDate ? `
           <div style="background-color: #eef6ff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #60a5fa;">
-            <p style="margin: 0 0 10px 0; color: #1e3a8a; font-weight: bold;">💡 Gut zu wissen zu Ihrer Langzeitbuchung:</p>
+            <p style="margin: 0 0 10px 0; color: #1e3a8a; font-weight: bold;">Gut zu wissen zu Ihrer Langzeitbuchung:</p>
             <p style="margin: 0; color: #1e3a8a; font-size: 13px; line-height: 1.5;">
               Wir rechnen längere Aufenthalte in 28-Tage-Zyklen ab. Diese erste Rechnung deckt die ersten 4 Wochen (28 Nächte) ab.<br><br>
               Für die verbleibenden ${booking.totalNights - 28} Nächte erhalten Sie rechtzeitig automatisch eine Folgerechnung - Sie müssen nichts weiter tun.
@@ -144,16 +158,29 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
           </div>
           ` : ''}
         </div>
+        ${!isFollowUpInvoice ? `
         <div style="margin: 30px 0;">
           <h3 style="color: #374151;">Schlüsselübergabe:</h3>
           <p style="margin: 5px 0;">Frühlingstraße 8<br>82152 Krailling b. München</p>
         </div>
+        ` : ''}
+        ${!isFollowUpInvoice ? `
         <div style="margin: 30px 0;">
           <h3 style="color: #374151;">Check-In / Check-Out:</h3>
           <p style="margin: 5px 0;">
             <strong>Anreise:</strong> 16:00 - 19:00 Uhr${showCheckoutTime ? '<br><strong>Abreise:</strong> bis 10:00 Uhr' : ''}
           </p>
         </div>
+        ` : ''}
+        ${isFinalFollowUpInvoice ? `
+        <div style="margin: 30px 0;">
+          <h3 style="color: #374151;">Check-out:</h3>
+          <p style="margin: 5px 0;">
+            <strong>Buchungsende:</strong> bis 10:00 Uhr<br>
+            Bitte lassen Sie den Schlüssel beim Check-out auf dem Tisch liegen.
+          </p>
+        </div>
+        ` : ''}
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
         <p>Bei Fragen oder Wünschen stehen wir Ihnen gerne zur Verfügung.</p>
         <p>
