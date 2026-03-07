@@ -419,7 +419,7 @@ export default function Home() {
                 type="button"
                 onClick={() => jumpToSection(section.id)}
                 aria-current={isActive ? 'true' : undefined}
-                className={`rounded-lg px-2 py-2 text-[11px] font-semibold leading-tight transition ${
+                className={`rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold leading-snug transition ${
                   isActive
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
