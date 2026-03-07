@@ -65,9 +65,9 @@ export default function Payment() {
                     </div>
                     <div className="ml-3">
                       <p className="text-sm text-sky-800">
-                        <strong>Teilbuchung:</strong> Sie reservieren den gesamten Zeitraum <strong>{bookingInfo.originalStartDate} – {bookingInfo.originalEndDate}</strong> ({bookingInfo.totalNights} Nächte).
+                        Sie reservieren den gesamten Zeitraum <strong>{bookingInfo.originalStartDate} – {bookingInfo.originalEndDate}</strong> ({bookingInfo.totalNights} Nächte).
                         <br/>
-                        Die erste Rechnung ist für die <strong>ersten 4 Wochen (28 Nächte)</strong>. Für den restlichen Zeitraum erhalten Sie rechtzeitig eine Folgerechnung.
+                        Die erste Rechnung ist für die <strong>ersten 4 Wochen (28 Nächte)</strong>. Für den restlichen Zeitraum erhalten Sie eine Woche vorher eine Folgerechnung.
                       </p>
                     </div>
                   </div>
@@ -116,9 +116,15 @@ export default function Payment() {
                   <strong>{bookingInfo.email}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span>Telefon:</span>
-                  <strong>{bookingInfo.phone}</strong>
+                  <span>Mobil:</span>
+                  <strong>{bookingInfo.mobilePhone || bookingInfo.phone || '-'}</strong>
                 </div>
+                {bookingInfo.landlinePhone && (
+                  <div className="flex justify-between">
+                    <span>Festnetz:</span>
+                    <strong>{bookingInfo.landlinePhone}</strong>
+                  </div>
+                )}
               </div>
             </div>
 
