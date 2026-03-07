@@ -10,9 +10,10 @@ export default function Footer() {
           </div>
           <div className="flex flex-col items-center">
             <h3 className="text-lg font-bold mb-4">Kontakt</h3>
-            <p className="text-gray-400">
-              Tel: +49 (0) 172 3248313<br />
-              Email: karl658@hotmail.de
+            <p className="text-gray-400"> 
+              Mobil: +49 (0)172 3248313<br />
+              Festnetz: +49 (0)89 8571174 <br />
+              Email: monteur-wohnung@dumser.net
             </p>
           </div>
           <div className="flex flex-col items-center">
