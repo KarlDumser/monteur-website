@@ -158,7 +158,28 @@ export default function Admin() {
   const updateFollowUpDraft = (field, value) => {
     setFollowUpDraft((prev) => {
       if (!prev) return prev;
-      const next = { ...prev, [field]: value };
+      const next = { ...prev };
+
+      // Zahlenfelder so behandeln wie im "Neue Buchung"-Formular:
+      // leere Eingaben sind erlaubt und werden erst bei Berechnung/Speichern als 0 behandelt.
+      if (['nights', 'people', 'pricePerNight', 'cleaningFee', 'discountPercent'].includes(field)) {
+        if (value === '') {
+          next[field] = '';
+        } else {
+          const parsed = Number(value);
+          if (field === 'people') {
+            next[field] = Math.max(1, Math.min(11, Math.floor(parsed || 0)));
+          } else if (field === 'nights') {
+            next[field] = Math.max(1, Math.floor(parsed || 0));
+          } else if (field === 'discountPercent') {
+            next[field] = Math.max(0, Math.min(100, parsed || 0));
+          } else {
+            next[field] = Math.max(0, parsed || 0);
+          }
+        }
+      } else {
+        next[field] = value;
+      }
 
       if (field === 'startDate' || field === 'endDate') {
         next.nights = calculateNights(next.startDate, next.endDate);
@@ -1181,23 +1202,23 @@ export default function Admin() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Nächte</label>
-                      <input type="number" min="1" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.nights} onChange={(e) => updateFollowUpDraft('nights', Number(e.target.value) || 1)} />
+                      <input type="number" min="1" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.nights} onChange={(e) => updateFollowUpDraft('nights', e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Personen</label>
-                      <input type="number" min="1" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.people} onChange={(e) => updateFollowUpDraft('people', Number(e.target.value) || 1)} />
+                      <input type="number" min="1" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.people} onChange={(e) => updateFollowUpDraft('people', e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Preis pro Nacht</label>
-                      <input type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.pricePerNight} onChange={(e) => updateFollowUpDraft('pricePerNight', Number(e.target.value) || 0)} />
+                      <input type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.pricePerNight} onChange={(e) => updateFollowUpDraft('pricePerNight', e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Reinigungsgebühr</label>
-                      <input type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.cleaningFee} onChange={(e) => updateFollowUpDraft('cleaningFee', Number(e.target.value) || 0)} />
+                      <input type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.cleaningFee} onChange={(e) => updateFollowUpDraft('cleaningFee', e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Rabatt (%)</label>
-                      <input type="number" step="0.1" min="0" max="100" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.discountPercent ?? 0} onChange={(e) => updateFollowUpDraft('discountPercent', Number(e.target.value) || 0)} />
+                      <input type="number" step="0.1" min="0" max="100" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.discountPercent === '' ? '' : (followUpDraft.discountPercent ?? 0)} onChange={(e) => updateFollowUpDraft('discountPercent', e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Rabatt (€) - Berechnet</label>
