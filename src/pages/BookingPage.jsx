@@ -340,7 +340,7 @@ export default function BookingPage() {
       extras: "Garten, Grill, ruhige Lage",
       features: [
         "Waschmaschine mit Trockner",
-        "2 Einzelbetten in jedem Zimmer (je eines Queen size)",
+        "3 Einzelbetten in jedem Zimmer (je eines Queen size)",
         "WLAN 150 Mbit/s frei",
         "Sat-TV",
         "Parkplätze für PKW & LKW mit Hänger vor dem Haus",
@@ -859,7 +859,7 @@ export default function BookingPage() {
                                   <div className="flex items-start gap-3">
                                     <span className="text-2xl">ℹ️</span>
                                     <div>
-                                      <p className="font-bold text-sky-900 text-sm mb-2">Teilbuchung: Rechnung wird aufgeteilt</p>
+                                      <p className="font-bold text-sky-900 text-sm mb-2">Rechnung wird aufgeteilt</p>
                                       <p className="text-xs text-sky-800 mb-2">
                                         Da Sie länger als 4 Wochen buchen, berechnen wir in zwei Schritten:
                                       </p>

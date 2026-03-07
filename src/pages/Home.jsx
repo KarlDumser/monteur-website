@@ -6,9 +6,17 @@ import { Link } from 'react-router-dom';
 import { APP_VERSION } from '../config';
 
 export default function Home() {
+  const navSections = [
+    { id: 'routen-berechnung', label: 'Routen Berechnung' },
+    { id: 'wohnungsdetails', label: 'Wohnungsdetails' },
+    { id: 'verfuegbarkeit', label: 'Verfuegbarkeit' },
+    { id: 'jetzt-buchen', label: 'Jetzt Buchen!' }
+  ];
+
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [activeSection, setActiveSection] = useState(navSections[0].id);
   
   const properties = [
     {
@@ -138,8 +146,83 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [galleryOpen, selectedProperty, currentImageIndex]);
 
+  useEffect(() => {
+    const sectionNodes = navSections
+      .map((section) => document.getElementById(section.id))
+      .filter(Boolean);
+
+    if (sectionNodes.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleEntries = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visibleEntries.length > 0) {
+          setActiveSection(visibleEntries[0].target.id);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '-20% 0px -55% 0px',
+        threshold: [0.2, 0.4, 0.7]
+      }
+    );
+
+    sectionNodes.forEach((node) => observer.observe(node));
+
+    return () => observer.disconnect();
+  }, []);
+
+  const jumpToSection = (sectionId) => {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActiveSection(sectionId);
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-24 lg:pb-0">
+      {/* Desktop dot navigation */}
+      <nav
+        aria-label="Homepage Bereiche"
+        className="fixed right-5 top-1/2 z-40 hidden -translate-y-1/2 lg:flex lg:flex-col lg:gap-3"
+      >
+        {navSections.map((section) => {
+          const isActive = activeSection === section.id;
+
+          return (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => jumpToSection(section.id)}
+              aria-current={isActive ? 'true' : undefined}
+              aria-label={section.label}
+              className="group relative flex items-center justify-end"
+            >
+              <span
+                className={`h-3 w-3 rounded-full border-2 transition-all ${
+                  isActive
+                    ? 'scale-125 border-blue-700 bg-blue-600'
+                    : 'border-blue-300 bg-white hover:border-blue-500 hover:bg-blue-100'
+                }`}
+              />
+              <span
+                className={`pointer-events-none absolute right-6 rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm transition ${
+                  isActive
+                    ? 'translate-x-0 opacity-100'
+                    : 'translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                }`}
+              >
+                {section.label}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
+
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-12 px-4">
         <div className="container mx-auto text-center">
@@ -168,8 +251,25 @@ export default function Home() {
           <p className="text-green-600">von 100 €/Nacht auf nur 90 €/Nacht</p>
         </div>
 
-        <div className="mb-12">
+        <div id="routen-berechnung" className="mb-12 scroll-mt-24">
           <CommuteCalculator title="Wie weit ist die Wohnung von Ihrer Baustelle entfernt?" />
+        </div>
+
+        <div id="wohnungsdetails" className="scroll-mt-24">
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">Wohnungsdetails</h3>
+          <p className="text-gray-600 mb-6">
+            Vergleichen Sie beide Wohnungen inklusive Ausstattung, Preis und Bildergalerie.
+          </p>
+        </div>
+
+        <div
+          id="verfuegbarkeit"
+          className="mb-8 rounded-xl border border-blue-200 bg-blue-50 p-5 scroll-mt-24"
+        >
+          <h3 className="text-xl font-bold text-blue-900">Verfuegbarkeit</h3>
+          <p className="mt-1 text-blue-800">
+            Die Kalender in den Karten zeigen Ihnen direkt gesperrte und freie Zeitraume.
+          </p>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -267,7 +367,7 @@ export default function Home() {
         </div>
 
         {/* Zentraler Buchungsbutton */}
-        <div className="mt-12 text-center">
+        <div id="jetzt-buchen" className="mt-12 text-center scroll-mt-24">
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-8 mb-6">
             <p className="text-gray-700 text-lg mb-6">
               📅 <strong>Buchung starten:</strong> Wählen Sie im nächsten Schritt Ihren gewünschten Zeitraum aus und prüfen Sie die Verfügbarkeit beider Wohnungen.
@@ -281,6 +381,34 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Mobile quick navigation */}
+      <nav
+        aria-label="Homepage Schnellnavigation"
+        className="fixed bottom-3 left-1/2 z-40 w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 lg:hidden"
+      >
+        <div className="grid grid-cols-4 gap-2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur-sm">
+          {navSections.map((section) => {
+            const isActive = activeSection === section.id;
+
+            return (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => jumpToSection(section.id)}
+                aria-current={isActive ? 'true' : undefined}
+                className={`rounded-lg px-2 py-2 text-[11px] font-semibold leading-tight transition ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {section.label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* Full Screen Gallery Modal */}
       {galleryOpen && selectedProperty && (

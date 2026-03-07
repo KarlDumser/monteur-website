@@ -104,7 +104,7 @@ export default function Payment() {
 
             {/* Guest Info */}
             <div className="border-2 border-gray-300 rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-4">Gästendaten</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Kontaktdaten</h2>
               
               <div className="space-y-3 text-gray-700">
                 <div className="flex justify-between">
