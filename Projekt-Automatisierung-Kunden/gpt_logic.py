@@ -157,6 +157,55 @@ def analyze_booking_interest(response_text: str) -> str:
 
 
 def is_rental_related(text: str) -> bool:
+    """Prüft, ob eine E-Mail eine echte Vermietungsanfrage ist (nicht Service/Auto-Reply)."""
+    
+    # Lokale Blacklist: Häufige Service-, Verifizierungs- und Auto-Reply-Indikatoren
+    # Diese werden zuerst geprüft, bevor teure GPT-Calls gemacht werden
+    service_blacklist = [
+        "verifizierungscode",
+        "verification",
+        "bestätigungscode",
+        "confirmation code",
+        "passwort zurücksetzen",
+        "reset password",
+        "passwort vergessen",
+        "forgot password",
+        "automatische",
+        "automatic",
+        "out of office",
+        "abwesenheit",
+        "undeliverable",
+        "nicht zustellbar",
+        "bounced",
+        "bounce",
+        "mailer daemon",
+        "delivery failure",
+        "mailbox full",
+        "postfach voll",
+        "no-reply",
+        "noreply",
+        "do not reply",
+        "bitte nicht antworten",
+        "automatisch generiert",
+        "auto-generated",
+        "system message",
+        "systemnachricht",
+    ]
+    
+    text_lower = text.lower()
+    
+    # Wenn eine der Service-Ausschluss-Phrasen auftaucht, direkt False zurückgeben
+    for phrase in service_blacklist:
+        if phrase in text_lower:
+            print(f"[is_rental_related] Service-Blacklist Match: '{phrase}' -> False")
+            return False
+    
+    # Nur sehr kurze Texte (< 20 Chars) als nicht-vermietungsbezogen einstufen
+    if len(text.strip()) < 20:
+        print(f"[is_rental_related] Text zu kurz ({len(text.strip())} Chars) -> False")
+        return False
+    
+    # Jetzt erst den langsamen GPT-Check durchführen
     prompt = (
         "Beantworte mit \"ja\" oder \"nein\":  \nGeht es in folgendem Text um das Thema "
         "Wohnung, Vermietung, Unterkunft oder eine Anfrage zur Buchung einer Monteurwohnung?\n\nText:\n"
@@ -164,4 +213,6 @@ def is_rental_related(text: str) -> bool:
     )
 
     msg = chat([{"role": "user", "content": prompt}])
-    return "ja" in msg.content.strip().lower()
+    result = "ja" in msg.content.strip().lower()
+    print(f"[is_rental_related] GPT-Check: {result}")
+    return result
