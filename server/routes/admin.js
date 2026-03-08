@@ -2,6 +2,7 @@ import express from 'express';
 import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
 import Customer from '../models/Customer.js';
+import WebsiteVisit from '../models/WebsiteVisit.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
 import { sendBookingConfirmation } from '../services/emailService.js';
@@ -633,22 +634,278 @@ router.get('/calendar', async (req, res) => {
 // Statistiken
 router.get('/statistics', async (req, res) => {
   try {
-    const totalBookings = await Booking.countDocuments({ deletedAt: null });
-    const paidBookings = await Booking.countDocuments({ paymentStatus: 'paid', deletedAt: null });
-    const totalRevenue = await Booking.aggregate([
-      { $match: { paymentStatus: 'paid', deletedAt: null } },
-      { $group: { _id: null, total: { $sum: '$total' } } }
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const previousYear = currentYear - 1;
+
+    const yearStart = new Date(currentYear, 0, 1);
+    const nextYearStart = new Date(currentYear + 1, 0, 1);
+    const previousYearStart = new Date(previousYear, 0, 1);
+
+    const monthStart = new Date(currentYear, now.getMonth(), 1);
+    const nextMonthStart = new Date(currentYear, now.getMonth() + 1, 1);
+    const last30Start = new Date(now);
+    last30Start.setDate(last30Start.getDate() - 30);
+
+    const baseBookingFilter = { deletedAt: null };
+
+    const [
+      totalBookings,
+      paidBookings,
+      pendingBookings,
+      totalRevenuePaidAgg,
+      totalRevenueAllAgg,
+      totalNightsAgg,
+      totalPeopleAgg,
+      currentYearAgg,
+      previousYearAgg,
+      yearlyStats,
+      monthlyStatsCurrentYear,
+      recentBookings,
+      visitorFacets
+    ] = await Promise.all([
+      Booking.countDocuments(baseBookingFilter),
+      Booking.countDocuments({ ...baseBookingFilter, paymentStatus: 'paid' }),
+      Booking.countDocuments({ ...baseBookingFilter, paymentStatus: { $in: ['pending', 'failed'] } }),
+      Booking.aggregate([
+        { $match: { ...baseBookingFilter, paymentStatus: 'paid' } },
+        { $group: { _id: null, total: { $sum: '$total' } } }
+      ]),
+      Booking.aggregate([
+        { $match: baseBookingFilter },
+        { $group: { _id: null, total: { $sum: '$total' } } }
+      ]),
+      Booking.aggregate([
+        { $match: baseBookingFilter },
+        { $group: { _id: null, total: { $sum: '$nights' } } }
+      ]),
+      Booking.aggregate([
+        { $match: baseBookingFilter },
+        { $group: { _id: null, total: { $sum: '$people' } } }
+      ]),
+      Booking.aggregate([
+        {
+          $match: {
+            ...baseBookingFilter,
+            createdAt: { $gte: yearStart, $lt: nextYearStart }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            bookings: { $sum: 1 },
+            paidBookings: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0]
+              }
+            },
+            revenuePaid: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0]
+              }
+            },
+            revenueAll: { $sum: '$total' },
+            nights: { $sum: '$nights' }
+          }
+        }
+      ]),
+      Booking.aggregate([
+        {
+          $match: {
+            ...baseBookingFilter,
+            createdAt: { $gte: previousYearStart, $lt: yearStart }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            bookings: { $sum: 1 },
+            paidBookings: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0]
+              }
+            },
+            revenuePaid: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0]
+              }
+            },
+            revenueAll: { $sum: '$total' },
+            nights: { $sum: '$nights' }
+          }
+        }
+      ]),
+      Booking.aggregate([
+        { $match: baseBookingFilter },
+        {
+          $group: {
+            _id: { $year: '$createdAt' },
+            bookings: { $sum: 1 },
+            paidBookings: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0]
+              }
+            },
+            revenuePaid: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0]
+              }
+            },
+            revenueAll: { $sum: '$total' },
+            nights: { $sum: '$nights' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      Booking.aggregate([
+        {
+          $match: {
+            ...baseBookingFilter,
+            createdAt: { $gte: yearStart, $lt: nextYearStart }
+          }
+        },
+        {
+          $group: {
+            _id: { $month: '$createdAt' },
+            bookings: { $sum: 1 },
+            paidBookings: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0]
+              }
+            },
+            revenuePaid: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0]
+              }
+            },
+            revenueAll: { $sum: '$total' },
+            nights: { $sum: '$nights' }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      Booking.find(baseBookingFilter).sort({ createdAt: -1 }).limit(5),
+      WebsiteVisit.aggregate([
+        {
+          $facet: {
+            totalViews: [{ $group: { _id: null, value: { $sum: '$views' } } }],
+            uniqueVisitors: [{ $group: { _id: '$visitorHash' } }, { $count: 'value' }],
+            currentYearViews: [
+              { $match: { visitDate: { $gte: yearStart, $lt: nextYearStart } } },
+              { $group: { _id: null, value: { $sum: '$views' } } }
+            ],
+            currentYearUniqueVisitors: [
+              { $match: { visitDate: { $gte: yearStart, $lt: nextYearStart } } },
+              { $group: { _id: '$visitorHash' } },
+              { $count: 'value' }
+            ],
+            currentMonthViews: [
+              { $match: { visitDate: { $gte: monthStart, $lt: nextMonthStart } } },
+              { $group: { _id: null, value: { $sum: '$views' } } }
+            ],
+            currentMonthUniqueVisitors: [
+              { $match: { visitDate: { $gte: monthStart, $lt: nextMonthStart } } },
+              { $group: { _id: '$visitorHash' } },
+              { $count: 'value' }
+            ],
+            last30DaysViews: [
+              { $match: { visitDate: { $gte: last30Start, $lte: now } } },
+              { $group: { _id: null, value: { $sum: '$views' } } }
+            ],
+            last30DaysUniqueVisitors: [
+              { $match: { visitDate: { $gte: last30Start, $lte: now } } },
+              { $group: { _id: '$visitorHash' } },
+              { $count: 'value' }
+            ]
+          }
+        }
+      ])
     ]);
-    
-    const recentBookings = await Booking.find({ deletedAt: null })
-      .sort({ createdAt: -1 })
-      .limit(5);
-    
+
+    const extractFacetValue = (facets, key) => facets?.[0]?.[key]?.[0]?.value || 0;
+
+    const totalRevenuePaid = totalRevenuePaidAgg[0]?.total || 0;
+    const totalRevenueAll = totalRevenueAllAgg[0]?.total || 0;
+    const totalNights = totalNightsAgg[0]?.total || 0;
+    const totalPeople = totalPeopleAgg[0]?.total || 0;
+
+    const currentYearData = currentYearAgg[0] || {
+      bookings: 0,
+      paidBookings: 0,
+      revenuePaid: 0,
+      revenueAll: 0,
+      nights: 0
+    };
+    const previousYearData = previousYearAgg[0] || {
+      bookings: 0,
+      paidBookings: 0,
+      revenuePaid: 0,
+      revenueAll: 0,
+      nights: 0
+    };
+
+    const growth = (currentValue, previousValue) => {
+      if (!previousValue) {
+        return currentValue > 0 ? 100 : 0;
+      }
+      return Number((((currentValue - previousValue) / previousValue) * 100).toFixed(1));
+    };
+
+    const monthlyMap = new Map(monthlyStatsCurrentYear.map((item) => [item._id, item]));
+    const monthly = Array.from({ length: 12 }, (_, index) => {
+      const monthNumber = index + 1;
+      const monthData = monthlyMap.get(monthNumber) || {
+        bookings: 0,
+        paidBookings: 0,
+        revenuePaid: 0,
+        revenueAll: 0,
+        nights: 0
+      };
+
+      return {
+        month: monthNumber,
+        ...monthData
+      };
+    });
+
     res.json({
       totalBookings,
       paidBookings,
-      totalRevenue: totalRevenue[0]?.total || 0,
-      recentBookings
+      pendingBookings,
+      totalRevenue: totalRevenuePaid,
+      totalRevenueAll,
+      totalNights,
+      totalPeople,
+      recentBookings,
+      currentYear,
+      yearly: yearlyStats.map((item) => ({
+        year: item._id,
+        bookings: item.bookings,
+        paidBookings: item.paidBookings,
+        revenuePaid: item.revenuePaid,
+        revenueAll: item.revenueAll,
+        nights: item.nights
+      })),
+      currentYearStats: currentYearData,
+      previousYearStats: previousYearData,
+      growthVsPreviousYear: {
+        bookings: growth(currentYearData.bookings, previousYearData.bookings),
+        paidBookings: growth(currentYearData.paidBookings, previousYearData.paidBookings),
+        revenuePaid: growth(currentYearData.revenuePaid, previousYearData.revenuePaid),
+        revenueAll: growth(currentYearData.revenueAll, previousYearData.revenueAll),
+        nights: growth(currentYearData.nights, previousYearData.nights)
+      },
+      monthly,
+      visitors: {
+        totalViews: extractFacetValue(visitorFacets, 'totalViews'),
+        uniqueVisitors: extractFacetValue(visitorFacets, 'uniqueVisitors'),
+        currentYearViews: extractFacetValue(visitorFacets, 'currentYearViews'),
+        currentYearUniqueVisitors: extractFacetValue(visitorFacets, 'currentYearUniqueVisitors'),
+        currentMonthViews: extractFacetValue(visitorFacets, 'currentMonthViews'),
+        currentMonthUniqueVisitors: extractFacetValue(visitorFacets, 'currentMonthUniqueVisitors'),
+        last30DaysViews: extractFacetValue(visitorFacets, 'last30DaysViews'),
+        last30DaysUniqueVisitors: extractFacetValue(visitorFacets, 'last30DaysUniqueVisitors')
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -37,10 +37,12 @@ app.get('/api/health', (req, res) => {
 import bookingRoutes from './routes/bookings.js';
 import adminRoutes from './routes/admin.js';
 import paymentRoutes from './routes/payment.js';
+import analyticsRoutes from './routes/analytics.js';
 
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Serve Frontend (Production)
 const __filename = fileURLToPath(import.meta.url);
