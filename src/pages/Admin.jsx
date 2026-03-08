@@ -1591,149 +1591,6 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Statistiken */}
-        {stats && (
-          <div className="mb-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-600 text-sm font-semibold">Gesamt Buchungen</h3>
-                <p className="text-3xl font-bold text-blue-600">{stats.totalBookings}</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-600 text-sm font-semibold">Bezahlte Buchungen</h3>
-                <p className="text-3xl font-bold text-green-600">{stats.paidBookings ?? 0}</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-600 text-sm font-semibold">Offene Buchungen</h3>
-                <p className="text-3xl font-bold text-amber-600">{stats.pendingBookings ?? 0}</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-600 text-sm font-semibold">Umsatz bezahlt (gesamt)</h3>
-                <p className="text-3xl font-bold text-blue-600">
-                  {Number(stats.totalRevenue || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-700 font-semibold mb-3">Jahresvergleich ({stats.currentYear} vs {stats.currentYear - 1})</h3>
-                <div className="space-y-2 text-sm text-gray-700">
-                  <div className="flex items-center justify-between">
-                    <span>Buchungen ({stats.currentYear})</span>
-                    <span className="font-semibold">{stats.currentYearStats?.bookings ?? 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Umsatz bezahlt ({stats.currentYear})</span>
-                    <span className="font-semibold">
-                      {Number(stats.currentYearStats?.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Wachstum Buchungen</span>
-                    <span className={`font-semibold ${(stats.growthVsPreviousYear?.bookings ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                      {(stats.growthVsPreviousYear?.bookings ?? 0) >= 0 ? '+' : ''}{stats.growthVsPreviousYear?.bookings ?? 0}%
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Wachstum Umsatz bezahlt</span>
-                    <span className={`font-semibold ${(stats.growthVsPreviousYear?.revenuePaid ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                      {(stats.growthVsPreviousYear?.revenuePaid ?? 0) >= 0 ? '+' : ''}{stats.growthVsPreviousYear?.revenuePaid ?? 0}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-700 font-semibold mb-3">Website Besucher</h3>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-gray-500">Seitenaufrufe gesamt</p>
-                    <p className="text-xl font-bold text-blue-700">{stats.visitors?.totalViews ?? 0}</p>
-                  </div>
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-gray-500">Eindeutige Besucher gesamt</p>
-                    <p className="text-xl font-bold text-blue-700">{stats.visitors?.uniqueVisitors ?? 0}</p>
-                  </div>
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-gray-500">Letzte 30 Tage Aufrufe</p>
-                    <p className="text-xl font-bold text-indigo-700">{stats.visitors?.last30DaysViews ?? 0}</p>
-                  </div>
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-gray-500">Letzte 30 Tage Besucher</p>
-                    <p className="text-xl font-bold text-indigo-700">{stats.visitors?.last30DaysUniqueVisitors ?? 0}</p>
-                  </div>
-                </div>
-                <p className="mt-3 text-xs text-gray-500">
-                  Tipp: Um sich selbst auszuschließen, auf dem eigenen Gerät einmal `localStorage.setItem('mw_analytics_excluded', '1')` in der Browser-Konsole setzen.
-                </p>
-              </div>
-            </div>
-
-            {Array.isArray(stats.yearly) && stats.yearly.length > 0 && (
-              <div className="bg-white rounded-lg shadow overflow-x-auto">
-                <div className="px-5 pt-4 pb-2">
-                  <h3 className="text-gray-700 font-semibold">Jahresstatistik gesamt</h3>
-                </div>
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-600">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Jahr</th>
-                      <th className="px-4 py-2 text-left">Buchungen</th>
-                      <th className="px-4 py-2 text-left">Bezahlt</th>
-                      <th className="px-4 py-2 text-left">Nächte</th>
-                      <th className="px-4 py-2 text-left">Umsatz bezahlt</th>
-                      <th className="px-4 py-2 text-left">Umsatz gesamt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {stats.yearly.map((yearRow) => (
-                      <tr key={yearRow.year}>
-                        <td className="px-4 py-2 font-semibold">{yearRow.year}</td>
-                        <td className="px-4 py-2">{yearRow.bookings}</td>
-                        <td className="px-4 py-2">{yearRow.paidBookings}</td>
-                        <td className="px-4 py-2">{yearRow.nights}</td>
-                        <td className="px-4 py-2">{Number(yearRow.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€</td>
-                        <td className="px-4 py-2">{Number(yearRow.revenueAll || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {Array.isArray(stats.monthly) && stats.monthly.length > 0 && (
-              <div className="bg-white rounded-lg shadow overflow-x-auto">
-                <div className="px-5 pt-4 pb-2">
-                  <h3 className="text-gray-700 font-semibold">Monatsstatistik {stats.currentYear}</h3>
-                </div>
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-600">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Monat</th>
-                      <th className="px-4 py-2 text-left">Buchungen</th>
-                      <th className="px-4 py-2 text-left">Bezahlt</th>
-                      <th className="px-4 py-2 text-left">Nächte</th>
-                      <th className="px-4 py-2 text-left">Umsatz bezahlt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {stats.monthly.map((monthRow) => (
-                      <tr key={monthRow.month}>
-                        <td className="px-4 py-2 font-semibold">{String(monthRow.month).padStart(2, '0')}</td>
-                        <td className="px-4 py-2">{monthRow.bookings}</td>
-                        <td className="px-4 py-2">{monthRow.paidBookings}</td>
-                        <td className="px-4 py-2">{monthRow.nights}</td>
-                        <td className="px-4 py-2">{Number(monthRow.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Tabs */}
         <div className="mb-6 border-b">
           <button
@@ -1765,6 +1622,12 @@ export default function Admin() {
             className={`px-6 py-3 font-semibold ${activeTab === 'customers' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
           >
             Kunden ({customers.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('statistics')}
+            className={`px-6 py-3 font-semibold ${activeTab === 'statistics' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+          >
+            Statistik
           </button>
           <button
             onClick={() => setActiveTab('bot-console')}
@@ -2140,6 +2003,149 @@ export default function Admin() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* Statistik Tab */}
+        {activeTab === 'statistics' && stats && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg shadow p-5">
+                <h3 className="text-gray-600 text-sm font-semibold">Gesamt Buchungen</h3>
+                <p className="text-3xl font-bold text-blue-600">{stats.totalBookings}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-5">
+                <h3 className="text-gray-600 text-sm font-semibold">Bezahlte Buchungen</h3>
+                <p className="text-3xl font-bold text-green-600">{stats.paidBookings ?? 0}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-5">
+                <h3 className="text-gray-600 text-sm font-semibold">Offene Buchungen</h3>
+                <p className="text-3xl font-bold text-amber-600">{stats.pendingBookings ?? 0}</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-5">
+                <h3 className="text-gray-600 text-sm font-semibold">Umsatz bezahlt (gesamt)</h3>
+                <p className="text-3xl font-bold text-blue-600">
+                  {Number(stats.totalRevenue || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg shadow p-5">
+                <h3 className="text-gray-700 font-semibold mb-3">Jahresvergleich ({stats.currentYear} vs {stats.currentYear - 1})</h3>
+                <div className="space-y-2 text-sm text-gray-700">
+                  <div className="flex items-center justify-between">
+                    <span>Buchungen ({stats.currentYear})</span>
+                    <span className="font-semibold">{stats.currentYearStats?.bookings ?? 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Umsatz bezahlt ({stats.currentYear})</span>
+                    <span className="font-semibold">
+                      {Number(stats.currentYearStats?.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Wachstum Buchungen</span>
+                    <span className={`font-semibold ${(stats.growthVsPreviousYear?.bookings ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {(stats.growthVsPreviousYear?.bookings ?? 0) >= 0 ? '+' : ''}{stats.growthVsPreviousYear?.bookings ?? 0}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Wachstum Umsatz bezahlt</span>
+                    <span className={`font-semibold ${(stats.growthVsPreviousYear?.revenuePaid ?? 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {(stats.growthVsPreviousYear?.revenuePaid ?? 0) >= 0 ? '+' : ''}{stats.growthVsPreviousYear?.revenuePaid ?? 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-5">
+                <h3 className="text-gray-700 font-semibold mb-3">Website Besucher</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded border border-gray-200 p-3">
+                    <p className="text-gray-500">Seitenaufrufe gesamt</p>
+                    <p className="text-xl font-bold text-blue-700">{stats.visitors?.totalViews ?? 0}</p>
+                  </div>
+                  <div className="rounded border border-gray-200 p-3">
+                    <p className="text-gray-500">Eindeutige Besucher gesamt</p>
+                    <p className="text-xl font-bold text-blue-700">{stats.visitors?.uniqueVisitors ?? 0}</p>
+                  </div>
+                  <div className="rounded border border-gray-200 p-3">
+                    <p className="text-gray-500">Letzte 30 Tage Aufrufe</p>
+                    <p className="text-xl font-bold text-indigo-700">{stats.visitors?.last30DaysViews ?? 0}</p>
+                  </div>
+                  <div className="rounded border border-gray-200 p-3">
+                    <p className="text-gray-500">Letzte 30 Tage Besucher</p>
+                    <p className="text-xl font-bold text-indigo-700">{stats.visitors?.last30DaysUniqueVisitors ?? 0}</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-gray-500">
+                  Tipp: Um sich selbst auszuschließen, auf dem eigenen Gerät einmal `localStorage.setItem('mw_analytics_excluded', '1')` in der Browser-Konsole setzen.
+                </p>
+              </div>
+            </div>
+
+            {Array.isArray(stats.yearly) && stats.yearly.length > 0 && (
+              <div className="bg-white rounded-lg shadow overflow-x-auto">
+                <div className="px-5 pt-4 pb-2">
+                  <h3 className="text-gray-700 font-semibold">Jahresstatistik gesamt</h3>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Jahr</th>
+                      <th className="px-4 py-2 text-left">Buchungen</th>
+                      <th className="px-4 py-2 text-left">Bezahlt</th>
+                      <th className="px-4 py-2 text-left">Nächte</th>
+                      <th className="px-4 py-2 text-left">Umsatz bezahlt</th>
+                      <th className="px-4 py-2 text-left">Umsatz gesamt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {stats.yearly.map((yearRow) => (
+                      <tr key={yearRow.year}>
+                        <td className="px-4 py-2 font-semibold">{yearRow.year}</td>
+                        <td className="px-4 py-2">{yearRow.bookings}</td>
+                        <td className="px-4 py-2">{yearRow.paidBookings}</td>
+                        <td className="px-4 py-2">{yearRow.nights}</td>
+                        <td className="px-4 py-2">{Number(yearRow.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€</td>
+                        <td className="px-4 py-2">{Number(yearRow.revenueAll || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {Array.isArray(stats.monthly) && stats.monthly.length > 0 && (
+              <div className="bg-white rounded-lg shadow overflow-x-auto">
+                <div className="px-5 pt-4 pb-2">
+                  <h3 className="text-gray-700 font-semibold">Monatsstatistik {stats.currentYear}</h3>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Monat</th>
+                      <th className="px-4 py-2 text-left">Buchungen</th>
+                      <th className="px-4 py-2 text-left">Bezahlt</th>
+                      <th className="px-4 py-2 text-left">Nächte</th>
+                      <th className="px-4 py-2 text-left">Umsatz bezahlt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {stats.monthly.map((monthRow) => (
+                      <tr key={monthRow.month}>
+                        <td className="px-4 py-2 font-semibold">{String(monthRow.month).padStart(2, '0')}</td>
+                        <td className="px-4 py-2">{monthRow.bookings}</td>
+                        <td className="px-4 py-2">{monthRow.paidBookings}</td>
+                        <td className="px-4 py-2">{monthRow.nights}</td>
+                        <td className="px-4 py-2">{Number(monthRow.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

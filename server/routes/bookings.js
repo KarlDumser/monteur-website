@@ -343,7 +343,7 @@ router.post('/', async (req, res) => {
 // Buchung aktualisieren (Admin)
 router.patch('/:id', async (req, res) => {
   try {
-    const { _id, createdAt, ...updateData } = req.body;
+    const { _id, ...updateData } = req.body;
     const booking = await Booking.findById(req.params.id);
     
     if (!booking) {

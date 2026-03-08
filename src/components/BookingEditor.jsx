@@ -311,6 +311,25 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
             </div>
 
             <div>
+              <label className="block text-sm font-medium mb-1">Buchungsdatum *</label>
+              <input
+                type="date"
+                name="createdAt"
+                value={formData.createdAt ? new Date(formData.createdAt).toISOString().slice(0, 10) : ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const date = new Date(e.target.value + 'T00:00:00Z');
+                    setFormData(prev => ({
+                      ...prev,
+                      createdAt: date.toISOString()
+                    }));
+                  }
+                }}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+
+            <div>
               <label className="block text-sm font-medium mb-1">Startdatum *</label>
               <input
                 type="date"
