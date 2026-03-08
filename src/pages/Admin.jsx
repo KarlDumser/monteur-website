@@ -82,6 +82,26 @@ export default function Admin() {
     return Math.max(1, diffDays || 1);
   };
 
+  const getDateOnlyTimestamp = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 0;
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  };
+
+  const sortBookingsByCreatedAndStart = (items) => {
+    if (!Array.isArray(items)) return [];
+
+    return [...items].sort((a, b) => {
+      const createdDiff = getDateOnlyTimestamp(b.createdAt) - getDateOnlyTimestamp(a.createdAt);
+      if (createdDiff !== 0) return createdDiff;
+
+      const startDiff = new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+      if (!Number.isNaN(startDiff) && startDiff !== 0) return startDiff;
+
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  };
+
   const buildFollowUpDraftFromCustomer = async (customer) => {
     const apiUrl = getApiUrl();
     const response = await fetch(`${apiUrl}/admin/customers/${customer._id}/bookings`, {
@@ -359,7 +379,7 @@ export default function Admin() {
         return;
       }
       const bookingsData = await bookingsRes.json();
-      setBookings(bookingsData);
+      setBookings(sortBookingsByCreatedAndStart(bookingsData));
 
       // Archivierte Buchungen laden
       const deletedRes = await fetch(`${apiUrl}/admin/deleted-bookings`, { headers });
@@ -545,7 +565,7 @@ export default function Admin() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Fehler beim Markieren als bezahlt');
 
-      setBookings((prev) => prev.map((b) => (b._id === data._id ? data : b)));
+      setBookings((prev) => sortBookingsByCreatedAndStart(prev.map((b) => (b._id === data._id ? data : b))));
       setSelectedBooking(data);
       setPaymentProofFile(null);
       showActionMessage('success', 'Buchung als bezahlt markiert');
@@ -575,7 +595,7 @@ export default function Admin() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Fehler beim Rückgängig-Machen des Zahlungsstatus');
 
-      setBookings((prev) => prev.map((b) => (b._id === data._id ? data : b)));
+      setBookings((prev) => sortBookingsByCreatedAndStart(prev.map((b) => (b._id === data._id ? data : b))));
       setSelectedBooking(data);
       setPaymentProofFile(null);
       showActionMessage('success', 'Bezahlstatus wurde zurückgesetzt');
@@ -606,7 +626,7 @@ export default function Admin() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Fehler bei Kundenzuordnung');
 
-      setBookings((prev) => prev.map((b) => (b._id === data._id ? data : b)));
+      setBookings((prev) => sortBookingsByCreatedAndStart(prev.map((b) => (b._id === data._id ? data : b))));
       setSelectedBooking(data);
       showActionMessage('success', 'Kunde zur Buchung zugeordnet');
       loadData();
@@ -1036,7 +1056,7 @@ export default function Admin() {
             auth={auth}
             onClose={() => setEditingBooking(null)}
             onSave={(updated) => {
-              setBookings(bookings.map(b => b._id === updated._id ? updated : b));
+              setBookings((prev) => sortBookingsByCreatedAndStart(prev.map((b) => (b._id === updated._id ? updated : b))));
               setEditingBooking(null);
               showActionMessage('success', 'Buchung erfolgreich aktualisiert');
             }}
@@ -1047,9 +1067,10 @@ export default function Admin() {
         {showNewBookingForm && (
           <NewBookingForm
             auth={auth}
+            customers={customers}
             onClose={() => setShowNewBookingForm(false)}
             onSuccess={(newBooking) => {
-              setBookings([newBooking, ...bookings]);
+              setBookings((prev) => sortBookingsByCreatedAndStart([newBooking, ...prev]));
               setShowNewBookingForm(false);
               showActionMessage('success', 'Buchung erfolgreich erstellt');
               loadData();

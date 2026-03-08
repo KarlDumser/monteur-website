@@ -208,7 +208,7 @@ router.get('/bot-console/logs', async (req, res) => {
 // Alle Buchungen abrufen
 router.get('/bookings', async (req, res) => {
   try {
-    const bookings = await Booking.find({ deletedAt: null }).sort({ createdAt: -1 });
+    const bookings = await Booking.find({ deletedAt: null }).sort({ createdAt: -1, startDate: -1 });
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -218,10 +218,19 @@ router.get('/bookings', async (req, res) => {
 // Neue Buchung erstellen
 router.post('/bookings', async (req, res) => {
   try {
-    const { sendConfirmationEmail = true, ...bookingPayload } = req.body || {};
+    const { sendConfirmationEmail = true, customerId = null, ...bookingPayload } = req.body || {};
     const booking = new Booking(bookingPayload);
-    const customer = await findOrCreateCustomerFromBooking(bookingPayload);
-    booking.customerId = customer._id;
+
+    let customer = null;
+    if (customerId) {
+      customer = await Customer.findOne({ _id: customerId, isActive: true });
+    }
+
+    if (!customer) {
+      customer = await findOrCreateCustomerFromBooking(bookingPayload);
+    }
+
+    booking.customerId = customer?._id || null;
     await booking.save();
 
     await BlockedDate.create({

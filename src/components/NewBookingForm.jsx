@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { getApiUrl } from '../utils/api';
 
-export default function NewBookingForm({ auth, onClose, onSuccess }) {
+export default function NewBookingForm({ auth, customers = [], onClose, onSuccess }) {
   const [formData, setFormData] = useState({
+    customerId: '',
     name: '',
     email: '',
     phone: '',
@@ -146,6 +147,7 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
 
     setFormData((prev) => ({
       ...prev,
+      customerId: '',
       name: 'Max Mustermann',
       email: 'max.mustermann@example.com',
       phone: '015221557400',
@@ -182,6 +184,27 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
     }
   };
 
+  const applyCustomerToForm = (customerId) => {
+    const selectedCustomer = customers.find((customer) => String(customer._id) === String(customerId));
+
+    if (!selectedCustomer) {
+      setFormData((prev) => ({
+        ...prev,
+        customerId: ''
+      }));
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      customerId: String(selectedCustomer._id),
+      name: selectedCustomer.contactPerson || selectedCustomer.name || prev.name,
+      email: selectedCustomer.email || prev.email,
+      phone: selectedCustomer.phone || selectedCustomer.mobile || prev.phone,
+      company: selectedCustomer.name || prev.company
+    }));
+  };
+
   const executeSave = async () => {
     clearCountdown();
     setCountdownOpen(false);
@@ -203,6 +226,7 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
 
     const payload = {
       ...formData,
+      customerId: formData.customerId || null,
       people,
       nights: Number(formData.nights) || 0,
       pricePerNight: Number(formData.pricePerNight) || 0,
@@ -289,6 +313,23 @@ export default function NewBookingForm({ auth, onClose, onSuccess }) {
           )}
 
           <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Kunde aus Datenbank wählen</label>
+              <select
+                name="customerId"
+                value={formData.customerId}
+                onChange={(e) => applyCustomerToForm(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              >
+                <option value="">- Kein Kunde vorauswählen -</option>
+                {customers.map((customer) => (
+                  <option key={customer._id} value={customer._id}>
+                    {(customer.customerNumber || '---')} · {customer.name} ({customer.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Name *</label>
               <input
