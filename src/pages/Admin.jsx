@@ -1591,6 +1591,30 @@ export default function Admin() {
           </div>
         )}
 
+        {/* KPI Karten - immer sichtbar */}
+        {stats && (
+          <div className="mb-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow p-5">
+              <h3 className="text-gray-600 text-sm font-semibold">Gesamt Buchungen</h3>
+              <p className="text-3xl font-bold text-blue-600">{stats.totalBookings}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-5">
+              <h3 className="text-gray-600 text-sm font-semibold">Bezahlte Buchungen</h3>
+              <p className="text-3xl font-bold text-green-600">{stats.paidBookings ?? 0}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-5">
+              <h3 className="text-gray-600 text-sm font-semibold">Offene Buchungen</h3>
+              <p className="text-3xl font-bold text-amber-600">{stats.pendingBookings ?? 0}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-5">
+              <h3 className="text-gray-600 text-sm font-semibold">Umsatz bezahlt (gesamt)</h3>
+              <p className="text-3xl font-bold text-blue-600">
+                {Number(stats.totalRevenue || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="mb-6 border-b">
           <button
@@ -2009,27 +2033,6 @@ export default function Admin() {
         {/* Statistik Tab */}
         {activeTab === 'statistics' && stats && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-600 text-sm font-semibold">Gesamt Buchungen</h3>
-                <p className="text-3xl font-bold text-blue-600">{stats.totalBookings}</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-600 text-sm font-semibold">Bezahlte Buchungen</h3>
-                <p className="text-3xl font-bold text-green-600">{stats.paidBookings ?? 0}</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-600 text-sm font-semibold">Offene Buchungen</h3>
-                <p className="text-3xl font-bold text-amber-600">{stats.pendingBookings ?? 0}</p>
-              </div>
-              <div className="bg-white rounded-lg shadow p-5">
-                <h3 className="text-gray-600 text-sm font-semibold">Umsatz bezahlt (gesamt)</h3>
-                <p className="text-3xl font-bold text-blue-600">
-                  {Number(stats.totalRevenue || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                </p>
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div className="bg-white rounded-lg shadow p-5">
                 <h3 className="text-gray-700 font-semibold mb-3">Jahresvergleich ({stats.currentYear} vs {stats.currentYear - 1})</h3>
