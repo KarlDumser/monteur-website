@@ -1,5 +1,4 @@
 import time
-import uuid
 import os
 from gpt_logic import is_rental_related, clean_email_body, generate_reply, extract_booking_dates, analyze_booking_interest
 from datetime import datetime, timedelta
@@ -8,7 +7,6 @@ from email_sender import send_email
 from smart_send_logic import extract_target_email
 from notifier import send_push
 from calendar_utils import create_booking_event
-from gpt_logic import clean_email_body
 from forward_detection import extract_forwarded_sender
 from dotenv import load_dotenv
 
@@ -16,6 +14,7 @@ load_dotenv()
 
 YOUR_EMAIL = os.getenv("EMAIL_ADDRESS", "monteur-wohnung@dumser.net")
 MAX_EMAIL_AGE_HOURS = int(os.getenv("MAX_EMAIL_AGE_HOURS", "48"))
+BOT_REPLY_DELAY_SECONDS = int(os.getenv("BOT_REPLY_DELAY_SECONDS", "0"))
 
 # Nur diese 4 Vermittlungsseiten duerfen Anfragen einreichen
 ALLOWED_DOMAINS = {
@@ -199,8 +198,9 @@ def main():
                 print("📍 Keine Vermietungsanfrage – ignoriert.")
                 continue
 
-            print("⏳ Warte 2 Minuten...")
-            time.sleep(12)
+            if BOT_REPLY_DELAY_SECONDS > 0:
+                print(f"⏳ Warte {BOT_REPLY_DELAY_SECONDS} Sekunden vor Antwort...")
+                time.sleep(BOT_REPLY_DELAY_SECONDS)
 
             clean_body = clean_email_body(mail["body"])
             reply = generate_reply(clean_body)
