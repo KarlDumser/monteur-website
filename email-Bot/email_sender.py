@@ -48,21 +48,19 @@ def send_email(to_address, subject, body):
 
         # ➕ Kopie der Antwort an dich selbst – klar als Bot-Benachrichtigung formatiert
         zeitpunkt = datetime.now().strftime("%d.%m.%Y um %H:%M Uhr")
-        copy_body = (
-            "=" * 55 + "\n"
-            "  BOT-ANTWORT AUTOMATISCH GESENDET\n"
-            "=" * 55 + "\n\n"
-            f"  Anfrage von:  {to_address}\n"
-            f"  Betreff:      {subject}\n"
-            f"  Zeitpunkt:    {zeitpunkt}\n\n"
-            + "-" * 55 + "\n"
-            "  VERSENDETE ANTWORT:\n"
-            + "-" * 55 + "\n\n"
-            + body.strip() + "\n\n"
-            + "=" * 55 + "\n"
-            "  Diese Nachricht wurde automatisch vom Bot erstellt.\n"
-            "=" * 55 + "\n"
-        )
+        copy_body = "\n".join([
+            "BOT-ANTWORT AUTOMATISCH GESENDET",
+            "",
+            f"Anfrage von: {to_address}",
+            f"Betreff: {subject}",
+            f"Zeitpunkt: {zeitpunkt}",
+            "",
+            "VERSENDETE ANTWORT:",
+            "",
+            body.strip(),
+            "",
+            "Diese Nachricht wurde automatisch vom Bot erstellt.",
+        ])
         copy = MIMEText(copy_body, "plain", "utf-8")
         copy["Subject"] = f"[Bot] Antwort an {to_address} – {subject[:50]}"
         copy["From"] = EMAIL
