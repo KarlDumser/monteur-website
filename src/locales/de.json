@@ -6,7 +6,8 @@
     "impressum": "Impressum",
     "datenschutz": "Datenschutz",
     "agb": "AGB",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "widerruf": "Widerrufsrecht"
   },
   "header": {
     "title": "Monteurwohnung Dumser",
@@ -60,7 +61,11 @@
     "phone": "Telefon",
     "email": "E-Mail",
     "rights": "Alle Rechte vorbehalten",
-    "followUs": "Folgen Sie uns"
+    "followUs": "Folgen Sie uns",
+    "description": "Komfortable und praktische Monteurwohnungen in bester Lage.",
+    "mobileLabel": "Mobil",
+    "landlineLabel": "Festnetz",
+    "country": "Deutschland"
   },
   "common": {
     "loading": "Lädt...",
@@ -148,5 +153,150 @@
     "processing": "Buchung wird verarbeitet...",
     "bookNow": "Jetzt verbindlich buchen",
     "invoiceByEmail": "Nach Buchung erhalten Sie Ihre Rechnung per E-Mail."
+  },
+  "calendar": {
+    "available": "Verfuegbar",
+    "booked": "Gebucht"
+  },
+  "commute": {
+    "title": "Entfernung zur Baustelle",
+    "intro": "Geben Sie die Adresse Ihrer Baustelle ein. Wir berechnen automatisch Fahrzeit und Entfernung zu beiden Wohnungen.",
+    "placeholder": "z.B. Landsberger Strasse 312, 80687 Muenchen",
+    "submit": "Route berechnen",
+    "calculating": "Berechne...",
+    "siteLabel": "Baustelle",
+    "note": "Hinweis: Fahrzeiten basieren auf aktueller Routenschaetzung (Auto) und koennen je nach Verkehr variieren.",
+    "distanceDuration": "{{distance}} km - ca. {{duration}} Min.",
+    "apartments": {
+      "fruehling": {
+        "name": "Fruehlingstrasse - Neubau",
+        "address": "Fruehlingstrasse 8, 82152 Krailling, Deutschland"
+      },
+      "hackerberg": {
+        "name": "Hackerberg - Penthouse",
+        "address": "Hackerberg 4, 82152 Krailling, Deutschland"
+      }
+    },
+    "errors": {
+      "addressSearchFailed": "Adresssuche fehlgeschlagen",
+      "addressNotFound": "Adresse nicht gefunden. Bitte genauer eingeben.",
+      "routeFailed": "Routenberechnung fehlgeschlagen",
+      "noRoute": "Keine Route gefunden",
+      "emptyAddress": "Bitte geben Sie eine Baustellenadresse ein.",
+      "generic": "Die Berechnung konnte nicht durchgefuehrt werden."
+    }
+  },
+  "properties": {
+    "home": {
+      "hackerberg": {
+        "titel": "Wohnung Krailling, Hackerberg - Penthouse",
+        "beschreibung": "2,5-Zimmer Penthousewohnung im 5. Stock mit Aufzug und Panorama Balkon",
+        "preis": "ab 18EUR pro Person/Nacht!",
+        "zimmer": "2,5 Zimmer",
+        "flaeche": "65 m²",
+        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "features": [
+          "Waschmaschine mit Trockner im Keller",
+          "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
+          "WLAN 150 Mbit/s frei",
+          "Sat-TV",
+          "Parkplaetze direkt vor dem Haus",
+          "Ruhige Wohnlage",
+          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+        ]
+      },
+      "neubau": {
+        "titel": "Wohnung Krailling, Fruehlingstrasse - Neubau",
+        "beschreibung": "2-Zimmerwohnung mit eigenem Zugang, Garten mit Grillplatz",
+        "preis": "ab 16EUR pro Person/Nacht!",
+        "zimmer": "2 Zimmer",
+        "flaeche": "58 m²",
+        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "features": [
+          "Waschmaschine mit Trockner",
+          "2 Einzelbetten in jedem Zimmer (je eines Queen size)",
+          "WLAN 150 Mbit/s frei",
+          "Sat-TV",
+          "Parkplaetze fuer PKW & LKW mit Haenger vor dem Haus",
+          "Gartenbenutzung mit Grillmoeglichkeit",
+          "Ruhige Wohnlage",
+          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+        ]
+      }
+    },
+    "booking": {
+      "neubau": {
+        "titel": "Fruehlingstrasse - Neubau",
+        "beschreibung": "2-Zimmerwohnung mit vollausgestatteter Kueche, Bad, Garten mit Grillplatz. Ideal fuer handwerkliche Fachkraefte und Monteure.",
+        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "zimmer": "2 Zimmer",
+        "flaeche": "58 m²",
+        "internet": "WLAN 150 Mbit/s",
+        "extras": "Garten, Grill, ruhige Lage",
+        "features": [
+          "Waschmaschine mit Trockner",
+          "3 Einzelbetten in jedem Zimmer (je eines Queen size)",
+          "WLAN 150 Mbit/s frei",
+          "Sat-TV",
+          "Parkplaetze fuer PKW & LKW mit Haenger vor dem Haus",
+          "Gartenbenutzung mit Grillmoeglichkeit",
+          "Ruhige Wohnlage",
+          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+        ],
+        "preis": "110 EUR/Nacht + 100 EUR Endreinigung"
+      },
+      "hackerberg": {
+        "titel": "Hackerberg - Penthouse",
+        "beschreibung": "2-Zimmer-Penthouse mit grosszuegigem 35m² Balkon, Kueche, Bad und Panoramablick. 2 Einzelbetten in jedem Zimmer.",
+        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "zimmer": "2,5 Zimmer",
+        "flaeche": "65 m²",
+        "internet": "WLAN 150 Mbit/s",
+        "extras": "Grosser Balkon, Panoramablick, ruhige Lage",
+        "features": [
+          "Waschmaschine mit Trockner im Keller",
+          "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
+          "WLAN 150 Mbit/s frei",
+          "Sat-TV",
+          "Parkplaetze direkt vor dem Haus",
+          "Ruhige Wohnlage",
+          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+        ],
+        "preis": "110 EUR/Nacht + 100 EUR Endreinigung"
+      },
+      "kombi": {
+        "titel": "Kombi-Paket: Hackerberg + Fruehlingstrasse",
+        "beschreibung": "Beide Wohnungen zusammen. Ideal fuer groessere Teams mit 7-11 Personen.",
+        "internet": "WLAN 100-150 Mbit/s",
+        "extras": "Zwei Wohnungen, zwei Kuechen, zwei Baeder",
+        "preis": "Kombi-Paket",
+        "galleries": {
+          "fruehling": "Fruehlingstrasse",
+          "hackerberg": "Hackerberg"
+        }
+      }
+    }
+  },
+  "bookingPage": {
+    "steps": {
+      "bookApartment": "Wohnung buchen",
+      "chooseDates": "Schritt 1: Waehlen Sie Ihre Anreisedaten",
+      "availableApartments": "Verfuegbare Wohnungen",
+      "chooseApartment": "Schritt 2: Waehlen Sie eine Wohnung",
+      "yourData": "Ihre Daten",
+      "companyAndContact": "Schritt 3: Firmendaten und Kontaktinformationen"
+    }
+  },
+  "impressumPage": {
+    "title": "Impressum"
+  },
+  "datenschutzPage": {
+    "title": "Datenschutzerklaerung"
+  },
+  "agbPage": {
+    "title": "Allgemeine Geschaeftsbedingungen (AGB)"
+  },
+  "widerrufPage": {
+    "title": "Widerrufsrecht und Widerrufsformular"
   }
 }

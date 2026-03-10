@@ -6,7 +6,8 @@
     "impressum": "Impresum",
     "datenschutz": "Ochrona danych",
     "agb": "Warunki",
-    "logout": "Wyloguj się"
+    "logout": "Wyloguj się",
+    "widerruf": "Prawo odstapienia"
   },
   "header": {
     "title": "Apartament Montażowy Dumser",
@@ -73,7 +74,11 @@
     "phone": "Telefon",
     "email": "E-mail",
     "rights": "Wszelkie prawa zastrzeżone",
-    "followUs": "Obserwuj nas"
+    "followUs": "Obserwuj nas",
+    "description": "Wygodne i praktyczne mieszkania dla monterow w bardzo dobrej lokalizacji.",
+    "mobileLabel": "Komorka",
+    "landlineLabel": "Stacjonarny",
+    "country": "Niemcy"
   },
   "common": {
     "loading": "Ładuje...",
@@ -161,5 +166,150 @@
     "processing": "Przetwarzanie rezerwacji...",
     "bookNow": "Zarezerwuj teraz wiążąco",
     "invoiceByEmail": "Po rezerwacji otrzymasz fakturę e-mailem."
+  },
+  "calendar": {
+    "available": "Dostepne",
+    "booked": "Zarezerwowane"
+  },
+  "commute": {
+    "title": "Odleglosc do placu budowy",
+    "intro": "Podaj adres placu budowy. Automatycznie obliczymy czas dojazdu i odleglosc do obu mieszkan.",
+    "placeholder": "np. Landsberger Strasse 312, 80687 Muenchen",
+    "submit": "Oblicz trase",
+    "calculating": "Obliczanie...",
+    "siteLabel": "Plac budowy",
+    "note": "Uwaga: czasy przejazdu opieraja sie na aktualnym szacunku trasy samochodem i moga sie roznic w zaleznosci od ruchu.",
+    "distanceDuration": "{{distance}} km - ok. {{duration}} min.",
+    "apartments": {
+      "fruehling": {
+        "name": "Fruehlingstrasse - Nowy budynek",
+        "address": "Fruehlingstrasse 8, 82152 Krailling, Niemcy"
+      },
+      "hackerberg": {
+        "name": "Hackerberg - Penthouse",
+        "address": "Hackerberg 4, 82152 Krailling, Niemcy"
+      }
+    },
+    "errors": {
+      "addressSearchFailed": "Wyszukiwanie adresu nie powiodlo sie",
+      "addressNotFound": "Nie znaleziono adresu. Podaj go dokladniej.",
+      "routeFailed": "Obliczenie trasy nie powiodlo sie",
+      "noRoute": "Nie znaleziono trasy",
+      "emptyAddress": "Podaj adres placu budowy.",
+      "generic": "Nie udalo sie wykonac obliczenia."
+    }
+  },
+  "properties": {
+    "home": {
+      "hackerberg": {
+        "titel": "Mieszkanie Krailling, Hackerberg - Penthouse",
+        "beschreibung": "Penthouse 2,5-pokojowy na 5. pietrze z winda i balkonem panoramicznym",
+        "preis": "od 18EUR za osobe/noc!",
+        "zimmer": "2,5 pokoju",
+        "flaeche": "65 m²",
+        "details": "Wlasne wejscie, w pelni wyposazona kuchnia i lazienka (z wanna i prysznicem)",
+        "features": [
+          "Pralka z suszarka w piwnicy",
+          "2 lozka pojedyncze w 1. pokoju, 2 lozka pojedyncze w 2. pokoju (jedno Queen Size)",
+          "Bezplatne WiFi 150 Mbit/s",
+          "Telewizja satelitarna",
+          "Parking bezposrednio przed domem",
+          "Spokojna okolica mieszkalna",
+          "W poblizu: ogrodek piwny, jezioro kapielowe, sklepy i banki"
+        ]
+      },
+      "neubau": {
+        "titel": "Mieszkanie Krailling, Fruehlingstrasse - Nowy budynek",
+        "beschreibung": "Mieszkanie 2-pokojowe z wlasnym wejsciem i ogrodem z miejscem do grillowania",
+        "preis": "od 16EUR za osobe/noc!",
+        "zimmer": "2 pokoje",
+        "flaeche": "58 m²",
+        "details": "Wlasne wejscie, w pelni wyposazona kuchnia i lazienka (z wanna i prysznicem)",
+        "features": [
+          "Pralka z suszarka",
+          "2 lozka pojedyncze w kazdym pokoju (po jednym Queen Size)",
+          "Bezplatne WiFi 150 Mbit/s",
+          "Telewizja satelitarna",
+          "Parking dla aut osobowych i ciezarowych z przyczepa przed domem",
+          "Mozliwosc korzystania z ogrodu i grilla",
+          "Spokojna okolica mieszkalna",
+          "W poblizu: ogrodek piwny, jezioro kapielowe, sklepy i banki"
+        ]
+      }
+    },
+    "booking": {
+      "neubau": {
+        "titel": "Fruehlingstrasse - Nowy budynek",
+        "beschreibung": "Mieszkanie 2-pokojowe z w pelni wyposazona kuchnia, lazienka i ogrodem z grillem. Idealne dla fachowcow i monterow.",
+        "details": "Wlasne wejscie, w pelni wyposazona kuchnia i lazienka (z wanna i prysznicem)",
+        "zimmer": "2 pokoje",
+        "flaeche": "58 m²",
+        "internet": "WiFi 150 Mbit/s",
+        "extras": "Ogrod, grill, spokojna lokalizacja",
+        "features": [
+          "Pralka z suszarka",
+          "3 lozka pojedyncze w kazdym pokoju (po jednym Queen Size)",
+          "Bezplatne WiFi 150 Mbit/s",
+          "Telewizja satelitarna",
+          "Parking dla aut osobowych i ciezarowych z przyczepa przed domem",
+          "Mozliwosc korzystania z ogrodu i grilla",
+          "Spokojna okolica mieszkalna",
+          "W poblizu: ogrodek piwny, jezioro kapielowe, sklepy i banki"
+        ],
+        "preis": "110 EUR/noc + 100 EUR sprzatanie koncowe"
+      },
+      "hackerberg": {
+        "titel": "Hackerberg - Penthouse",
+        "beschreibung": "Penthouse 2-pokojowy z duzym balkonem 35 m², kuchnia, lazienka i panoramicznym widokiem. 2 lozka pojedyncze w kazdym pokoju.",
+        "details": "Wlasne wejscie, w pelni wyposazona kuchnia i lazienka (z wanna i prysznicem)",
+        "zimmer": "2,5 pokoju",
+        "flaeche": "65 m²",
+        "internet": "WiFi 150 Mbit/s",
+        "extras": "Duzy balkon, panoramiczny widok, spokojna lokalizacja",
+        "features": [
+          "Pralka z suszarka w piwnicy",
+          "2 lozka pojedyncze w 1. pokoju, 2 lozka pojedyncze w 2. pokoju (jedno Queen Size)",
+          "Bezplatne WiFi 150 Mbit/s",
+          "Telewizja satelitarna",
+          "Parking bezposrednio przed domem",
+          "Spokojna okolica mieszkalna",
+          "W poblizu: ogrodek piwny, jezioro kapielowe, sklepy i banki"
+        ],
+        "preis": "110 EUR/noc + 100 EUR sprzatanie koncowe"
+      },
+      "kombi": {
+        "titel": "Pakiet laczony: Hackerberg + Fruehlingstrasse",
+        "beschreibung": "Oba mieszkania razem. Idealne dla wiekszych zespolow od 7 do 11 osob.",
+        "internet": "WiFi 100-150 Mbit/s",
+        "extras": "Dwa mieszkania, dwie kuchnie, dwie lazienki",
+        "preis": "Pakiet laczony",
+        "galleries": {
+          "fruehling": "Fruehlingstrasse",
+          "hackerberg": "Hackerberg"
+        }
+      }
+    }
+  },
+  "bookingPage": {
+    "steps": {
+      "bookApartment": "Wohnung buchen",
+      "chooseDates": "Schritt 1: Waehlen Sie Ihre Anreisedaten",
+      "availableApartments": "Verfuegbare Wohnungen",
+      "chooseApartment": "Schritt 2: Waehlen Sie eine Wohnung",
+      "yourData": "Ihre Daten",
+      "companyAndContact": "Schritt 3: Firmendaten und Kontaktinformationen"
+    }
+  },
+  "impressumPage": {
+    "title": "Impressum"
+  },
+  "datenschutzPage": {
+    "title": "Datenschutzerklaerung"
+  },
+  "agbPage": {
+    "title": "Allgemeine Geschaeftsbedingungen (AGB)"
+  },
+  "widerrufPage": {
+    "title": "Widerrufsrecht und Widerrufsformular"
   }
 }

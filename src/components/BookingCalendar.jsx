@@ -1,9 +1,11 @@
 import React from 'react';
 import Calendar from 'react-calendar';
+import { useTranslation } from 'react-i18next';
 import 'react-calendar/dist/Calendar.css';
 import './BookingCalendar.css';
 
 export default function BookingCalendar({ periods }) {
+  const { t } = useTranslation();
   // Erstelle ein Set aller belegten Tage
   const bookedDates = new Set();
   periods.forEach(({ start, end }) => {
@@ -55,11 +57,11 @@ export default function BookingCalendar({ periods }) {
       <div className="calendar-legend">
         <div className="legend-item">
           <div className="legend-color available"></div>
-          <span>Verfügbar</span>
+          <span>{t('calendar.available')}</span>
         </div>
         <div className="legend-item">
           <div className="legend-color booked"></div>
-          <span>Gebucht</span>
+          <span>{t('calendar.booked')}</span>
         </div>
       </div>
     </div>

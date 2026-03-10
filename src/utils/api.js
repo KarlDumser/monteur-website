@@ -7,8 +7,11 @@ export const getApiUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
   
-  // Runtime check: Bin ich auf localhost? → local, sonst → production
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  // Runtime check: Bin ich lokal? → local, sonst → production
+  if (
+    typeof window !== 'undefined' &&
+    ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
+  ) {
     console.log('🏠 Lokale Umgebung erkannt - nutze localhost:3001');
     return 'http://localhost:3001';
   }

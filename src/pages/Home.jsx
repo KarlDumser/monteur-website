@@ -32,44 +32,17 @@ export default function Home() {
   const properties = [
     {
       id: 1,
-      titel: "Wohnung Krailling, Hackerberg – Penthouse",
-      beschreibung: "2,5-Zimmer Penthousewohnung im 5. Stock mit Aufzug und Panorama Balkon",
-      preis: "ab 18€ pro Person/Nacht!",
-      zimmer: "2,5 Zimmer",
+      ...t('properties.home.hackerberg', { returnObjects: true }),
       flaeche: "65 m²",
       folder: "Wohnung-Hackerberg",
       wohnung: "hackerberg",
-      details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
-      features: [
-        "Waschmaschine mit Trockner im Keller",
-        "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
-        "WLAN 150 Mbit/s frei",
-        "Sat-TV",
-        "Parkplätze direkt vor dem Haus",
-        "Ruhige Wohnlage",
-        "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
-      ]
     },
     {
       id: 2,
-      titel: "Wohnung Krailling, Frühlingstraße – Neubau",
-      beschreibung: "2-Zimmerwohnung mit eigenem Zugang, Garten mit Grillplatz",
-      preis: "ab 16€ pro Person/Nacht!",
-      zimmer: "2 Zimmer",
+      ...t('properties.home.neubau', { returnObjects: true }),
       flaeche: "58 m²",
       folder: "Wohnung-Fruehlingstrasse",
       wohnung: "neubau",
-      details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
-      features: [
-        "Waschmaschine mit Trockner",
-        "2 Einzelbetten in jedem Zimmer (je eines Queen size)",
-        "WLAN 150 Mbit/s frei",
-        "Sat-TV",
-        "Parkplätze für PKW & LKW mit Hänger vor dem Haus",
-        "Gartenbenutzung mit Grillmöglichkeit",
-        "Ruhige Wohnlage",
-        "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
-      ]
     }
   ];
 

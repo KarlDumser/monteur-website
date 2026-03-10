@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Polyline, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import { useTranslation } from "react-i18next";
 
-const APARTMENTS = [
+const APARTMENT_META = [
   {
     id: "fruehling",
-    name: "Fruehlingstrasse - Neubau",
-    address: "Fruehlingstrasse 8, 82152 Krailling, Deutschland",
     color: "#2563eb",
   },
   {
     id: "hackerberg",
-    name: "Hackerberg - Penthouse",
-    address: "Hackerberg 4, 82152 Krailling, Deutschland",
     color: "#16a34a",
   },
 ];
@@ -29,58 +26,71 @@ function FitToRoutes({ points }) {
   return null;
 }
 
-async function geocodeAddress(address) {
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Adresssuche fehlgeschlagen");
-  }
-
-  const results = await response.json();
-  if (!results.length) {
-    throw new Error("Adresse nicht gefunden. Bitte genauer eingeben.");
-  }
-
-  return {
-    lat: Number(results[0].lat),
-    lng: Number(results[0].lon),
-    label: results[0].display_name,
-  };
-}
-
-async function calculateRoute(from, to) {
-  const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error("Routenberechnung fehlgeschlagen");
-  }
-
-  const data = await response.json();
-  if (!data.routes || !data.routes.length) {
-    throw new Error("Keine Route gefunden");
-  }
-
-  const route = data.routes[0];
-  return {
-    distanceKm: route.distance / 1000,
-    durationMin: route.duration / 60,
-    geometry: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
-  };
-}
-
-export default function CommuteCalculator({ title = "Entfernung zur Baustelle", className = "" }) {
+export default function CommuteCalculator({ title, className = "" }) {
+  const { t } = useTranslation();
   const [siteAddress, setSiteAddress] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sitePoint, setSitePoint] = useState(null);
   const [results, setResults] = useState([]);
   const [selectedRoute, setSelectedRoute] = useState(null);
+
+  const apartments = useMemo(
+    () =>
+      APARTMENT_META.map((apartment) => ({
+        ...apartment,
+        name: t(`commute.apartments.${apartment.id}.name`),
+        address: t(`commute.apartments.${apartment.id}.address`),
+      })),
+    [t]
+  );
+
+  const heading = title || t("commute.title");
+
+  const geocodeAddress = async (address) => {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`;
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(t("commute.errors.addressSearchFailed"));
+    }
+
+    const searchResults = await response.json();
+    if (!searchResults.length) {
+      throw new Error(t("commute.errors.addressNotFound"));
+    }
+
+    return {
+      lat: Number(searchResults[0].lat),
+      lng: Number(searchResults[0].lon),
+      label: searchResults[0].display_name,
+    };
+  };
+
+  const calculateRoute = async (from, to) => {
+    const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(t("commute.errors.routeFailed"));
+    }
+
+    const data = await response.json();
+    if (!data.routes || !data.routes.length) {
+      throw new Error(t("commute.errors.noRoute"));
+    }
+
+    const route = data.routes[0];
+    return {
+      distanceKm: route.distance / 1000,
+      durationMin: route.duration / 60,
+      geometry: route.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
+    };
+  };
 
   const mapPoints = useMemo(() => {
     const points = [];
@@ -98,7 +108,7 @@ export default function CommuteCalculator({ title = "Entfernung zur Baustelle", 
   const handleCalculate = async (e) => {
     e.preventDefault();
     if (!siteAddress.trim()) {
-      setError("Bitte geben Sie eine Baustellenadresse ein.");
+      setError(t("commute.errors.emptyAddress"));
       return;
     }
 
@@ -110,7 +120,7 @@ export default function CommuteCalculator({ title = "Entfernung zur Baustelle", 
       setSitePoint(site);
 
       const computed = [];
-      for (const apartment of APARTMENTS) {
+      for (const apartment of apartments) {
         const apartmentPoint = await geocodeAddress(apartment.address);
         const route = await calculateRoute(site, apartmentPoint);
 
@@ -125,7 +135,7 @@ export default function CommuteCalculator({ title = "Entfernung zur Baustelle", 
       setResults(computed);
       setSelectedRoute(computed[0]?.apartment.id || null);
     } catch (err) {
-      setError(err.message || "Die Berechnung konnte nicht durchgefuehrt werden.");
+      setError(err.message || t("commute.errors.generic"));
       setResults([]);
       setSitePoint(null);
       setSelectedRoute(null);
@@ -136,9 +146,9 @@ export default function CommuteCalculator({ title = "Entfernung zur Baustelle", 
 
   return (
     <section className={`bg-white rounded-2xl shadow-lg border border-blue-100 p-6 ${className}`}>
-      <h2 className="text-2xl font-bold text-gray-800 mb-2">{title}</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">{heading}</h2>
       <p className="text-gray-600 mb-5">
-        Geben Sie die Adresse Ihrer Baustelle ein. Wir berechnen automatisch Fahrzeit und Entfernung zu beiden Wohnungen.
+        {t("commute.intro")}
       </p>
 
       <form onSubmit={handleCalculate} className="flex flex-col md:flex-row gap-3 mb-5">
@@ -146,7 +156,7 @@ export default function CommuteCalculator({ title = "Entfernung zur Baustelle", 
           type="text"
           value={siteAddress}
           onChange={(e) => setSiteAddress(e.target.value)}
-          placeholder="z.B. Landsberger Strasse 312, 80687 Muenchen"
+          placeholder={t("commute.placeholder")}
           className="flex-1 border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500"
         />
         <button
@@ -154,7 +164,7 @@ export default function CommuteCalculator({ title = "Entfernung zur Baustelle", 
           disabled={loading}
           className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold px-6 py-3 rounded-xl transition"
         >
-          {loading ? "Berechne..." : "Route berechnen"}
+          {loading ? t("commute.calculating") : t("commute.submit")}
         </button>
       </form>
 
@@ -181,7 +191,10 @@ export default function CommuteCalculator({ title = "Entfernung zur Baustelle", 
                 <p className="font-bold text-gray-800 mb-1">{result.apartment.name}</p>
                 <p className="text-sm text-gray-500 mb-3">{result.apartment.address}</p>
                 <p className="text-sm text-gray-700">
-                  <strong>{result.distanceKm.toFixed(1)} km</strong> - ca. <strong>{Math.round(result.durationMin)} Min.</strong>
+                  {t("commute.distanceDuration", {
+                    distance: result.distanceKm.toFixed(1),
+                    duration: Math.round(result.durationMin),
+                  })}
                 </p>
               </button>
             ))}
@@ -196,7 +209,7 @@ export default function CommuteCalculator({ title = "Entfernung zur Baustelle", 
 
               {sitePoint && (
                 <CircleMarker center={[sitePoint.lat, sitePoint.lng]} radius={10} pathOptions={{ color: "#111827", fillColor: "#111827", fillOpacity: 1 }}>
-                  <Popup>Baustelle</Popup>
+                  <Popup>{t("commute.siteLabel")}</Popup>
                 </CircleMarker>
               )}
 
@@ -224,7 +237,7 @@ export default function CommuteCalculator({ title = "Entfernung zur Baustelle", 
           </div>
 
           <p className="text-xs text-gray-500 mt-3">
-            Hinweis: Fahrzeiten basieren auf aktueller Routenschaetzung (Auto) und koennen je nach Verkehr variieren.
+            {t("commute.note")}
           </p>
         </>
       )}

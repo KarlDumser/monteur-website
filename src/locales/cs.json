@@ -6,7 +6,8 @@
     "impressum": "Impressum",
     "datenschutz": "Ochrana údajů",
     "agb": "Podmínky",
-    "logout": "Odhlášení"
+    "logout": "Odhlášení",
+    "widerruf": "Pravo na odstoupeni"
   },
   "header": {
     "title": "Bytové ubytování pro montéry Dumser",
@@ -46,7 +47,13 @@
     "selectDates": "Vyberte si svá data",
     "rooms2": "Místnosti",
     "area2": "m²",
-    "images": "Fotografie"
+    "images": "Fotografie",
+    "importantNote": "Besonders wichtig",
+    "featuresAndServices": "Ausstattung & Services:",
+    "earlyBookingPriceHint": "*Bei Frühbucher und {{count}} Personen.",
+    "availabilityHeadline": "Verfügbarkeiten",
+    "galleryWithCount": "📷 Galerie ({{count}} Bilder)",
+    "bookingStartHint": "📅 Buchung starten: Wählen Sie im nächsten Schritt Ihren gewünschten Zeitraum aus und prüfen Sie die Verfügbarkeit beider Wohnungen."
   },
   "booking": {
     "title": "Rezervace",
@@ -67,7 +74,11 @@
     "phone": "Telefon",
     "email": "E-mail",
     "rights": "Všechna práva vyhrazena",
-    "followUs": "Sledujte nás"
+    "followUs": "Sledujte nás",
+    "description": "Pohodlne a prakticke byty pro montery ve velmi dobre lokalite.",
+    "mobileLabel": "Mobil",
+    "landlineLabel": "Pevna linka",
+    "country": "Nemecko"
   },
   "common": {
     "loading": "Načítání...",
@@ -78,6 +89,227 @@
     "delete": "Odstranit",
     "edit": "Upravit",
     "close": "Zavřít",
-    "language": "Jazyk"
+    "language": "Jazyk",
+    "selected": "Aktiv"
+  },
+  "calendar": {
+    "available": "Dostupne",
+    "booked": "Obsazeno"
+  },
+  "commute": {
+    "title": "Vzdalenost od stavby",
+    "intro": "Zadejte adresu stavby. Automaticky spocitame cas jizdy a vzdalenost ke obema bytum.",
+    "placeholder": "napr. Landsberger Strasse 312, 80687 Muenchen",
+    "submit": "Vypocitat trasu",
+    "calculating": "Pocita se...",
+    "siteLabel": "Stavba",
+    "note": "Poznamka: casy jizdy vychazeji z aktualniho odhadu trasy autem a mohou se lisit podle provozu.",
+    "distanceDuration": "{{distance}} km - cca {{duration}} min.",
+    "apartments": {
+      "fruehling": {
+        "name": "Fruehlingstrasse - Novostavba",
+        "address": "Fruehlingstrasse 8, 82152 Krailling, Nemecko"
+      },
+      "hackerberg": {
+        "name": "Hackerberg - Penthouse",
+        "address": "Hackerberg 4, 82152 Krailling, Nemecko"
+      }
+    },
+    "errors": {
+      "addressSearchFailed": "Vyhledani adresy selhalo",
+      "addressNotFound": "Adresa nebyla nalezena. Zadejte ji presneji.",
+      "routeFailed": "Vypocet trasy selhal",
+      "noRoute": "Nebyla nalezena zadna trasa",
+      "emptyAddress": "Zadejte adresu stavby.",
+      "generic": "Vypocet se nepodarilo provest."
+    }
+  },
+  "directions": {
+    "title": "Anfahrt",
+    "calculatorTitle": "Baustelle eingeben und Route berechnen",
+    "apartmentTitle": "Wohnung Frühlingstraße",
+    "addressLabel": "Adresse",
+    "country": "Deutschland",
+    "byCarLabel": "Anfahrt mit Auto",
+    "byCarText": "Ca. 30 Minuten vom Stadtzentrum entfernt",
+    "publicTransportLabel": "Öffentliche Verkehrsmittel",
+    "publicTransportText": "S-Bahn-Station Stockdorf mit der S6 in Richtung Stadtzentrum",
+    "parkingLabel": "Parkmöglichkeiten",
+    "parkingText": "Kostenlos vor Ort vorhanden",
+    "keyHandoverLabel": "Schlüsselübergabe",
+    "keyHandoverText": "Die Schlüsselübergabe findet immer in der Frühlingstraße statt.",
+    "openMaps": "Route in Google Maps öffnen"
+  },
+  "success": {
+    "title": "Buchung bestätigt!",
+    "confirmationPrefix": "Vielen Dank für Ihre Buchung. Wir haben eine Bestätigungsemail an",
+    "yourEmail": "Ihre E-Mail-Adresse",
+    "confirmationSuffix": "gesendet.",
+    "nextStepsTitle": "Nächste Schritte:",
+    "nextStepsText": "Sie erhalten in Kürze eine E-Mail mit allen weiteren Informationen und der Rechnung zu Ihrer Buchung.",
+    "downloadInvoice": "Rechnung herunterladen",
+    "backHome": "Zurück zur Startseite",
+    "tipTitle": "Tipp:",
+    "tipText": "Falls Sie die E-Mail nicht finden, schauen Sie bitte auch in Ihrem Spam- oder Junk-Ordner nach."
+  },
+  "cancelPage": {
+    "title": "Zahlung abgebrochen",
+    "subtitle": "Ihre Buchung wurde nicht abgeschlossen. Kein Betrag wurde belastet.",
+    "retryTitle": "Möchten Sie es erneut versuchen?",
+    "retryText": "Klicken Sie unten auf \"Neue Buchung\", um den Buchungsprozess erneut zu starten.",
+    "newBooking": "Neue Buchung",
+    "back": "Zurück"
+  },
+  "payment": {
+    "preparing": "Zahlung wird vorbereitet...",
+    "bookingDataMissing": "Fehler: Buchungsdaten nicht gefunden",
+    "title": "Buchung überprüfen",
+    "bookingDetails": "Buchungsdetails",
+    "partialIntro": "Sie reservieren den gesamten Zeitraum",
+    "nights": "Nächte",
+    "partialHintPrefix": "Die erste Rechnung ist für die",
+    "partialHintStrong": "ersten 4 Wochen (28 Nächte)",
+    "partialHintSuffix": "Für den restlichen Zeitraum erhalten Sie eine Woche vorher eine Folgerechnung.",
+    "apartmentLabel": "Wohnung:",
+    "reservationPeriod": "Reservierungszeitraum:",
+    "payNowFirstWeeks": "Jetzt zu zahlen (Erste 4 Wochen):",
+    "periodLabel": "Zeitraum:",
+    "invoiceNights": "Nächte (dieser Rechnung):",
+    "nightCount": "Anzahl Nächte:",
+    "peopleLabel": "Personen:",
+    "contactDetails": "Kontaktdaten",
+    "name": "Name:",
+    "email": "E-Mail:",
+    "mobile": "Mobil:",
+    "landline": "Festnetz:",
+    "accommodationLine": "Unterkunft ({{nights}} Nächte × {{price}}€):",
+    "monthlyCleaning": "monatliche Reinigung",
+    "finalCleaning": "Endreinigung",
+    "netTotal": "Nettosumme:",
+    "earlyDiscount": "Frühbucherabatt (-10%):",
+    "vat": "zzgl. 7% MwSt.:",
+    "invoiceAmount": "Rechnungsbetrag:",
+    "paymentMethod": "Zahlungsmethode",
+    "paymentType": "Zahlungsart",
+    "onInvoice": "Auf Rechnung",
+    "onlyInvoiceHint": "Hinweis: Aktuell ist ausschließlich Zahlung auf Rechnung möglich.",
+    "createBookingError": "Buchung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+    "connectionError": "Verbindungsfehler. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+    "processing": "Buchung wird verarbeitet...",
+    "bookNow": "Jetzt verbindlich buchen",
+    "invoiceByEmail": "Nach Buchung erhalten Sie Ihre Rechnung per E-Mail."
+  },
+  "properties": {
+    "home": {
+      "hackerberg": {
+        "titel": "Wohnung Krailling, Hackerberg - Penthouse",
+        "beschreibung": "2,5-Zimmer Penthousewohnung im 5. Stock mit Aufzug und Panorama Balkon",
+        "preis": "ab 18EUR pro Person/Nacht!",
+        "zimmer": "2,5 Zimmer",
+        "flaeche": "65 m²",
+        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "features": [
+          "Waschmaschine mit Trockner im Keller",
+          "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
+          "WLAN 150 Mbit/s frei",
+          "Sat-TV",
+          "Parkplaetze direkt vor dem Haus",
+          "Ruhige Wohnlage",
+          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+        ]
+      },
+      "neubau": {
+        "titel": "Wohnung Krailling, Fruehlingstrasse - Neubau",
+        "beschreibung": "2-Zimmerwohnung mit eigenem Zugang, Garten mit Grillplatz",
+        "preis": "ab 16EUR pro Person/Nacht!",
+        "zimmer": "2 Zimmer",
+        "flaeche": "58 m²",
+        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "features": [
+          "Waschmaschine mit Trockner",
+          "2 Einzelbetten in jedem Zimmer (je eines Queen size)",
+          "WLAN 150 Mbit/s frei",
+          "Sat-TV",
+          "Parkplaetze fuer PKW & LKW mit Haenger vor dem Haus",
+          "Gartenbenutzung mit Grillmoeglichkeit",
+          "Ruhige Wohnlage",
+          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+        ]
+      }
+    },
+    "booking": {
+      "neubau": {
+        "titel": "Fruehlingstrasse - Neubau",
+        "beschreibung": "2-Zimmerwohnung mit vollausgestatteter Kueche, Bad, Garten mit Grillplatz. Ideal fuer handwerkliche Fachkraefte und Monteure.",
+        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "zimmer": "2 Zimmer",
+        "flaeche": "58 m²",
+        "internet": "WLAN 150 Mbit/s",
+        "extras": "Garten, Grill, ruhige Lage",
+        "features": [
+          "Waschmaschine mit Trockner",
+          "3 Einzelbetten in jedem Zimmer (je eines Queen size)",
+          "WLAN 150 Mbit/s frei",
+          "Sat-TV",
+          "Parkplaetze fuer PKW & LKW mit Haenger vor dem Haus",
+          "Gartenbenutzung mit Grillmoeglichkeit",
+          "Ruhige Wohnlage",
+          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+        ],
+        "preis": "110 EUR/Nacht + 100 EUR Endreinigung"
+      },
+      "hackerberg": {
+        "titel": "Hackerberg - Penthouse",
+        "beschreibung": "2-Zimmer-Penthouse mit grosszuegigem 35m² Balkon, Kueche, Bad und Panoramablick. 2 Einzelbetten in jedem Zimmer.",
+        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "zimmer": "2,5 Zimmer",
+        "flaeche": "65 m²",
+        "internet": "WLAN 150 Mbit/s",
+        "extras": "Grosser Balkon, Panoramablick, ruhige Lage",
+        "features": [
+          "Waschmaschine mit Trockner im Keller",
+          "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
+          "WLAN 150 Mbit/s frei",
+          "Sat-TV",
+          "Parkplaetze direkt vor dem Haus",
+          "Ruhige Wohnlage",
+          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+        ],
+        "preis": "110 EUR/Nacht + 100 EUR Endreinigung"
+      },
+      "kombi": {
+        "titel": "Kombi-Paket: Hackerberg + Fruehlingstrasse",
+        "beschreibung": "Beide Wohnungen zusammen. Ideal fuer groessere Teams mit 7-11 Personen.",
+        "internet": "WLAN 100-150 Mbit/s",
+        "extras": "Zwei Wohnungen, zwei Kuechen, zwei Baeder",
+        "preis": "Kombi-Paket",
+        "galleries": {
+          "fruehling": "Fruehlingstrasse",
+          "hackerberg": "Hackerberg"
+        }
+      }
+    }
+  },
+  "bookingPage": {
+    "steps": {
+      "bookApartment": "Wohnung buchen",
+      "chooseDates": "Schritt 1: Waehlen Sie Ihre Anreisedaten",
+      "availableApartments": "Verfuegbare Wohnungen",
+      "chooseApartment": "Schritt 2: Waehlen Sie eine Wohnung",
+      "yourData": "Ihre Daten",
+      "companyAndContact": "Schritt 3: Firmendaten und Kontaktinformationen"
+    }
+  },
+  "impressumPage": {
+    "title": "Impressum"
+  },
+  "datenschutzPage": {
+    "title": "Datenschutzerklaerung"
+  },
+  "agbPage": {
+    "title": "Allgemeine Geschaeftsbedingungen (AGB)"
+  },
+  "widerrufPage": {
+    "title": "Widerrufsrecht und Widerrufsformular"
   }
 }

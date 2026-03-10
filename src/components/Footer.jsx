@@ -11,14 +11,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 text-center">
           <div className="flex flex-col items-center">
             <h3 className="text-lg font-bold mb-4">{t('footer.company')}</h3>
-            <p className="text-gray-400">Komfortable und praktische Monteurwohnungen in bester Lage.</p>
+            <p className="text-gray-400">{t('footer.description')}</p>
           </div>
           <div className="flex flex-col items-center">
             <h3 className="text-lg font-bold mb-4">{t('footer.phone')}</h3>
             <p className="text-gray-400"> 
-              Mobil: +49 (0)172 3248313<br />
-              Festnetz: +49 (0)89 8571174 <br />
-              Email: monteur-wohnung@dumser.net
+              {t('footer.mobileLabel')}: +49 (0)172 3248313<br />
+              {t('footer.landlineLabel')}: +49 (0)89 8571174 <br />
+              {t('footer.email')}: monteur-wohnung@dumser.net
             </p>
           </div>
           <div className="flex flex-col items-center">
@@ -26,7 +26,7 @@ export default function Footer() {
             <p className="text-gray-400">
               Frühlingstraße 8<br />
               82152 Krailling<br />
-              Deutschland
+              {t('footer.country')}
             </p>
           </div>
         </div>
@@ -40,7 +40,7 @@ export default function Footer() {
             <span className="text-gray-600">•</span>
             <Link to="/agb" className="hover:text-white transition">{t('nav.agb')}</Link>
             <span className="text-gray-600">•</span>
-            <Link to="/widerruf" className="hover:text-white transition">Widerrufsrecht</Link>
+            <Link to="/widerruf" className="hover:text-white transition">{t('nav.widerruf')}</Link>
           </div>
         </div>
 

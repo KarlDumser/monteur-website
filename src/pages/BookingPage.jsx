@@ -344,25 +344,7 @@ export default function BookingPage() {
 
   const wohnungen = {
     neubau: {
-      titel: "Frühlingstraße – Neubau",
-      beschreibung:
-        "2-Zimmerwohnung mit vollausgestatteter Küche, Bad, Garten mit Grillplatz. Ideal für handwerkliche Fachkräfte und Monteure.",
-      details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
-      zimmer: "2 Zimmer",
-      flaeche: "58 m²",
-      internet: "WLAN 150 Mbit/s",
-      extras: "Garten, Grill, ruhige Lage",
-      features: [
-        "Waschmaschine mit Trockner",
-        "3 Einzelbetten in jedem Zimmer (je eines Queen size)",
-        "WLAN 150 Mbit/s frei",
-        "Sat-TV",
-        "Parkplätze für PKW & LKW mit Hänger vor dem Haus",
-        "Gartenbenutzung mit Grillmöglichkeit",
-        "Ruhige Wohnlage",
-        "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
-      ],
-      preis: "110 EUR/Nacht + 100 EUR Endreinigung",
+      ...t('properties.booking.neubau', { returnObjects: true }),
       galerie:
         "https://www.monteurzimmer.de/gaestezimmer/82152-krailling-1422811f39",
       images: [
@@ -377,24 +359,7 @@ export default function BookingPage() {
       folder: "Wohnung-Fruehlingstrasse"
     },
     hackerberg: {
-      titel: "Hackerberg – Penthouse",
-      beschreibung:
-        "2-Zimmer-Penthouse mit großzügigem 35m² Balkon, Küche, Bad und Panoramablick. 2 Einzelbetten in jedem Zimmer.",
-      details: "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
-      zimmer: "2,5 Zimmer",
-      flaeche: "65 m²",
-      internet: "WLAN 150 Mbit/s",
-      extras: "Großer Balkon, Panoramablick, ruhige Lage",
-      features: [
-        "Waschmaschine mit Trockner im Keller",
-        "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
-        "WLAN 150 Mbit/s frei",
-        "Sat-TV",
-        "Parkplätze direkt vor dem Haus",
-        "Ruhige Wohnlage",
-        "Nahe: Biergarten, Naturbadesee, Geschäfte & Banken"
-      ],
-      preis: "110 EUR/Nacht + 100 EUR Endreinigung",
+      ...t('properties.booking.hackerberg', { returnObjects: true }),
       galerie:
         "https://www.monteurzimmer.de/gaestezimmer/82152-krailling-1422811f39",
       images: [
@@ -409,15 +374,10 @@ export default function BookingPage() {
       folder: "Wohnung-Hackerberg"
     },
     kombi: {
-      titel: "Kombi-Paket: Hackerberg + Frühlingstraße",
-      beschreibung:
-        "Beide Wohnungen zusammen. Ideal für größere Teams mit 7–11 Personen.",
-      internet: "WLAN 100–150 Mbit/s",
-      extras: "Zwei Wohnungen, zwei Küchen, zwei Bäder",
-      preis: "Kombi-Paket",
+      ...t('properties.booking.kombi', { returnObjects: true }),
       galleries: [
         {
-          titel: "Frühlingstraße",
+          titel: t('properties.booking.kombi.galleries.fruehling'),
           folder: "Wohnung-Fruehlingstrasse",
           images: [
             "Zimmer-1.JPG",
@@ -430,7 +390,7 @@ export default function BookingPage() {
           ]
         },
         {
-          titel: "Hackerberg",
+          titel: t('properties.booking.kombi.galleries.hackerberg'),
           folder: "Wohnung-Hackerberg",
           images: [
             "Wohnzimmer.JPG",
