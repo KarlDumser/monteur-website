@@ -232,7 +232,7 @@ export default function Home() {
         aria-label="Homepage Bereiche"
         className="fixed right-6 top-1/2 z-50 hidden -translate-y-1/2 lg:flex lg:flex-col lg:gap-4"
       >
-        {NAV_SECTIONS.map((section) => {
+        {navSections.map((section) => {
           const isActive = activeSection === section.id;
 
           return (
@@ -418,7 +418,7 @@ export default function Home() {
         className="fixed bottom-3 left-1/2 z-40 w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 lg:hidden"
       >
         <div className="grid grid-cols-4 gap-2 rounded-xl border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur-sm">
-          {NAV_SECTIONS.map((section) => {
+          {navSections.map((section) => {
             const isActive = activeSection === section.id;
 
             return (
