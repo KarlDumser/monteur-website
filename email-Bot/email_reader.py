@@ -1,6 +1,7 @@
 import imaplib
 import email
 from email.header import decode_header
+from email.utils import parsedate_to_datetime
 import os
 from dotenv import load_dotenv
 
@@ -52,6 +53,15 @@ def get_latest_email():
     from_ = msg.get("From")
     sender = from_.split()[-1].strip("<>")
 
+    # Versanddatum aus Header (falls vorhanden)
+    mail_date = None
+    raw_date = msg.get("Date")
+    if raw_date:
+        try:
+            mail_date = parsedate_to_datetime(raw_date)
+        except Exception:
+            mail_date = None
+
     # Inhalt extrahieren
     body = ""
 
@@ -74,6 +84,7 @@ def get_latest_email():
     return {
         "from": sender,
         "subject": subject,
-        "body": body
+        "body": body,
+        "date": mail_date
     }
 

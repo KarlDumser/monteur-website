@@ -1,5 +1,8 @@
 import smtplib
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime
+import html
 import os
 from dotenv import load_dotenv
 
@@ -10,11 +13,31 @@ PASSWORD = os.getenv("EMAIL_PASSWORD")
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = int(os.getenv("SMTP_PORT"))
 
+def _plain_to_html(text: str) -> str:
+    """Wandelt Plain-Text mit \\n-Absätzen in sauberes HTML um."""
+    escaped = html.escape(text)
+    # Doppelte Leerzeilen → Absatz-Trennung, einzelne Zeilenumbrüche → <br>
+    paragraphs = escaped.split("\n\n")
+    html_parts = []
+    for para in paragraphs:
+        para = para.strip()
+        if para:
+            inner = para.replace("\n", "<br>\n")
+            html_parts.append(f"<p>{inner}</p>")
+    return (
+        "<!DOCTYPE html><html><body style='font-family:Arial,sans-serif;"
+        "font-size:14px;line-height:1.6;color:#222;max-width:600px;'>\n"
+        + "\n".join(html_parts)
+        + "\n</body></html>"
+    )
+
 def send_email(to_address, subject, body):
-    msg = MIMEText(body, "plain", "utf-8")
+    msg = MIMEMultipart("alternative")
     msg["Subject"] = "Re: " + subject
     msg["From"] = EMAIL
     msg["To"] = to_address
+    msg.attach(MIMEText(body, "plain", "utf-8"))
+    msg.attach(MIMEText(_plain_to_html(body), "html", "utf-8"))
 
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
@@ -23,9 +46,25 @@ def send_email(to_address, subject, body):
         server.send_message(msg)
         print(f"✅ Antwort erfolgreich an {to_address} gesendet.")
 
-        # ➕ Kopie der Antwort an dich selbst senden
-        copy = MIMEText(body, "plain", "utf-8")
-        copy["Subject"] = "Kopie: Re: " + subject
+        # ➕ Kopie der Antwort an dich selbst – klar als Bot-Benachrichtigung formatiert
+        zeitpunkt = datetime.now().strftime("%d.%m.%Y um %H:%M Uhr")
+        copy_body = (
+            "=" * 55 + "\n"
+            "  BOT-ANTWORT AUTOMATISCH GESENDET\n"
+            "=" * 55 + "\n\n"
+            f"  Anfrage von:  {to_address}\n"
+            f"  Betreff:      {subject}\n"
+            f"  Zeitpunkt:    {zeitpunkt}\n\n"
+            + "-" * 55 + "\n"
+            "  VERSENDETE ANTWORT:\n"
+            + "-" * 55 + "\n\n"
+            + body.strip() + "\n\n"
+            + "=" * 55 + "\n"
+            "  Diese Nachricht wurde automatisch vom Bot erstellt.\n"
+            "=" * 55 + "\n"
+        )
+        copy = MIMEText(copy_body, "plain", "utf-8")
+        copy["Subject"] = f"[Bot] Antwort an {to_address} – {subject[:50]}"
         copy["From"] = EMAIL
         copy["To"] = EMAIL
         server.send_message(copy)

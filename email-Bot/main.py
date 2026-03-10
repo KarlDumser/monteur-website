@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 YOUR_EMAIL = os.getenv("EMAIL_ADDRESS", "monteur-wohnung@dumser.net")
+MAX_EMAIL_AGE_HOURS = int(os.getenv("MAX_EMAIL_AGE_HOURS", "48"))
 
 # Nur diese 4 Vermittlungsseiten duerfen Anfragen einreichen
 ALLOWED_DOMAINS = {
@@ -118,6 +119,15 @@ def log(text):
     with open("log.txt", "a", encoding="utf-8") as f:
         f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {text}\n")
 
+def is_mail_too_old(mail_date) -> bool:
+    """Blockiert alte Mails, damit historische UNSEEN-Eintraege nie beantwortet werden."""
+    if not mail_date:
+        return False
+
+    now = datetime.now(mail_date.tzinfo) if mail_date.tzinfo else datetime.now()
+    age = now - mail_date
+    return age > timedelta(hours=MAX_EMAIL_AGE_HOURS)
+
 def main():
     print("🛁 Starte E-Mail-Bot... (läuft dauerhaft)")
     log("Bot gestartet.")
@@ -126,6 +136,12 @@ def main():
         mail = get_latest_email()
 
         if mail:
+            if is_mail_too_old(mail.get("date")):
+                date_str = mail.get("date").isoformat() if mail.get("date") else "unbekannt"
+                log(f"🕒 Alte E-Mail ignoriert (Date={date_str}, Limit={MAX_EMAIL_AGE_HOURS}h): {mail.get('from', 'unknown')}")
+                print(f"🕒 E-Mail zu alt ({MAX_EMAIL_AGE_HOURS}h+) – wird ignoriert.")
+                continue
+
             sender = mail["from"].lower()
             
             # Check if this is a forwarded email from our own address
@@ -169,7 +185,16 @@ def main():
             print(f"📝 Betreff: {mail['subject']}")
             print(f"📄 Nachricht:\n{mail['body']}\n")
 
-            if not is_rental_related(mail["body"]):
+            # DMZ sendet oft standardisierte Betreffzeilen, die wir als valide Buchungsanfrage akzeptieren.
+            subject_lower = mail.get("subject", "").lower()
+            combined_text = f"Betreff: {mail.get('subject', '')}\n\n{mail.get('body', '')}"
+            if "buchungsanfrage" in subject_lower:
+                rental_related = True
+                log("ℹ️ Vermietungsanfrage über Betreff erkannt (Buchungsanfrage).")
+            else:
+                rental_related = is_rental_related(combined_text)
+
+            if not rental_related:
                 log("💪 E-Mail ignoriert (nicht vermietungsbezogen)")
                 print("📍 Keine Vermietungsanfrage – ignoriert.")
                 continue
