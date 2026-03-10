@@ -126,7 +126,7 @@
   "payment": {
     "preparing": "Przygotowywanie płatności...",
     "bookingDataMissing": "Błąd: nie znaleziono danych rezerwacji",
-    "title": "Potwierdzenie rezerwacji",
+    "title": "Sprawdz rezerwacje",
     "bookingDetails": "Szczegóły rezerwacji",
     "partialIntro": "Rezerwujesz cały okres",
     "nights": "nocy",

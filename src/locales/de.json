@@ -113,7 +113,7 @@
   "payment": {
     "preparing": "Zahlung wird vorbereitet...",
     "bookingDataMissing": "Fehler: Buchungsdaten nicht gefunden",
-    "title": "Buchungsbestätigung",
+    "title": "Buchung überprüfen",
     "bookingDetails": "Buchungsdetails",
     "partialIntro": "Sie reservieren den gesamten Zeitraum",
     "nights": "Nächte",
