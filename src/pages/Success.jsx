@@ -49,16 +49,16 @@ export default function Success() {
           </svg>
         </div>
         
-        <h1 className="text-4xl font-bold text-green-600 mb-4">Buchung bestätigt!</h1>
+        <h1 className="text-4xl font-bold text-green-600 mb-4">{t('success.title')}</h1>
         
         <p className="text-gray-600 text-lg mb-6">
-          Vielen Dank für Ihre Buchung. Wir haben eine Bestätigungsemail an <span className="font-semibold text-gray-800">{email || 'Ihre E-Mail-Adresse'}</span> gesendet.
+          {t('success.confirmationPrefix')} <span className="font-semibold text-gray-800">{email || t('success.yourEmail')}</span> {t('success.confirmationSuffix')}
         </p>
         
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-left">
           <p className="text-sm text-gray-700">
-            <strong>Nächste Schritte:</strong><br/>
-            Sie erhalten in Kürze eine E-Mail mit allen weiteren Informationen und der Rechnung zu Ihrer Buchung.
+            <strong>{t('success.nextStepsTitle')}</strong><br/>
+            {t('success.nextStepsText')}
           </p>
           {bookingId && (
             <div className="mt-4">
@@ -68,7 +68,7 @@ export default function Success() {
                 rel="noopener noreferrer"
                 className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition"
               >
-                Rechnung herunterladen
+                {t('success.downloadInvoice')}
               </a>
             </div>
           )}
@@ -78,13 +78,13 @@ export default function Success() {
           to="/"
           className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition mb-8"
         >
-          Zurück zur Startseite
+          {t('success.backHome')}
         </Link>
 
         <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 text-left mt-6 pt-6 border-t-2">
           <p className="text-yellow-800 text-sm flex items-start gap-2">
             <span className="text-lg">ℹ️</span>
-            <span><strong>Tipp:</strong> Falls Sie die Email nicht finden, schauen Sie bitte auch in Ihrem Spam- oder Junk-Ordner nach.</span>
+            <span><strong>{t('success.tipTitle')}</strong> {t('success.tipText')}</span>
           </p>
         </div>
       </div>

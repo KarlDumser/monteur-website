@@ -32,6 +32,17 @@ export default function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsLanguageMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   const handleLogout = () => {
     sessionStorage.removeItem('adminAuth');
     window.dispatchEvent(new Event('admin-auth-changed'));
@@ -43,10 +54,11 @@ export default function Header() {
     setIsLanguageMenuOpen(false);
   };
 
-  const currentLangName = languages.find(l => l.code === i18n.language)?.name || 'Language';
+  const currentLanguage = languages.find((l) => l.code === i18n.language) || languages[0];
 
   return (
-    <header className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg sticky top-0 z-50">
+    <>
+      <header className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg sticky top-0 z-50">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
@@ -55,9 +67,9 @@ export default function Header() {
                 <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
               </svg>
             </div>
-            <span className="text-xl font-bold text-white">Monteurwohnung Dumser</span>
+            <span className="text-xl font-bold text-white">{t('header.title')}</span>
           </Link>
-          <div className="flex gap-4 items-center flex-nowrap overflow-x-auto scrollbar-hide py-2" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex gap-3 items-center py-2">
             <Link to="/" className="text-white hover:bg-blue-500 px-3 py-2 rounded-lg transition">
               {t('nav.home')}
             </Link>
@@ -71,28 +83,15 @@ export default function Header() {
               {t('nav.impressum')}
             </Link>
             
-            {/* Language Switcher */}
-            <div className="relative">
-              <button
-                onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
-                className="text-white hover:bg-blue-500 px-3 py-2 rounded-lg transition text-sm"
-              >
-                🌐 {currentLangName.split(' ')[0]}
-              </button>
-              {isLanguageMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-10">
-                  {languages.map(lang => (
-                    <button
-                      key={lang.code}
-                      onClick={() => handleLanguageChange(lang.code)}
-                      className={`w-full text-left px-4 py-2 hover:bg-blue-100 ${i18n.language === lang.code ? 'bg-blue-50 font-bold text-blue-700' : 'text-gray-800'}`}
-                    >
-                      {lang.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsLanguageMenuOpen(true)}
+              className="text-white hover:bg-blue-500 px-3 py-2 rounded-lg transition text-sm"
+              aria-haspopup="dialog"
+              aria-expanded={isLanguageMenuOpen ? 'true' : 'false'}
+            >
+              🌐 {currentLanguage.name}
+            </button>
 
             {isAdminAuthed ? (
               <>
@@ -122,5 +121,54 @@ export default function Header() {
         </div>
       </nav>
     </header>
+
+      {isLanguageMenuOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/45 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('common.language')}
+          onClick={() => setIsLanguageMenuOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">{t('common.language')}</h2>
+              <button
+                type="button"
+                onClick={() => setIsLanguageMenuOpen(false)}
+                className="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                aria-label={t('common.close')}
+              >
+                x
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {languages.map((lang) => {
+                const isCurrent = i18n.language === lang.code;
+                return (
+                  <button
+                    key={lang.code}
+                    type="button"
+                    onClick={() => handleLanguageChange(lang.code)}
+                    className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
+                      isCurrent
+                        ? 'border-blue-500 bg-blue-50 font-semibold text-blue-700'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50'
+                    }`}
+                  >
+                    <span>{lang.name}</span>
+                    {isCurrent && <span className="text-xs">{t('common.selected')}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

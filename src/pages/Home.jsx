@@ -330,7 +330,7 @@ export default function Home() {
                 {property.details && (
                   <div className="mb-5 rounded-lg border-2 border-emerald-300 bg-emerald-50 p-4">
                     <p className="text-xs font-bold uppercase tracking-wide text-emerald-800 mb-1">
-                      Besonders wichtig
+                      {t('home.importantNote')}
                     </p>
                     <p className="text-base font-semibold text-emerald-900">
                       {property.details}
@@ -357,7 +357,7 @@ export default function Home() {
                 {/* Features List */}
                 {property.features && property.features.length > 0 && (
                   <div className="mb-6 bg-blue-50 rounded-lg p-4 border border-blue-100">
-                    <h4 className="font-semibold text-gray-800 mb-3 text-sm">Ausstattung & Services:</h4>
+                    <h4 className="font-semibold text-gray-800 mb-3 text-sm">{t('home.featuresAndServices')}</h4>
                     <ul className="space-y-2 text-sm text-gray-700">
                       {property.features.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-2">
@@ -372,13 +372,13 @@ export default function Home() {
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <p className="text-2xl font-bold text-blue-900">{property.preis}</p>
                   <p className="mt-1 text-xs text-blue-700">
-                    *Bei Frühbucher und {property.id === 1 ? '5' : '6'} Personen.
+                    {t('home.earlyBookingPriceHint', { count: property.id === 1 ? '5' : '6' })}
                   </p>
                 </div>
 
                 {/* Kalender */}
                 <div id={property.id === 1 ? "verfuegbarkeit" : undefined} className="mb-4 scroll-mt-24">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Verfügbarkeiten</h3>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{t('home.availabilityHeadline')}</h3>
                   <BookingCalendar periods={periods[property.wohnung] || []} />
                 </div>
 
@@ -388,7 +388,7 @@ export default function Home() {
                     onClick={() => openGallery(property, 0)}
                     className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
                   >
-                    📷 Galerie ({getImages(property.folder).length} Bilder)
+                    {t('home.galleryWithCount', { count: getImages(property.folder).length })}
                   </button>
                 </div>
               </div>
@@ -400,13 +400,13 @@ export default function Home() {
         <div id="jetzt-buchen" className="mt-12 text-center scroll-mt-24">
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-8 mb-6">
             <p className="text-gray-700 text-lg mb-6">
-              📅 <strong>Buchung starten:</strong> Wählen Sie im nächsten Schritt Ihren gewünschten Zeitraum aus und prüfen Sie die Verfügbarkeit beider Wohnungen.
+              {t('home.bookingStartHint')}
             </p>
             <Link
               to="/booking"
               className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-12 rounded-lg transition shadow-lg text-lg"
             >
-              Jetzt Buchen! →
+              {t('home.bookNowArrow')}
             </Link>
           </div>
         </div>
