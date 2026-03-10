@@ -4,7 +4,6 @@ import re
 VERMITTLER_DOMAINS = {
     "monteurzimmerguru.de": "text",
     "dmz.de": "text",
-    "mail.dmz.de": "text",  # Deutschland-Monteurzimmer.de Subdomain
     "mein-monteurzimmer.de": "text",
     "monteurzimmer.de": "text"
 }

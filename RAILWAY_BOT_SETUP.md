@@ -28,7 +28,7 @@ Gehe zu deinem Railway Project → Variables und füge folgende hinzu:
 BOT_SSH_HOST=100.84.86.61
 BOT_SSH_USER=karldumser
 BOT_SSH_PORT=22
-BOT_PROJECT_DIR=/home/karldumser/Projekt-Automatisierung-Kunden
+BOT_PROJECT_DIR=/home/karldumser/email-Bot
 BOT_SYSTEMD_SERVICE=wohnungsbot.service
 ```
 
@@ -119,7 +119,7 @@ npm run dev:server
 ### Logs werden nicht angezeigt
 - Überprüfe ob `log.txt` existiert: 
   ```bash
-  ssh -i ~/.ssh/monteur_pi karldumser@100.84.86.61 'ls -la ~/Projekt-Automatisierung-Kunden/log.txt'
+  ssh -i ~/.ssh/monteur_pi karldumser@100.84.86.61 'ls -la ~/email-Bot/log.txt'
   ```
 
 ### Bot startet nicht
@@ -129,7 +129,7 @@ npm run dev:server
   ```
 - Überprüfe Python-Dependencies:
   ```bash
-  ssh -i ~/.ssh/monteur_pi karldumser@100.84.86.61 'cd ~/Projekt-Automatisierung-Kunden && source .venv/bin/activate && pip list'
+  ssh -i ~/.ssh/monteur_pi karldumser@100.84.86.61 'cd ~/email-Bot && source .venv/bin/activate && pip list'
   ```
 
 ## 📝 Manuelle Befehle (falls Admin Panel nicht funktioniert)
@@ -147,7 +147,7 @@ ssh -i ~/.ssh/monteur_pi karldumser@100.84.86.61 'sudo systemctl start wohnungsb
 ssh -i ~/.ssh/monteur_pi karldumser@100.84.86.61 'sudo systemctl stop wohnungsbot.service'
 
 # Logs anschauen
-ssh -i ~/.ssh/monteur_pi karldumser@100.84.86.61 'tail -f ~/Projekt-Automatisierung-Kunden/log.txt'
+ssh -i ~/.ssh/monteur_pi karldumser@100.84.86.61 'tail -f ~/email-Bot/log.txt'
 
 # Service Status Details
 ssh -i ~/.ssh/monteur_pi karldumser@100.84.86.61 'sudo systemctl status wohnungsbot.service'
