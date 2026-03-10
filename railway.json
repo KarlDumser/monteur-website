@@ -7,5 +7,17 @@
     "startCommand": "npm run start:prod",
     "restartPolicyType": "on_failure",
     "restartPolicyMaxRetries": 5
-  }
+  },
+  "watchPatterns": [
+    "src/**",
+    "server/**",
+    "public/**",
+    "package.json",
+    "package-lock.json",
+    "vite.config.js",
+    "postcss.config.js",
+    "tailwind.config.js",
+    "nixpacks.toml",
+    "index.html"
+  ]
 }
