@@ -1,0 +1,83 @@
+{
+  "nav": {
+    "home": "Strona główna",
+    "booking": "Rezerwacja",
+    "anfahrt": "Dojazd",
+    "impressum": "Impresum",
+    "datenschutz": "Ochrona danych",
+    "agb": "Warunki",
+    "logout": "Wyloguj się"
+  },
+  "header": {
+    "title": "Apartament Montażowy Dumser",
+    "description": "Nowoczesne mieszkanie dla specjalistów i monterów"
+  },
+  "home": {
+    "welcome": "Witamy",
+    "subtitle": "Znajdź idealne mieszkanie na swojej podróży",
+    "features": "Komfortowe apartamenty",
+    "description": "Przestronnie umeblowane apartamenty dla krótko- i długoterminowych pobytów",
+    "cta": "Zarezerwuj teraz",
+    "gallery": "Galeria",
+    "contact": "Kontakt",
+    "routeCalculation": "Obliczanie tras",
+    "apartmentDetails": "Szczegóły apartamentu",
+    "availability": "Dostępność",
+    "bookNow": "Zarezerwuj teraz!",
+    "fromPrice": "od",
+    "perPersonPerNight": "za osobę/noc!",
+    "rooms": "Pokoje",
+    "area": "m²",
+    "featuresList": "Wyposażenie",
+    "bookingCalendar": "Kalendarz rezerwacji",
+    "welcomeTitle": "Witamy w naszych apartamentach",
+    "welcomeSubtitle": "Znajdź swój apartament dla monterów!",
+    "ourApartments": "Nasze apartamenty",
+    "earlyBookingDiscount": "Wczesna rezerwacja - oszczędź!",
+    "earlyBookingText": "Zarezerwuj co najmniej 2 miesiące wcześniej i uzyskaj 10% zniżki!",
+    "earlyBookingSavings": "z 100 €/noc tylko 90 €/noc",
+    "distanceQuestion": "Jak daleko jest apartament od Twojego placu budowy?",
+    "apartmentDetails2": "Szczegóły apartamentu",
+    "compareApartments": "Porównaj oba apartamenty łącznie z wyposażeniem, ceną i galerią zdjęć.",
+    "openGallery": "📷 Otwórz galerię",
+    "galleryCount": "📷 Galeria",
+    "bookNowArrow": "Zarezerwuj teraz! →",
+    "availability2": "Dostępność",
+    "selectDates": "Wybierz swoje daty",
+    "rooms2": "Pokoje",
+    "area2": "m²",
+    "images": "Zdjęcia"
+  },
+  "booking": {
+    "title": "Rezerwacja",
+    "startDate": "Data przyjazdu",
+    "endDate": "Data odjazdu",
+    "property": "Apartament",
+    "name": "Nazwa",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "submit": "Zarezerwuj",
+    "cancel": "Anuluj",
+    "confirmation": "Potwierdzenie rezerwacji",
+    "success": "Dziękujemy za rezerwację!"
+  },
+  "footer": {
+    "company": "Apartament Montażowy Dumser",
+    "address": "Adres",
+    "phone": "Telefon",
+    "email": "E-mail",
+    "rights": "Wszelkie prawa zastrzeżone",
+    "followUs": "Obserwuj nas"
+  },
+  "common": {
+    "loading": "Ładuje...",
+    "error": "Błąd",
+    "success": "Sukces",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "close": "Zamknij",
+    "language": "Język"
+  }
+}

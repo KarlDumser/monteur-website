@@ -1,0 +1,83 @@
+{
+  "nav": {
+    "home": "Acasă",
+    "booking": "Rezervare",
+    "anfahrt": "Acces",
+    "impressum": "Impresia",
+    "datenschutz": "Protecția datelor",
+    "agb": "Termeni",
+    "logout": "Deconectare"
+  },
+  "header": {
+    "title": "Apartament pentru Montatori Dumser",
+    "description": "Locuință modernă pentru specialiști și montatori"
+  },
+  "home": {
+    "welcome": "Bun venit",
+    "subtitle": "Găsește apartamentul perfect pentru sejurul tău",
+    "features": "Apartamente confortabile",
+    "description": "Apartamente confortabil mobilate pentru sejururi pe termen scurt și mediu",
+    "cta": "Rezervă acum",
+    "gallery": "Galerie",
+    "contact": "Contact",
+    "routeCalculation": "Calculare Rute",
+    "apartmentDetails": "Detalii Apartament",
+    "availability": "Disponibilitate",
+    "bookNow": "Rezervă acum!",
+    "fromPrice": "de la",
+    "perPersonPerNight": "per persoană/noapte!",
+    "rooms": "Camere",
+    "area": "m²",
+    "featuresList": "Dotări",
+    "bookingCalendar": "Calendar Rezervări",
+    "welcomeTitle": "Bun venit la apartamentele noastre",
+    "welcomeSubtitle": "Găsește apartamentul tău pentru montori!",
+    "ourApartments": "Apartamentele noastre",
+    "earlyBookingDiscount": "Rezervare timpurie - Economisește!",
+    "earlyBookingText": "Rezervă cu cel puțin 2 luni în avans și obține 10% reducere!",
+    "earlyBookingSavings": "de la 100 €/noapte doar 90 €/noapte",
+    "distanceQuestion": "Cât de departe este apartamentul de șantierul tău?",
+    "apartmentDetails2": "Detalii Apartament",
+    "compareApartments": "Compară ambele apartamente, inclusiv dotări, preț și galerie de fotografii.",
+    "openGallery": "📷 Deschide galeria",
+    "galleryCount": "📷 Galerie",
+    "bookNowArrow": "Rezervă acum! →",
+    "availability2": "Disponibilitate",
+    "selectDates": "Selectează-ți datele",
+    "rooms2": "Camere",
+    "area2": "m²",
+    "images": "Fotografii"
+  },
+  "booking": {
+    "title": "Rezervare",
+    "startDate": "Data sosirii",
+    "endDate": "Data plecării",
+    "property": "Apartament",
+    "name": "Nume",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "submit": "Rezervă",
+    "cancel": "Anulare",
+    "confirmation": "Confirmare rezervare",
+    "success": "Mulțumim pentru rezervarea ta!"
+  },
+  "footer": {
+    "company": "Apartament pentru Montatori Dumser",
+    "address": "Adresă",
+    "phone": "Telefon",
+    "email": "E-mail",
+    "rights": "Toate drepturile rezervate",
+    "followUs": "Urmărește-ne"
+  },
+  "common": {
+    "loading": "Se încarcă...",
+    "error": "Eroare",
+    "success": "Succes",
+    "save": "Salvare",
+    "cancel": "Anulare",
+    "delete": "Ștergere",
+    "edit": "Editare",
+    "close": "Închidere",
+    "language": "Limba"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "nav": {
+    "home": "Kezdőlap",
+    "booking": "Foglalás",
+    "anfahrt": "Megközelítés",
+    "impressum": "Impresszum",
+    "datenschutz": "Adatvédelem",
+    "agb": "Feltételek",
+    "logout": "Kijelentkezés"
+  },
+  "header": {
+    "title": "Dumser Szerelőlakás",
+    "description": "Modern szálláshely szakemberek és szerelők számára"
+  },
+  "home": {
+    "welcome": "Üdvözöljük",
+    "subtitle": "Találd meg az ideális szállást az utazásodhoz",
+    "features": "Kényelmes lakások",
+    "description": "Csinos felszerelt lakások rövid és középtávú tartózkodásokhoz",
+    "cta": "Foglalj most",
+    "gallery": "Galéria",
+    "contact": "Kapcsolat",
+    "routeCalculation": "Útvonal Kalkuláció",
+    "apartmentDetails": "Lakás Adatai",
+    "availability": "Rendelkezésre állás",
+    "bookNow": "Foglalj most!",
+    "fromPrice": "ettől",
+    "perPersonPerNight": "személyenként/éjszaka!",
+    "rooms": "Szobák",
+    "area": "m²",
+    "featuresList": "Felszerelés",
+    "bookingCalendar": "Foglalási Naptár",
+    "welcomeTitle": "Üdvözöljük lakásainkban",
+    "welcomeSubtitle": "Találd meg szerelő lakásodat!",
+    "ourApartments": "Lakásaink",
+    "earlyBookingDiscount": "Korai foglalás - Takarékoskodj!",
+    "earlyBookingText": "Foglalj legalább 2 hónappal előre és kapj 10% kedvezményt!",
+    "earlyBookingSavings": "100 €/éj helyett csak 90 €/éj",
+    "distanceQuestion": "Milyen messze van a lakás az építkezésedtől?",
+    "apartmentDetails2": "Lakás Adatai",
+    "compareApartments": "Hasonlítsd össze mindkét lakást, a felszereléseket, árakat és fotógalériát.",
+    "openGallery": "📷 Galéria megnyitása",
+    "galleryCount": "📷 Galéria",
+    "bookNowArrow": "Foglalj most! →",
+    "availability2": "Rendelkezésre állás",
+    "selectDates": "Válaszd ki a dátumaidat",
+    "rooms2": "Szobák",
+    "area2": "m²",
+    "images": "Képek"
+  },
+  "booking": {
+    "title": "Foglalás",
+    "startDate": "Érkezési dátum",
+    "endDate": "Távozási dátum",
+    "property": "Lakás",
+    "name": "Név",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "submit": "Foglalj",
+    "cancel": "Mégse",
+    "confirmation": "Foglalás megerősítése",
+    "success": "Köszönjük a foglalást!"
+  },
+  "footer": {
+    "company": "Dumser Szerelőlakás",
+    "address": "Cím",
+    "phone": "Telefon",
+    "email": "E-mail",
+    "rights": "Minden jog fenntartva",
+    "followUs": "Kövess bennünket"
+  },
+  "common": {
+    "loading": "Betöltés...",
+    "error": "Hiba",
+    "success": "Siker",
+    "save": "Mentés",
+    "cancel": "Mégse",
+    "delete": "Törlés",
+    "edit": "Szerkesztés",
+    "close": "Bezárás",
+    "language": "Nyelv"
+  }
+}

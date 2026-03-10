@@ -139,6 +139,15 @@ const buildBlockedDateDeleteFilters = (booking) => {
 // Bot Console: Status abrufen
 router.get('/bot-console/status', async (req, res) => {
   try {
+    if (!BOT_CONTROL_URL || !BOT_CONTROL_TOKEN) {
+      return res.status(503).json({
+        error: 'Bot Control Server not configured',
+        message: 'BOT_CONTROL_URL and BOT_CONTROL_TOKEN environment variables are not set on Railway. Please configure these variables first.',
+        docs: 'See BACKEND_SETUP.md for Cloudflare Tunnel setup instructions',
+        status: 'unconfigured'
+      });
+    }
+
     const data = await botControlRequest('/status');
     const info = await botControlRequest('/info');
     
@@ -149,13 +158,24 @@ router.get('/bot-console/status', async (req, res) => {
       service: info.service
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(502).json({
+      error: 'Bot Control Server unreachable',
+      message: error.message,
+      hint: 'Stelle sicher, dass der Cloudflare Tunnel auf dem Pi läuft und die BOT_CONTROL_URL/TOKEN korrekt sind'
+    });
   }
 });
 
 // Bot Console: Bot starten
 router.post('/bot-console/start', async (req, res) => {
   try {
+    if (!BOT_CONTROL_URL || !BOT_CONTROL_TOKEN) {
+      return res.status(503).json({
+        error: 'Bot Control Server not configured',
+        message: 'BOT_CONTROL_URL and BOT_CONTROL_TOKEN environment variables are not set'
+      });
+    }
+
     const result = await botControlRequest('/start', 'POST');
     const status = await botControlRequest('/status');
     
@@ -165,13 +185,20 @@ router.post('/bot-console/start', async (req, res) => {
       message: result.message
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(502).json({ error: error.message });
   }
 });
 
 // Bot Console: Bot stoppen
 router.post('/bot-console/stop', async (req, res) => {
   try {
+    if (!BOT_CONTROL_URL || !BOT_CONTROL_TOKEN) {
+      return res.status(503).json({
+        error: 'Bot Control Server not configured',
+        message: 'BOT_CONTROL_URL and BOT_CONTROL_TOKEN environment variables are not set'
+      });
+    }
+
     const result = await botControlRequest('/stop', 'POST');
     const status = await botControlRequest('/status');
     
@@ -181,13 +208,23 @@ router.post('/bot-console/stop', async (req, res) => {
       message: result.message
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(502).json({ error: error.message });
   }
 });
 
 // Bot Console: Logs abrufen
 router.get('/bot-console/logs', async (req, res) => {
   try {
+    if (!BOT_CONTROL_URL || !BOT_CONTROL_TOKEN) {
+      return res.status(503).json({
+        error: 'Bot Control Server not configured',
+        message: 'BOT_CONTROL_URL and BOT_CONTROL_TOKEN environment variables are not set on Railway. Please configure these variables first.',
+        docs: 'See BACKEND_SETUP.md for Cloudflare Tunnel setup instructions',
+        logs: 'Bot Console not available until configured',
+        output: ''
+      });
+    }
+
     const rawLines = Number(req.query.lines || 200);
     const lines = Number.isFinite(rawLines) ? Math.max(20, Math.min(500, rawLines)) : 200;
     
@@ -201,7 +238,12 @@ router.get('/bot-console/logs', async (req, res) => {
       output: data.logs || ''
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(502).json({
+      error: 'Bot Control Server unreachable',
+      message: error.message,
+      logs: error.message,
+      output: error.message
+    });
   }
 });
 

@@ -1,0 +1,83 @@
+{
+  "nav": {
+    "home": "Domů",
+    "booking": "Rezervace",
+    "anfahrt": "Přístup",
+    "impressum": "Impressum",
+    "datenschutz": "Ochrana údajů",
+    "agb": "Podmínky",
+    "logout": "Odhlášení"
+  },
+  "header": {
+    "title": "Bytové ubytování pro montéry Dumser",
+    "description": "Moderní ubytování pro odborníky a montéry"
+  },
+  "home": {
+    "welcome": "Vítejte",
+    "subtitle": "Najděte ideální ubytování pro váš pobyt",
+    "features": "Pohodlné byty",
+    "description": "Kvalitně vybavené byty pro krátkodobé a střednědobé pobyty",
+    "cta": "Rezervujte nyní",
+    "gallery": "Galerie",
+    "contact": "Kontakt",
+    "routeCalculation": "Výpočet Trasy",
+    "apartmentDetails": "Údaje o Bytě",
+    "availability": "Dostupnost",
+    "bookNow": "Rezervujte nyní!",
+    "fromPrice": "od",
+    "perPersonPerNight": "na osobu/noc!",
+    "rooms": "Místnosti",
+    "area": "m²",
+    "featuresList": "Vybavení",
+    "bookingCalendar": "Kalendář Rezervací",
+    "welcomeTitle": "Vítejte v našich bytech",
+    "welcomeSubtitle": "Najděte si svůj montážní byt!",
+    "ourApartments": "Naše byty",
+    "earlyBookingDiscount": "Včasná rezervace - Ušetřete!",
+    "earlyBookingText": "Rezervujte alespoň 2 měsíce dopředu a získejte 10% slevu!",
+    "earlyBookingSavings": "ze 100 €/noc na pouhých 90 €/noc",
+    "distanceQuestion": "Jak daleko je byt od vašeho staveniště?",
+    "apartmentDetails2": "Údaje o Bytě",
+    "compareApartments": "Porovnejte oba byty včetně vybavení, ceny a fotogalerie.",
+    "openGallery": "📷 Otevřít galerii",
+    "galleryCount": "📷 Galerie",
+    "bookNowArrow": "Rezervujte nyní! →",
+    "availability2": "Dostupnost",
+    "selectDates": "Vyberte si svá data",
+    "rooms2": "Místnosti",
+    "area2": "m²",
+    "images": "Fotografie"
+  },
+  "booking": {
+    "title": "Rezervace",
+    "startDate": "Datum příjezdu",
+    "endDate": "Datum odjezdu",
+    "property": "Byt",
+    "name": "Jméno",
+    "email": "E-mail",
+    "phone": "Telefon",
+    "submit": "Rezervovat",
+    "cancel": "Zrušit",
+    "confirmation": "Potvrzení rezervace",
+    "success": "Děkujeme za vaši rezervaci!"
+  },
+  "footer": {
+    "company": "Bytové ubytování pro montéry Dumser",
+    "address": "Adresa",
+    "phone": "Telefon",
+    "email": "E-mail",
+    "rights": "Všechna práva vyhrazena",
+    "followUs": "Sledujte nás"
+  },
+  "common": {
+    "loading": "Načítání...",
+    "error": "Chyba",
+    "success": "Úspěch",
+    "save": "Uložit",
+    "cancel": "Zrušit",
+    "delete": "Odstranit",
+    "edit": "Upravit",
+    "close": "Zavřít",
+    "language": "Jazyk"
+  }
+}

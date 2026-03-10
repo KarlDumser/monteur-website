@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function Success() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [bookingId, setBookingId] = useState('');
 

@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { format, addMonths, addDays, isAfter } from "date-fns";
 import { APP_VERSION } from "../config";
 import { DateRange } from "react-date-range";
@@ -9,6 +10,7 @@ import { apiCall } from "../utils/api";
 import ImageGallery from '../components/ImageGallery';
 
 export default function BookingPage() {
+  const { t } = useTranslation();
   // State für Mindestbuchungsdauer-Fehler
   const [minNightsError, setMinNightsError] = useState("");
   // State für Animation der Fehlermeldung

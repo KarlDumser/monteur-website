@@ -1,25 +1,33 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import BookingCalendar from '../components/BookingCalendar';
 import CommuteCalculator from '../components/CommuteCalculator';
 import { apiCall } from '../utils/api';
 import { Link } from 'react-router-dom';
 import { APP_VERSION } from '../config';
 
-const NAV_SECTIONS = [
-  { id: 'routen-berechnung', label: 'Routen Berechnung' },
-  { id: 'wohnungsdetails', label: 'Wohnungsdetails' },
-  { id: 'verfuegbarkeit', label: 'Verfügbarkeit' },
-  { id: 'jetzt-buchen', label: 'Jetzt Buchen!' }
+const getNavSections = (t) => [
+  { id: 'routen-berechnung', label: t('home.routeCalculation') || 'Routen Berechnung' },
+  { id: 'wohnungsdetails', label: t('home.apartmentDetails') || 'Wohnungsdetails' },
+  { id: 'verfuegbarkeit', label: t('home.availability') || 'Verfügbarkeit' },
+  { id: 'jetzt-buchen', label: t('home.bookNow') || 'Jetzt Buchen!' }
 ];
 
 export default function Home() {
+  const { t } = useTranslation();
 
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [activeSection, setActiveSection] = useState(NAV_SECTIONS[0].id);
+  const [navSections, setNavSections] = useState(getNavSections(t));
+  const [activeSection, setActiveSection] = useState(navSections[0]?.id || 'routen-berechnung');
   const manualScrollTargetRef = useRef(null);
   const manualScrollReleaseTimerRef = useRef(null);
+
+  // Update nav sections when translation changes
+  useEffect(() => {
+    setNavSections(getNavSections(t));
+  }, [t]);
   
   const properties = [
     {
@@ -164,9 +172,9 @@ export default function Home() {
       }
 
       const sectionSwitchLine = window.innerHeight * 0.35;
-      let currentSectionId = NAV_SECTIONS[0].id;
+      let currentSectionId = navSections[0]?.id || 'routen-berechnung';
 
-      NAV_SECTIONS.forEach((section) => {
+      navSections.forEach((section) => {
         const node = document.getElementById(section.id);
         if (node && node.getBoundingClientRect().top <= sectionSwitchLine) {
           currentSectionId = section.id;
@@ -187,7 +195,7 @@ export default function Home() {
         clearTimeout(manualScrollReleaseTimerRef.current);
       }
     };
-  }, []);
+  }, [navSections]);
 
   const jumpToSection = (sectionId) => {
     console.log('Jumping to section:', sectionId);
@@ -257,14 +265,14 @@ export default function Home() {
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-12 px-4">
         <div className="container mx-auto text-center">
-          <h1 className="text-5xl font-bold mb-4">Willkommen zu unseren Wohnungen</h1>
-          <p className="text-xl mb-8">Finden Sie Ihre Monteurwohnung!</p>
+          <h1 className="text-5xl font-bold mb-4">{t('home.welcomeTitle')}</h1>
+          <p className="text-xl mb-8">{t('home.welcomeSubtitle')}</p>
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
               to="/booking"
               className="inline-block bg-white text-blue-600 font-bold py-4 px-12 rounded-lg hover:bg-gray-100 transition text-lg"
             >
-              Jetzt Buchen
+              {t('home.cta')}
             </Link>
           </div>
         </div>
@@ -272,24 +280,24 @@ export default function Home() {
 
       {/* Properties Section */}
       <div className="container mx-auto px-4 py-16">
-        <h2 className="text-4xl font-bold text-center mb-12">Unsere Wohnungen</h2>
+        <h2 className="text-4xl font-bold text-center mb-12">{t('home.ourApartments')}</h2>
 
         {/* Early Booking Discount Info */}
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 rounded-xl p-8 mb-12 text-center">
           <div className="text-4xl mb-3">🎉</div>
-          <h3 className="text-2xl font-bold text-green-800 mb-2">Frühbucher Sparen!</h3>
-          <p className="text-lg text-green-700 mb-3">Buchen Sie mindestens <strong>2 Monate im Voraus</strong> und erhalten Sie <strong>10% Rabatt</strong>!</p>
-          <p className="text-green-600">von 100 €/Nacht auf nur 90 €/Nacht</p>
+          <h3 className="text-2xl font-bold text-green-800 mb-2">{t('home.earlyBookingDiscount')}</h3>
+          <p className="text-lg text-green-700 mb-3">{t('home.earlyBookingText')}</p>
+          <p className="text-green-600">{t('home.earlyBookingSavings')}</p>
         </div>
 
         <div id="routen-berechnung" className="mb-12 scroll-mt-24">
-          <CommuteCalculator title="Wie weit ist die Wohnung von Ihrer Baustelle entfernt?" />
+          <CommuteCalculator title={t('home.distanceQuestion')} />
         </div>
 
         <div id="wohnungsdetails" className="scroll-mt-24">
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Wohnungsdetails</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-3">{t('home.apartmentDetails2')}</h3>
           <p className="text-gray-600 mb-6">
-            Vergleichen Sie beide Wohnungen inklusive Ausstattung, Preis und Bildergalerie.
+            {t('home.compareApartments')}
           </p>
         </div>
         
@@ -308,7 +316,7 @@ export default function Home() {
                 />
                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover:bg-opacity-30 transition">
                   <span className="text-white text-lg font-semibold opacity-0 group-hover:opacity-100 transition">
-                    📷 Galerie öffnen
+                    {t('home.openGallery')}
                   </span>
                 </div>
               </div>

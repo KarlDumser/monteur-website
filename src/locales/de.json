@@ -1,0 +1,70 @@
+{
+  "nav": {
+    "home": "Startseite",
+    "booking": "Buchung",
+    "anfahrt": "Anfahrt",
+    "impressum": "Impressum",
+    "datenschutz": "Datenschutz",
+    "agb": "AGB",
+    "logout": "Abmelden"
+  },
+  "header": {
+    "title": "Monteurwohnung Dumser",
+    "description": "Moderne Unterkunft für Fachkräfte und Monteure"
+  },
+  "home": {
+    "welcome": "Willkommen",
+    "subtitle": "Finden Sie die perfekte Unterkunft für Ihren Aufenthalt",
+    "features": "Komfortable Wohnungen",
+    "description": "Hochwertig eingerichtete Wohnungen für kurz- und mittelfristige Aufenthalte",
+    "cta": "Jetzt buchen",
+    "gallery": "Galerie",
+    "contact": "Kontakt",
+    "routeCalculation": "Routen Berechnung",
+    "apartmentDetails": "Wohnungsdetails",
+    "availability": "Verfügbarkeit",
+    "bookNow": "Jetzt Buchen!",
+    "fromPrice": "ab",
+    "perPersonPerNight": "pro Person/Nacht!",
+    "rooms": "Zimmer",
+    "area": "m²",
+    "featuresList": "Ausstattung",
+    "bookingCalendar": "Buchungskalender",
+    "welcomeTitle": "Willkommen zu unseren Wohnungen",
+    "welcomeSubtitle": "Finden Sie Ihre Monteurwohnung!",
+    "ourApartments": "Unsere Wohnungen",
+    "earlyBookingDiscount": "Frühbucher Sparen!",
+    "earlyBookingText": "Buchen Sie mindestens 2 Monate im Voraus und erhalten Sie 10% Rabatt!",
+    "earlyBookingSavings": "von 100 €/Nacht auf nur 90 €/Nacht",
+    "distanceQuestion": "Wie weit ist die Wohnung von Ihrer Baustelle entfernt?",
+    "apartmentDetails2": "Wohnungsdetails",
+    "compareApartments": "Vergleichen Sie beide Wohnungen inklusive Ausstattung, Preis und Bildergalerie.",
+    "openGallery": "📷 Galerie öffnen",
+    "galleryCount": "📷 Galerie",
+    "bookNowArrow": "Jetzt Buchen! →",
+    "availability2": "Verfügbarkeit",
+    "selectDates": "Wählen Sie Ihre Daten",
+    "rooms2": "Zimmer",
+    "area2": "m²",
+    "images": "Bilder"
+  },
+  "footer": {
+    "company": "Monteurwohnung Dumser",
+    "address": "Adresse",
+    "phone": "Telefon",
+    "email": "E-Mail",
+    "rights": "Alle Rechte vorbehalten",
+    "followUs": "Folgen Sie uns"
+  },
+  "common": {
+    "loading": "Lädt...",
+    "error": "Fehler",
+    "success": "Erfolgreich",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen",
+    "language": "Sprache"
+  }
+}
