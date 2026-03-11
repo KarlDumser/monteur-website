@@ -8,9 +8,10 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { apiCall } from "../utils/api";
 import ImageGallery from '../components/ImageGallery';
+import { EU_COUNTRIES, getCountryDisplayName, isPostalCodeValid } from "../utils/addressSchemas";
 
 export default function BookingPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // State für Mindestbuchungsdauer-Fehler
   const [minNightsError, setMinNightsError] = useState("");
   // State für Animation der Fehlermeldung
@@ -29,9 +30,13 @@ export default function BookingPage() {
   const [phone, setPhone] = useState("");
   const [landlinePhone, setLandlinePhone] = useState("");
   const [company, setCompany] = useState("");
+  const [vatId, setVatId] = useState("");
   const [street, setStreet] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
   const [zip, setZip] = useState("");
   const [city, setCity] = useState("");
+  const [region, setRegion] = useState("");
+  const [countryCode, setCountryCode] = useState("DE");
   const [step, setStep] = useState("dateselect");
   const [selectedWohnung, setSelectedWohnung] = useState(null);
   const [availability, setAvailability] = useState({ keys: [], status: {} });
@@ -46,6 +51,9 @@ export default function BookingPage() {
   const MAX_PEOPLE_HACKERBERG = 5;
   const MAX_PEOPLE_FRUEHLING = 6;
   const MAX_PEOPLE = 11;
+
+  const isGermanAddress = countryCode === 'DE';
+  const isIrishAddress = countryCode === 'IE';
 
   // Dynamisch belegte Zeiten (aus Backend)
   const [blockedDates, setBlockedDates] = useState({ neubau: [], hackerberg: [] });
@@ -186,13 +194,13 @@ export default function BookingPage() {
     // Validierung: Personen
     const numPeople = parseInt(people, 10);
     if (isNaN(numPeople) || numPeople < 1 || numPeople > MAX_PEOPLE) {
-      alert(`Bitte geben Sie eine gültige Personenzahl zwischen 1 und ${MAX_PEOPLE} ein.`);
+      alert(t('bookingPage.alerts.invalidPeopleRange', { max: MAX_PEOPLE }));
       return;
     }
 
     const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
     if (nights < 27) {
-      setMinNightsError("Mindestbuchungsdauer 28 Tage (27 Nächte). Für kürzere Aufenthalte kontaktieren Sie uns bitte telefonisch.");
+      setMinNightsError(t('bookingPage.alerts.minNightsError'));
       setMinNightsErrorAnim(false); // Reset for retrigger
       setTimeout(() => setMinNightsErrorAnim(true), 10);
       // Kalenderfeld hervorheben und zum Fehler scrollen
@@ -219,10 +227,10 @@ export default function BookingPage() {
       const wohnungName = wohnungKey === "hackerberg" ? "Hackerberg" : "Frühlingstraße";
       
       const confirmed = window.confirm(
-        `⚠️ WICHTIGER HINWEIS\n\n` +
-        `Sie haben ${numPeople} Personen angegeben.\n\n` +
-        `Die Wohnung "${wohnungName}" ist allerdings nur für maximal ${maxCapacity} Personen ausgelegt.\n\n` +
-        `Möchten Sie trotzdem mit dieser Buchung fortfahren?`
+        `${t('bookingPage.alerts.capacityWarningTitle')}\n\n` +
+        `${t('bookingPage.alerts.capacityWarningPeople', { count: numPeople })}\n\n` +
+        `${t('bookingPage.alerts.capacityWarningApartment', { name: wohnungName, max: maxCapacity })}\n\n` +
+        `${t('bookingPage.alerts.capacityWarningContinue')}`
       );
       
       if (!confirmed) {
@@ -237,47 +245,53 @@ export default function BookingPage() {
 
   const handleCustomerDataSubmit = (e) => {
     e.preventDefault();
+    const countryLabel = getCountryDisplayName(countryCode, i18n.language);
     
     // Validierung: Consent Checkboxen
     if (!dataConsent) {
-      alert('Bitte akzeptieren Sie die Datenschutzerklärung.');
+      alert(t('bookingPage.alerts.acceptPrivacy'));
       return;
     }
     if (!agbConsent) {
-      alert('Bitte akzeptieren Sie die AGB.');
+      alert(t('bookingPage.alerts.acceptTerms'));
       return;
     }
     
     // Validierung: Email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      alert('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
+      alert(t('bookingPage.alerts.invalidEmail'));
       return;
     }
     
     // Validierung: Adressfelder
     if (company.trim().length < 2) {
-      alert('Bitte geben Sie einen gültigen Firmennamen ein (mindestens 2 Zeichen).');
+      alert(t('bookingPage.alerts.invalidCompany'));
       return;
     }
     if (street.trim().length < 3) {
-      alert('Bitte geben Sie eine gültige Straße ein (mindestens 3 Zeichen).');
+      alert(t('bookingPage.alerts.invalidStreet'));
       return;
     }
-    if (zip.trim().length < 4) {
-      alert('Bitte geben Sie eine gültige PLZ ein (mindestens 4 Zeichen).');
+    if (!isPostalCodeValid(countryCode, zip)) {
+      alert(
+        t('bookingPage.alerts.invalidPostalCodeByCountry', {
+          country: countryLabel,
+          defaultValue: `Bitte geben Sie eine gueltige Postleitzahl fuer ${countryLabel} ein.`
+        })
+      );
       return;
     }
     if (city.trim().length < 2) {
-      alert('Bitte geben Sie einen gültigen Ort ein (mindestens 2 Zeichen).');
+      alert(t('bookingPage.alerts.invalidCity'));
       return;
     }
     if (name.trim().length < 2) {
-      alert('Bitte geben Sie einen gültigen Namen ein (mindestens 2 Zeichen).');
+      alert(t('bookingPage.alerts.invalidName'));
       return;
     }
     if (phone.trim().length < 5) {
-      alert('Bitte geben Sie eine gültige Mobilnummer ein (mindestens 5 Zeichen).');
+      alert(t('bookingPage.alerts.invalidMobile'));
       return;
     }
     
@@ -305,6 +319,10 @@ export default function BookingPage() {
     paidThroughDate.setDate(paidThroughDate.getDate() + 28);
     
     // Store booking info and redirect to payment
+    const normalizedStreet = [street.trim(), addressLine2.trim()].filter(Boolean).join(', ');
+    const normalizedCity = region.trim() ? `${city.trim()} (${region.trim()})` : city.trim();
+    const countryLabel = getCountryDisplayName(countryCode, i18n.language);
+
     const bookingInfo = {
       wohnung: wohnungKey,
       startDate: format(range[0].startDate, "dd.MM.yyyy"),
@@ -317,9 +335,14 @@ export default function BookingPage() {
       mobilePhone: phone,
       landlinePhone,
       company,
-      street,
-      zip,
-      city,
+      vatId: vatId.trim(),
+      street: normalizedStreet,
+      zip: zip.trim(),
+      city: normalizedCity,
+      country: countryCode,
+      countryLabel,
+      addressLine2: addressLine2.trim(),
+      region: region.trim(),
       pricePerNight,
       cleaningFee,
       wohnungLabel,
@@ -464,8 +487,8 @@ export default function BookingPage() {
 
       {step === "dateselect" && (
         <div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Wohnung buchen</h1>
-          <p className="text-gray-600 mb-8">Schritt 1: Wählen Sie Ihre Anreisedaten</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">{t('bookingPage.steps.bookApartment')}</h1>
+          <p className="text-gray-600 mb-8">{t('bookingPage.steps.chooseDates')}</p>
 
           <form
             onSubmit={handleDateSelection}
@@ -473,14 +496,14 @@ export default function BookingPage() {
           >
             <div>
               <label className="block text-sm font-semibold mb-4 text-gray-700 text-lg">
-                📅 Zeitraum wählen den Sie reservieren möchten
+                {t('bookingPage.dateSelect.periodLabel')}
               </label>
               
               {/* Manuelle Eingabefelder */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-white border-2 border-blue-300 rounded-xl p-4 shadow-sm">
                   <label className="block text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">
-                    Von (Anreise)
+                    {t('bookingPage.dateSelect.from')}
                   </label>
                   <input
                     type="text"
@@ -515,7 +538,7 @@ export default function BookingPage() {
                 </div>
                 <div className="bg-white border-2 border-blue-300 rounded-xl p-4 shadow-sm">
                   <label className="block text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">
-                    Bis (Abreise)
+                    {t('bookingPage.dateSelect.to')}
                   </label>
                   <input
                     type="text"
@@ -566,7 +589,7 @@ export default function BookingPage() {
                     setEndDateInput(format(item.selection.endDate, "dd.MM.yyyy"));
                     const nights = Math.max(0, Math.ceil((item.selection.endDate - item.selection.startDate) / (1000 * 60 * 60 * 24)));
                     if (nights > 0 && nights < 27) {
-                      setMinNightsError("Mindestbuchungsdauer 28 Tage (27 Nächte). Für kürzere Aufenthalte kontaktieren Sie uns bitte telefonisch.");
+                      setMinNightsError(t('bookingPage.alerts.minNightsError'));
                       setMinNightsErrorAnim(false); // Reset for retrigger
                       setTimeout(() => setMinNightsErrorAnim(true), 10);
                     } else {
@@ -580,10 +603,10 @@ export default function BookingPage() {
                 />
               </div>
               <p className="text-sm text-gray-600 mt-4 bg-blue-50 p-3 rounded-lg">
-                <strong>Gewählt:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(
+                <strong>{t('bookingPage.dateSelect.selectedLabel')}</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(
                   range[0].endDate,
                   "dd.MM.yyyy"
-                )} ({Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)))} Nächte)
+                )} ({Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)))} {t('bookingPage.common.nights')})
               </p>
               {minNightsError && (
                 <div
@@ -597,15 +620,15 @@ export default function BookingPage() {
               
               {getEarlyBookingDiscount() > 0 && (
                 <div className="bg-green-50 border-2 border-green-400 p-4 rounded-lg mt-3">
-                  <p className="text-green-800 font-semibold">🎉 Frühbucherabatt: -10%</p>
-                  <p className="text-sm text-green-700">Sie buchen mindestens 2 Monate im Voraus!</p>
+                  <p className="text-green-800 font-semibold">{t('bookingPage.dateSelect.earlyDiscountTitle')}</p>
+                  <p className="text-sm text-green-700">{t('bookingPage.dateSelect.earlyDiscountText')}</p>
                 </div>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-semibold mb-3 text-gray-700">
-                👥 Anzahl der Personen
+                {t('bookingPage.dateSelect.peopleLabel')}
               </label>
               <input
                 type="number"
@@ -629,8 +652,11 @@ export default function BookingPage() {
                 required
               />
               <p className="mt-2 text-xs text-gray-500">
-                Hackerberg bis {MAX_PEOPLE_HACKERBERG} Personen, Frühlingstraße bis {MAX_PEOPLE_FRUEHLING} Personen,
-                Kombi-Paket für 7–{MAX_PEOPLE} Personen.
+                {t('bookingPage.dateSelect.peopleHint', {
+                  maxHackerberg: MAX_PEOPLE_HACKERBERG,
+                  maxFruehling: MAX_PEOPLE_FRUEHLING,
+                  maxTotal: MAX_PEOPLE,
+                })}
               </p>
             </div>
 
@@ -638,11 +664,11 @@ export default function BookingPage() {
               type="submit"
               className="w-full bg-blue-600 text-white font-semibold py-4 rounded-xl hover:bg-blue-700 transition shadow-lg hover:shadow-xl"
             >
-              Verfügbarkeit prüfen →
+              {t('bookingPage.dateSelect.checkAvailabilityButton')}
             </button>
 
             <p className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
-              ℹ️ Nach dem Absenden sehen Sie die verfügbaren Wohnungen. Danach erfolgt die Weiterleitung zur Bezahlung (Kreditkarte oder PayPal).
+              {t('bookingPage.dateSelect.afterSubmitHint')}
             </p>
           </form>
         </div>
@@ -650,8 +676,8 @@ export default function BookingPage() {
 
       {step === "select" && (
         <div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Verfügbare Wohnungen</h1>
-          <p className="text-gray-600 mb-8">Schritt 2: Wählen Sie eine Wohnung</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">{t('bookingPage.steps.availableApartments')}</h1>
+          <p className="text-gray-600 mb-8">{t('bookingPage.steps.chooseApartment')}</p>
 
           {(() => {
             const numPeople = parseInt(people, 10);
@@ -668,26 +694,25 @@ export default function BookingPage() {
             <div className="space-y-6">
               {kombiNotAvailableButNeeded && (
                 <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 text-yellow-900">
-                  <p className="font-semibold mb-1">Hinweis zur Kapazität</p>
+                  <p className="font-semibold mb-1">{t('bookingPage.select.capacityNoteTitle')}</p>
                   <p className="text-sm">
-                    Für {numPeople} Personen wäre das Kombi-Paket erforderlich, ist im gewählten Zeitraum aber nicht verfügbar.
-                    Einzelwohnungen sind verfügbar, haben jedoch jeweils eine geringere Kapazität.
+                    {t('bookingPage.select.capacityNoteText', { count: numPeople })}
                   </p>
                 </div>
               )}
               {/* Frühe Erklärung der Rechnungslogik */}
               <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-5">
-                <h3 className="text-lg font-semibold text-blue-900 mb-2">💳 So funktioniert die Rechnungsabwicklung bei Langzeitbuchungen:</h3>
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">{t('bookingPage.select.billingInfoTitle')}</h3>
                 <div className="text-sm text-blue-800 space-y-2">
-                  <p><strong>✓ Rechnung alle 4 Wochen (28 Tage):</strong> Sie erhalten immer eine Rechnung für die nächsten 28 Tage im Voraus bzw. bis zum Ende ihres gewählten Buchungszeitraumes.</p>
-                  <p><strong>✓ Automatische Folgezahlungen:</strong> Etwa eine Woche <em>vor</em> Ablauf des 4-Wochen-Zyklus erhalten Sie automatisch die nächste Rechnung – ohne Aufforderung.</p>
-                  <p><strong>✓ Transparent:</strong> Sie sehen immer, wie lange noch bezahlt ist und wann die nächste Rechnung kommt.</p>
+                  <p><strong>{t('bookingPage.select.billingInfoPoint1Title')}</strong> {t('bookingPage.select.billingInfoPoint1Text')}</p>
+                  <p><strong>{t('bookingPage.select.billingInfoPoint2Title')}</strong> {t('bookingPage.select.billingInfoPoint2Text')}</p>
+                  <p><strong>{t('bookingPage.select.billingInfoPoint3Title')}</strong> {t('bookingPage.select.billingInfoPoint3Text')}</p>
                 </div>
               </div>
               {!hasAnyAvailable && (
                 <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 text-center">
-                  <h3 className="text-xl font-bold text-red-800 mb-2">Keine Verfuegbarkeit</h3>
-                  <p className="text-red-700">Fuer den gewaehlten Zeitraum ist aktuell keine passende Wohnung verfuegbar.</p>
+                  <h3 className="text-xl font-bold text-red-800 mb-2">{t('bookingPage.select.noAvailabilityTitle')}</h3>
+                  <p className="text-red-700">{t('bookingPage.select.noAvailabilityText')}</p>
                 </div>
               )}
               {displayKeys.map((key) => {
@@ -723,13 +748,13 @@ export default function BookingPage() {
                             {wohnung.zimmer && (
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">🏠</span>
-                                <span><strong>Zimmer:</strong> {wohnung.zimmer}</span>
+                                <span><strong>{t('bookingPage.select.roomsLabel')}</strong> {wohnung.zimmer}</span>
                               </div>
                             )}
                             {wohnung.flaeche && (
                               <div className="flex items-center gap-2">
                                 <span className="text-lg">📐</span>
-                                <span><strong>Fläche:</strong> {wohnung.flaeche}</span>
+                                <span><strong>{t('bookingPage.select.areaLabel')}</strong> {wohnung.flaeche}</span>
                               </div>
                             )}
                           </div>
@@ -744,18 +769,18 @@ export default function BookingPage() {
                                   <line x1="8" y1="8" x2="16" y2="16" stroke="currentColor" strokeWidth="2" />
                                   <line x1="16" y1="8" x2="8" y2="16" stroke="currentColor" strokeWidth="2" />
                                 </svg>
-                                Ausgebucht
+                                {t('bookingPage.select.soldOut')}
                               </span>
                             </div>
                             <div className="text-lg text-red-700 font-semibold mb-2">
-                              <span>Nächster freier Zeitraum ab:</span>
+                              <span>{t('bookingPage.select.nextFreeFrom')}</span>
                               <span className="ml-2 bg-yellow-100 px-3 py-1 rounded-full text-yellow-800 font-bold">
                                 {(() => {
                                   const periods = key === "hackerberg" ? blockedDates.hackerberg : blockedDates.neubau;
                                   const start = format(range[0].startDate, "yyyy-MM-dd");
                                   const end = format(range[0].endDate, "yyyy-MM-dd");
                                   const next = getNextFreeDate([start, end], periods || []);
-                                  return next ? format(new Date(next), "dd.MM.yyyy") : "unbekannt";
+                                  return next ? format(new Date(next), "dd.MM.yyyy") : t('bookingPage.select.unknown');
                                 })()}
                               </span>
                             </div>
@@ -764,24 +789,24 @@ export default function BookingPage() {
                               disabled
                               className="mt-4 w-full font-bold py-3 px-4 rounded-xl bg-gray-200 text-gray-500 cursor-not-allowed"
                             >
-                              Ausgebucht
+                              {t('bookingPage.select.soldOut')}
                             </button>
                           </>
                         )}
                         <div className="space-y-2 text-sm text-gray-700 mb-4">
                           <div className="flex items-center gap-2">
                             <span className="text-lg">📡</span>
-                            <span><strong>Internet:</strong> {wohnung.internet}</span>
+                            <span><strong>{t('bookingPage.select.internetLabel')}</strong> {wohnung.internet}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-lg">✨</span>
-                            <span><strong>Ausstattung:</strong> {wohnung.extras}</span>
+                            <span><strong>{t('bookingPage.select.equipmentLabel')}</strong> {wohnung.extras}</span>
                           </div>
                         </div>
 
                         {isAvailable && wohnung.features && wohnung.features.length > 0 && (
                           <div className="mb-6 bg-blue-50 rounded-lg p-4 border border-blue-100">
-                            <h4 className="font-semibold text-gray-800 mb-3 text-sm">Ausstattung & Services:</h4>
+                            <h4 className="font-semibold text-gray-800 mb-3 text-sm">{t('bookingPage.select.equipmentServicesTitle')}</h4>
                             <ul className="space-y-2 text-sm text-gray-700">
                               {wohnung.features.map((feature, idx) => (
                                 <li key={idx} className="flex items-start gap-2">
@@ -798,7 +823,7 @@ export default function BookingPage() {
                         <>
                           {/* Einheitliche Image Gallery */}
                           <div className="mb-6">
-                            <h3 className="text-lg font-semibold mb-3 text-gray-800">📸 Bildergalerie</h3>
+                            <h3 className="text-lg font-semibold mb-3 text-gray-800">{t('bookingPage.select.galleryTitle')}</h3>
                             {wohnung.galleries
                               ? wohnung.galleries.map((gallery) => (
                                   <ImageGallery
@@ -820,26 +845,26 @@ export default function BookingPage() {
                           {/* Price Box */}
                           <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
                             <div>
-                              <p className="text-gray-600 text-sm mb-2">Preis pro Nacht</p>
+                              <p className="text-gray-600 text-sm mb-2">{t('bookingPage.select.pricePerNight')}</p>
                               <p className="text-4xl font-bold text-blue-600 mb-4">{pricePerNight.toFixed(2).replace('.', ',')}€</p>
-                              <p className="text-xs text-gray-500 mb-4">(für {people} {parseInt(people) === 1 ? 'Person' : 'Personen'})</p>
+                              <p className="text-xs text-gray-500 mb-4">({t('bookingPage.select.forPeople', { count: parseInt(people, 10), people })})</p>
                               <hr className="my-2 border-blue-200" />
-                              <div className="text-lg text-gray-700 mb-2">+ {cleaningFee.toFixed(2).replace('.', ',')} € {nights > 28 ? 'monatliche Reinigung' : 'Endreinigung'}</div>
+                              <div className="text-lg text-gray-700 mb-2">+ {cleaningFee.toFixed(2).replace('.', ',')} € {nights > 28 ? t('bookingPage.select.monthlyCleaning') : t('bookingPage.select.finalCleaning')}</div>
                               <div className="bg-blue-50 rounded-lg p-3 mt-3 text-gray-700 text-sm">
-                                <strong>Gewählt:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")} ({nights} Nächte)
+                                <strong>{t('bookingPage.dateSelect.selectedLabel')}</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")} ({nights} {t('bookingPage.common.nights')})
                               </div>
                               {nights > 28 && (
                                 <div className="bg-sky-50 border-2 border-sky-200 rounded-lg p-4 mt-4">
                                   <div className="flex items-start gap-3">
                                     <span className="text-2xl">ℹ️</span>
                                     <div>
-                                      <p className="font-bold text-sky-900 text-sm mb-2">Rechnung wird aufgeteilt</p>
+                                      <p className="font-bold text-sky-900 text-sm mb-2">{t('bookingPage.select.invoiceSplitTitle')}</p>
                                       <p className="text-xs text-sky-800 mb-2">
-                                        Da Sie länger als 4 Wochen buchen, berechnen wir in zwei Schritten:
+                                        {t('bookingPage.select.invoiceSplitIntro')}
                                       </p>
                                       <ul className="text-xs text-sky-800 space-y-1 ml-4">
-                                        <li>• <strong>Erste Rechnung (jetzt):</strong> 28 Nächte = {(28 * pricePerNight + cleaningFee).toFixed(2).replace('.', ',')} € (inkl. Reinigung)</li>
-                                        <li>• <strong>Folgerechnungen:</strong> Für die weiteren {nights - 28} Nächte erhalten Sie rechtzeitig eine Rechnung</li>
+                                        <li>• <strong>{t('bookingPage.select.firstInvoiceNow')}</strong> 28 {t('bookingPage.common.nights')} = {(28 * pricePerNight + cleaningFee).toFixed(2).replace('.', ',')} € ({t('bookingPage.select.inclCleaning')})</li>
+                                        <li>• <strong>{t('bookingPage.select.followUpInvoices')}</strong> {t('bookingPage.select.followUpInvoicesText', { remainingNights: nights - 28 })}</li>
                                       </ul>
                                     </div>
                                   </div>
@@ -849,7 +874,7 @@ export default function BookingPage() {
                                 onClick={() => handleWohnungSelection(key)}
                                 className="mt-6 w-full font-bold py-3 px-4 rounded-xl transition shadow-lg bg-green-600 text-white hover:bg-green-700"
                               >
-                                ✓ Diese Wohnung buchen
+                                {t('bookingPage.select.bookThisApartment')}
                               </button>
                             </div>
                           </div>
@@ -863,7 +888,7 @@ export default function BookingPage() {
                 onClick={() => setStep("dateselect")}
                 className="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition"
               >
-                ← Zurück zur Datumsauswahl
+                {t('bookingPage.select.backToDateSelection')}
               </button>
             </div>
           );
@@ -873,15 +898,16 @@ export default function BookingPage() {
 
       {step === "form" && (
         <div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Ihre Daten</h1>
-          <p className="text-gray-600 mb-8">Schritt 3: Firmendaten und Kontaktinformationen</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">{t('bookingPage.steps.yourData')}</h1>
+          <p className="text-gray-600 mb-8">{t('bookingPage.steps.companyAndContact')}</p>
 
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm text-gray-700">
-            <h3 className="font-semibold text-gray-800 mb-2">Auswahlübersicht</h3>
-            <p><strong>Wohnung:</strong> {selectedWohnung ? wohnungen[selectedWohnung]?.titel : "-"}</p>
-            <p><strong>Zeitraum:</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")}</p>
-            <p><strong>Nächte:</strong> {Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)))}</p>
-            <p><strong>Personen:</strong> {people}</p>
+            <h3 className="font-semibold text-gray-800 mb-2">{t('bookingPage.form.selectionSummaryTitle')}</h3>
+            <p><strong>{t('bookingPage.form.apartmentLabel')}</strong> {selectedWohnung ? wohnungen[selectedWohnung]?.titel : "-"}</p>
+            <p><strong>{t('bookingPage.form.periodLabel')}</strong> {format(range[0].startDate, "dd.MM.yyyy")} – {format(range[0].endDate, "dd.MM.yyyy")}</p>
+            <p><strong>{t('bookingPage.form.nightsLabel')}</strong> {Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)))}</p>
+            <p><strong>{t('bookingPage.form.peopleLabel')}</strong> {people}</p>
+            <p><strong>{t('bookingPage.form.country', { defaultValue: 'Land:' })}</strong> {getCountryDisplayName(countryCode, i18n.language)}</p>
           </div>
 
           <form
@@ -889,34 +915,78 @@ export default function BookingPage() {
             className="bg-white shadow-xl rounded-2xl p-8 space-y-6 border border-gray-100"
           >
             <div className="bg-blue-50 p-4 rounded-xl">
-              <h3 className="text-sm font-bold text-gray-800 mb-3">🏢 Firmendaten (für Rechnung)</h3>
+              <h3 className="text-sm font-bold text-gray-800 mb-3">{t('bookingPage.form.companySectionTitle')}</h3>
+              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                {t('bookingPage.form.b2bOnlyNotice')}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Firmenname</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">{t('bookingPage.form.country', { defaultValue: 'Land' })}</label>
+                  <select
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    required
+                  >
+                    {EU_COUNTRIES.map((countryCodeOption) => (
+                      <option key={countryCodeOption} value={countryCodeOption}>
+                        {getCountryDisplayName(countryCodeOption, i18n.language)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">{t('bookingPage.form.companyName')}</label>
                   <input
                     type="text"
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
                     minLength="2"
                     className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                    placeholder="z.B. Müller Haustechnik GmbH"
+                    placeholder={t('bookingPage.form.companyPlaceholder')}
                     required
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Straße & Hausnummer</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">{t('bookingPage.form.vatIdOptional')}</label>
+                  <input
+                    type="text"
+                    value={vatId}
+                    onChange={(e) => setVatId(e.target.value)}
+                    className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                    placeholder={t('bookingPage.form.vatIdPlaceholder')}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">
+                    {isGermanAddress ? t('bookingPage.form.streetAndNumber') : t('bookingPage.form.addressLine1')}
+                  </label>
                   <input
                     type="text"
                     value={street}
                     onChange={(e) => setStreet(e.target.value)}
                     minLength="3"
                     className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                    placeholder="z.B. Ottostraße 8"
+                    placeholder={isGermanAddress ? t('bookingPage.form.streetPlaceholder') : t('bookingPage.form.addressLine1Placeholder')}
                     required
                   />
                 </div>
+                {!isGermanAddress && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold mb-2 text-gray-700">{t('bookingPage.form.addressLine2Optional')}</label>
+                    <input
+                      type="text"
+                      value={addressLine2}
+                      onChange={(e) => setAddressLine2(e.target.value)}
+                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                      placeholder={t('bookingPage.form.addressLine2Placeholder')}
+                    />
+                  </div>
+                )}
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">PLZ</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">
+                    {isGermanAddress ? t('bookingPage.form.zip') : (isIrishAddress ? t('bookingPage.form.eircodeOrPostalCode') : t('bookingPage.form.postalCode'))}
+                  </label>
                   <input
                     type="text"
                     value={zip}
@@ -924,73 +994,89 @@ export default function BookingPage() {
                     minLength="4"
                     pattern="[0-9A-Za-z\s\-]+"
                     className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                    placeholder="z.B. 83521"
+                    placeholder={isGermanAddress ? t('bookingPage.form.zipPlaceholder') : (isIrishAddress ? t('bookingPage.form.eircodePlaceholder') : t('bookingPage.form.postalCodePlaceholder'))}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Ort</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">
+                    {isIrishAddress ? t('bookingPage.form.townOrCity') : t('bookingPage.form.city')}
+                  </label>
                   <input
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     minLength="2"
                     className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                    placeholder="z.B. Berghausen"
+                    placeholder={isIrishAddress ? t('bookingPage.form.townOrCityPlaceholder') : t('bookingPage.form.cityPlaceholder')}
                     required
                   />
                 </div>
+                {!isGermanAddress && (
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold mb-2 text-gray-700">
+                      {isIrishAddress ? t('bookingPage.form.countyOptional') : t('bookingPage.form.regionOptional')}
+                    </label>
+                    <input
+                      type="text"
+                      value={region}
+                      onChange={(e) => setRegion(e.target.value)}
+                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
+                      placeholder={isIrishAddress ? t('bookingPage.form.countyPlaceholder') : t('bookingPage.form.regionPlaceholder')}
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="bg-gray-50 p-4 rounded-xl">
-              <h3 className="text-sm font-bold text-gray-800 mb-3">👤 Kontaktdaten</h3>
+              <h3 className="text-sm font-bold text-gray-800 mb-3">{t('bookingPage.form.contactSectionTitle')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Ansprechpartner</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">{t('bookingPage.form.contactPerson')}</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     minLength="2"
                     className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                    placeholder="z.B. Max Mustermann"
+                    placeholder={t('bookingPage.form.contactPersonPlaceholder')}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">E-Mail</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">{t('bookingPage.form.email')}</label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
-                    title="Bitte geben Sie eine gültige E-Mail-Adresse ein (z.B. name@firma.de)"
+                    title={t('bookingPage.alerts.invalidEmailTitle')}
                     className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Festnetz (optional)</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">{t('bookingPage.form.landlineOptional')}</label>
                   <input
                     type="tel"
                     value={landlinePhone}
                     onChange={(e) => setLandlinePhone(e.target.value)}
                     pattern="[0-9+\s\-\(\)]*"
-                    title="Bitte geben Sie eine gültige Telefonnummer ein (z.B. 089 8571174)"
+                    title={t('bookingPage.alerts.invalidPhoneTitle')}
                     className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
-                    placeholder="z.B. 089 8571174"
+                    placeholder={t('bookingPage.form.landlinePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Mobil</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">{t('bookingPage.form.mobile')}</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     minLength="5"
                     pattern="[0-9+\s\-\(\)]+"
-                    title="Bitte geben Sie eine gültige Mobilnummer ein (z.B. 0172 1234567)"
+                    title={t('bookingPage.alerts.invalidMobileTitle')}
                     className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition"
                     required
                   />
@@ -1010,11 +1096,11 @@ export default function BookingPage() {
                   required
                 />
                 <label htmlFor="dataConsent" className="text-sm text-gray-700 cursor-pointer">
-                  <span className="font-semibold">Ich akzeptiere die </span>
+                  <span className="font-semibold">{t('bookingPage.form.acceptPrivacyPrefix')}</span>
                   <a href="/datenschutz" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    Datenschutzerklärung
+                    {t('bookingPage.form.privacyPolicyLink')}
                   </a>
-                  <span> und erkläre mich einverstanden, dass meine Daten zur Buchungsabwicklung verarbeitet werden.</span>
+                  <span>{t('bookingPage.form.acceptPrivacySuffix')}</span>
                 </label>
               </div>
 
@@ -1028,11 +1114,11 @@ export default function BookingPage() {
                   required
                 />
                 <label htmlFor="agbConsent" className="text-sm text-gray-700 cursor-pointer">
-                  <span className="font-semibold">Ich habe die </span>
+                  <span className="font-semibold">{t('bookingPage.form.acceptTermsPrefix')}</span>
                   <a href="/agb" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    AGB und das Widerrufsrecht
+                    {t('bookingPage.form.termsAndWithdrawalLink')}
                   </a>
-                  <span> zur Kenntnis genommen und akzeptiert.</span>
+                  <span>{t('bookingPage.form.acceptTermsSuffix')}</span>
                 </label>
               </div>
             </div>
@@ -1043,13 +1129,13 @@ export default function BookingPage() {
                 onClick={() => setStep("select")}
                 className="sm:w-auto bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-xl hover:bg-gray-300 transition"
               >
-                ← Zurück zur Wohnungsauswahl
+                {t('bookingPage.form.backToApartmentSelection')}
               </button>
               <button
                 type="submit"
                 className="flex-1 bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-blue-700 transition"
               >
-                Weiter zur verbindlichen Buchung →
+                {t('bookingPage.form.continueToBindingBooking')}
               </button>
             </div>
           </form>

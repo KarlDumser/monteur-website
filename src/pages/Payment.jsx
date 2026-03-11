@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getApiUrl } from '../utils/api.js';
+import { apiCall } from '../utils/api.js';
 import { useTranslation } from 'react-i18next';
 
 export default function Payment() {
@@ -181,7 +181,6 @@ export default function Payment() {
                   setInvoiceLoading(true);
                   setInvoiceError(null);
                   try {
-                    const apiUrl = getApiUrl();
                     function parseGermanDate(str) {
                       if (typeof str === 'string' && str.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
                         const [d, m, y] = str.split('.');
@@ -201,18 +200,26 @@ export default function Payment() {
                         paidThroughDate: parseGermanDate(bookingInfo.paidThroughDate)
                       })
                     };
-                    const response = await fetch(`${apiUrl}/bookings`, {
+                    const response = await apiCall('/bookings', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(payload)
                     });
-                    const data = await response.json();
+
+                    const raw = await response.text();
+                    let data = {};
+                    try {
+                      data = raw ? JSON.parse(raw) : {};
+                    } catch {
+                      data = {};
+                    }
+
                     if (response.ok && data._id) {
                       localStorage.setItem('bookingInfo', JSON.stringify({ ...bookingInfo, _id: data._id }));
                       window.location.href = '/erfolg';
                     } else {
                       // Show specific error message from API
-                      const errorMsg = data.error || data.message || t('payment.createBookingError');
+                      const errorMsg = data.error || data.message || `${t('payment.createBookingError')} (HTTP ${response.status})`;
                       setInvoiceError(errorMsg);
                     }
                   } catch (err) {
