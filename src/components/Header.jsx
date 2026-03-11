@@ -109,14 +109,7 @@ export default function Header() {
                   {t('nav.logout')}
                 </button>
               </>
-            ) : (
-              <Link
-                to="/admin"
-                className="text-white/70 hover:text-white text-xs px-2 py-1 rounded-md transition"
-              >
-                Admin-Login
-              </Link>
-            )}
+            ) : null}
           </div>
         </div>
       </nav>
