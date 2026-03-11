@@ -16,6 +16,13 @@ const router = express.Router();
 const ADMIN_MAX_FAILED_ATTEMPTS = 5;
 const ADMIN_BLOCK_WINDOW_MS = 15 * 60 * 1000;
 const adminFailedAuthByIp = new Map();
+const ADMIN_REQUIRE_CLOUDFLARE_ACCESS = process.env.ADMIN_REQUIRE_CLOUDFLARE_ACCESS === 'true';
+
+const getAllowedCloudflareEmails = () =>
+  String(process.env.ADMIN_ACCESS_ALLOWED_EMAILS || '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
 
 const getClientIp = (req) => {
   const forwarded = req.headers['x-forwarded-for'];
@@ -43,6 +50,34 @@ const registerFailedAttempt = (ip) => {
   }
   current.count += 1;
   adminFailedAuthByIp.set(ip, current);
+};
+
+const requireCloudflareAccess = (req, res, next) => {
+  if (!ADMIN_REQUIRE_CLOUDFLARE_ACCESS) {
+    return next();
+  }
+
+  const allowedEmails = getAllowedCloudflareEmails();
+  if (allowedEmails.length === 0) {
+    return res.status(500).json({
+      error: 'Cloudflare Access is enabled but ADMIN_ACCESS_ALLOWED_EMAILS is empty'
+    });
+  }
+
+  const accessEmail = String(req.headers['cf-access-authenticated-user-email'] || '')
+    .trim()
+    .toLowerCase();
+
+  if (!accessEmail) {
+    return res.status(403).json({ error: 'Cloudflare Access authentication required' });
+  }
+
+  if (!allowedEmails.includes(accessEmail)) {
+    return res.status(403).json({ error: 'Cloudflare Access identity not allowed' });
+  }
+
+  req.cloudflareAccessEmail = accessEmail;
+  return next();
 };
 
 // Bot Control via HTTP (via Cloudflare Tunnel)
@@ -145,6 +180,7 @@ const requireAdminAuth = (req, res, next) => {
   return next();
 };
 
+router.use(requireCloudflareAccess);
 router.use(requireAdminAuth);
 
 const addDays = (date, days) => {

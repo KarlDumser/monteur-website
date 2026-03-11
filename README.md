@@ -154,6 +154,40 @@ Empfehlung:
 - Fuer jede Person eigenen Zugang verwenden (keine geteilten Credentials).
 - Passwoerter lang und einzigartig halten.
 
+### Admin Schutz mit Cloudflare Access (empfohlen)
+
+Kurz: nicht kompliziert. Einrichtung dauert typischerweise 10-20 Minuten.
+
+Was es bringt:
+
+- Vor dem Admin-Login wird schon auf Cloudflare-Ebene geprueft.
+- Nur freigegebene Identitaeten (z. B. du + Onkel) sehen/erreichen Admin-API.
+- Danach greift weiterhin dein normales Admin-Login (zweite Schutzschicht).
+
+Server ENV setzen:
+
+- `ADMIN_REQUIRE_CLOUDFLARE_ACCESS=true`
+- `ADMIN_ACCESS_ALLOWED_EMAILS=du@mail.de,onkel@mail.de`
+
+Cloudflare Dashboard (Zero Trust) konfigurieren:
+
+1. Zero Trust oeffnen und eine Access Application fuer deine Domain erstellen.
+2. App-Regel auf Admin-Bereich setzen (z. B. `https://deine-domain/admin*` und `https://deine-domain/api/admin/*`).
+3. Policy `Allow` mit euren E-Mails erstellen (du + Onkel).
+4. Login-Methode waehlen (One-Time PIN per Mail oder Google/Microsoft).
+
+Ablauf fuer deinen Onkel:
+
+1. Er geht auf `https://deine-domain/admin`.
+2. Cloudflare Access fordert zuerst Login (z. B. Code per Mail).
+3. Nur wenn seine Mail in der Access-Policy erlaubt ist, kommt er weiter.
+4. Danach meldet er sich wie gewohnt mit Admin-Benutzer/Passwort an.
+
+Hinweis:
+
+- MAC-Adressen lassen sich ueber das Internet nicht zuverlaessig fuer eine Whitelist nutzen.
+- Cloudflare Identity-Policies sind dafuer der richtige Weg.
+
 **Test-Zahlungen mit Stripe**:
 - Kartennummer: `4242 4242 4242 4242`
 - Ablaufdatum: `12/26`
