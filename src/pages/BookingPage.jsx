@@ -916,9 +916,6 @@ export default function BookingPage() {
           >
             <div className="bg-blue-50 p-4 rounded-xl">
               <h3 className="text-sm font-bold text-gray-800 mb-3">{t('bookingPage.form.companySectionTitle')}</h3>
-              <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                {t('bookingPage.form.b2bOnlyNotice')}
-              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold mb-2 text-gray-700">{t('bookingPage.form.country', { defaultValue: 'Land' })}</label>

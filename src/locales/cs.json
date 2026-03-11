@@ -393,7 +393,7 @@
       "privacyPolicyLink": "zasadami ochrany osobnich udaju",
       "acceptPrivacySuffix": " a souhlasim se zpracovanim mych udaju za ucelem rezervace.",
       "acceptTermsPrefix": "Seznamil/a jsem se s ",
-      "termsAndWithdrawalLink": "OP (B2B)",
+        "termsAndWithdrawalLink": "OP",
       "acceptTermsSuffix": " a souhlasim s nimi.",
       "backToApartmentSelection": "<- Zpet k vyberu bytu",
       "continueToBindingBooking": "Pokracovat k zavazne rezervaci ->"

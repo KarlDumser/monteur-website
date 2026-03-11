@@ -393,7 +393,7 @@
       "privacyPolicyLink": "декларацията за поверителност",
       "acceptPrivacySuffix": " и се съгласявам данните ми да бъдат обработвани за целите на резервацията.",
       "acceptTermsPrefix": "Прочетох и приемам ",
-      "termsAndWithdrawalLink": "ОУ (B2B)",
+        "termsAndWithdrawalLink": "ОУ",
       "acceptTermsSuffix": ".",
       "backToApartmentSelection": "<- Назад към избора на апартамент",
       "continueToBindingBooking": "Продължете към обвързваща резервация ->"

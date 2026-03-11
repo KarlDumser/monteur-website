@@ -393,7 +393,7 @@
       "privacyPolicyLink": "adatvedelmi tajekoztatot",
       "acceptPrivacySuffix": " es hozzajarulok, hogy adataimat a foglalas lebonyolitasahoz kezeljek.",
       "acceptTermsPrefix": "Elolvastam es elfogadom a ",
-      "termsAndWithdrawalLink": "ASZF (B2B)",
+        "termsAndWithdrawalLink": "ASZF",
       "acceptTermsSuffix": ".",
       "backToApartmentSelection": "<- Vissza az apartmanvalasztashoz",
       "continueToBindingBooking": "Tovabb a kotelezo ereju foglalashoz ->"

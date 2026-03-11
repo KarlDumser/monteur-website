@@ -380,7 +380,7 @@
       "privacyPolicyLink": "Datenschutzerklaerung",
       "acceptPrivacySuffix": " und erklaere mich einverstanden, dass meine Daten zur Buchungsabwicklung verarbeitet werden.",
       "acceptTermsPrefix": "Ich habe die ",
-      "termsAndWithdrawalLink": "AGB (B2B)",
+        "termsAndWithdrawalLink": "AGB",
       "acceptTermsSuffix": " zur Kenntnis genommen und akzeptiert.",
       "backToApartmentSelection": "<- Zurueck zur Wohnungsauswahl",
       "continueToBindingBooking": "Weiter zur verbindlichen Buchung ->"

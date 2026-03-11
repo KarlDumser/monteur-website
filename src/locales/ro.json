@@ -393,7 +393,7 @@
       "privacyPolicyLink": "politica de confidentialitate",
       "acceptPrivacySuffix": " si sunt de acord ca datele mele sa fie prelucrate pentru procesarea rezervarii.",
       "acceptTermsPrefix": "Am luat la cunostinta ",
-      "termsAndWithdrawalLink": "termenii si conditiile (B2B)",
+        "termsAndWithdrawalLink": "termenii si conditiile",
       "acceptTermsSuffix": " si le accept.",
       "backToApartmentSelection": "<- Inapoi la selectarea apartamentului",
       "continueToBindingBooking": "Continua catre rezervarea obligatorie ->"

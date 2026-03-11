@@ -393,7 +393,7 @@
       "privacyPolicyLink": "polityke prywatnosci",
       "acceptPrivacySuffix": " i wyrazam zgode na przetwarzanie moich danych w celu realizacji rezerwacji.",
       "acceptTermsPrefix": "Zapoznalem/am sie z ",
-      "termsAndWithdrawalLink": "OWU (B2B)",
+        "termsAndWithdrawalLink": "OWU",
       "acceptTermsSuffix": " i akceptuje je.",
       "backToApartmentSelection": "<- Wroc do wyboru mieszkania",
       "continueToBindingBooking": "Przejdz do wiążacej rezerwacji ->"
