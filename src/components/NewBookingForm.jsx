@@ -19,6 +19,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
     people: 1,
     pricePerNight: 0,
     cleaningFee: 0,
+    cleaningBufferDays: 3,
     subtotal: 0,
     discount: 0,
     vat: 0,
@@ -104,13 +105,15 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
         const end = new Date(newData.endDate);
         newData.nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
       }
-    } else if (['people', 'pricePerNight', 'cleaningFee'].includes(name)) {
+    } else if (['people', 'pricePerNight', 'cleaningFee', 'cleaningBufferDays'].includes(name)) {
       if (value === '') {
         newData[name] = '';
       } else {
         const numberValue = Number(value);
         if (name === 'people') {
           newData[name] = Math.max(1, Math.min(11, Math.floor(numberValue || 0)));
+        } else if (name === 'cleaningBufferDays') {
+          newData[name] = Math.max(1, Math.min(30, Math.floor(numberValue || 0)));
         } else {
           newData[name] = Math.max(0, numberValue || 0);
         }
@@ -163,6 +166,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       people: 4,
       pricePerNight: 100,
       cleaningFee: 100,
+      cleaningBufferDays: 3,
       bookingStatus: 'confirmed',
       paymentStatus: 'pending',
       checkInTime: '15:00',
@@ -231,6 +235,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       nights: Number(formData.nights) || 0,
       pricePerNight: Number(formData.pricePerNight) || 0,
       cleaningFee: Number(formData.cleaningFee) || 0,
+      cleaningBufferDays: Number(formData.cleaningBufferDays) || 3,
       subtotal: Number(formData.subtotal) || 0,
       discount: Number(formData.discount) || 0,
       vat: Number(formData.vat) || 0,
@@ -500,6 +505,18 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
                 onChange={handleChange}
                 step="0.01"
                 min="0"
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Reinigungs-Sperrtage nach Abreise</label>
+              <input
+                type="number"
+                name="cleaningBufferDays"
+                value={formData.cleaningBufferDays}
+                onChange={handleChange}
+                min="1"
+                max="30"
                 className="w-full border rounded px-3 py-2"
               />
             </div>

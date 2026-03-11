@@ -189,8 +189,17 @@ const addDays = (date, days) => {
   return result;
 };
 
+const getCleaningBufferDays = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed < 1) {
+    return 3;
+  }
+  return Math.min(parsed, 30);
+};
+
 const buildBlockedDateDeleteFilters = (booking) => {
   const filters = [];
+  const cleaningBufferDays = getCleaningBufferDays(booking.cleaningBufferDays);
 
   const pushFilter = (startDate, endDate, reason) => {
     if (!startDate || !endDate) {
@@ -206,14 +215,18 @@ const buildBlockedDateDeleteFilters = (booking) => {
   };
 
   pushFilter(booking.startDate, booking.endDate, 'Buchung');
-  pushFilter(addDays(booking.endDate, 1), addDays(booking.endDate, 3), 'Reinigung');
+  pushFilter(addDays(booking.endDate, 1), addDays(booking.endDate, cleaningBufferDays), 'Reinigung');
 
   if (booking.isPartialBooking && booking.paidThroughDate && booking.originalEndDate) {
     const secondPeriodStart = addDays(booking.paidThroughDate, 1);
 
     pushFilter(secondPeriodStart, booking.originalEndDate, 'Reservierung');
     pushFilter(secondPeriodStart, booking.originalEndDate, 'Buchung');
-    pushFilter(addDays(booking.originalEndDate, 1), addDays(booking.originalEndDate, 3), 'Reinigung');
+    pushFilter(
+      addDays(booking.originalEndDate, 1),
+      addDays(booking.originalEndDate, cleaningBufferDays),
+      'Reinigung'
+    );
   }
 
   return filters;
@@ -345,6 +358,7 @@ router.post('/bookings', async (req, res) => {
   try {
     const { sendConfirmationEmail = true, customerId = null, ...bookingPayload } = req.body || {};
     const booking = new Booking(bookingPayload);
+    booking.cleaningBufferDays = getCleaningBufferDays(bookingPayload.cleaningBufferDays);
 
     let customer = null;
     if (customerId) {
@@ -380,7 +394,7 @@ router.post('/bookings', async (req, res) => {
       await BlockedDate.create({
         wohnung: booking.wohnung,
         startDate: addDays(booking.originalEndDate, 1),
-        endDate: addDays(booking.originalEndDate, 3),
+        endDate: addDays(booking.originalEndDate, booking.cleaningBufferDays),
         reason: 'Reinigung',
         createdBy: 'system-cleaning-buffer'
       });
@@ -388,7 +402,7 @@ router.post('/bookings', async (req, res) => {
       await BlockedDate.create({
         wohnung: booking.wohnung,
         startDate: addDays(booking.endDate, 1),
-        endDate: addDays(booking.endDate, 3),
+        endDate: addDays(booking.endDate, booking.cleaningBufferDays),
         reason: 'Reinigung',
         createdBy: 'system-cleaning-buffer'
       });

@@ -11,9 +11,14 @@ const bookingSchema = new mongoose.Schema({
   
   // Firmendaten (für Rechnung)
   company: { type: String, required: true },
+  vatId: { type: String, default: '' },
   street: { type: String, required: true },
   zip: { type: String, required: true },
   city: { type: String, required: true },
+  country: { type: String, default: 'DE' },
+  countryLabel: { type: String, default: 'Deutschland' },
+  addressLine2: { type: String, default: '' },
+  region: { type: String, default: '' },
   
   // Buchungsdetails
   wohnung: { type: String, required: true, enum: ['neubau', 'hackerberg', 'kombi'] },
@@ -34,6 +39,7 @@ const bookingSchema = new mongoose.Schema({
   // Preisdetails
   pricePerNight: { type: Number, required: true },
   cleaningFee: { type: Number },
+  cleaningBufferDays: { type: Number, default: 3 },
   subtotal: { type: Number, required: true },
   discount: { type: Number, default: 0 },
   vat: { type: Number, required: true },

@@ -125,6 +125,7 @@ export default function Admin() {
     const nights = calculateNights(newStartDate, newEndDate);
     const pricePerNight = Number(lastBooking.pricePerNight || 0);
     const cleaningFee = Number(lastBooking.cleaningFee || 0);
+    const cleaningBufferDays = Math.max(1, Math.min(30, Number(lastBooking.cleaningBufferDays || 3)));
     const subtotal = pricePerNight * nights + cleaningFee;
     const discount = 0;
     const vat = (subtotal - discount) * 0.07;
@@ -147,6 +148,7 @@ export default function Admin() {
       people: Number(lastBooking.people || 1),
       pricePerNight,
       cleaningFee,
+      cleaningBufferDays,
       discountPercent: 0,
       checkInTime: lastBooking.checkInTime || '15:00',
       checkOutTime: lastBooking.checkOutTime || '10:00',
@@ -184,7 +186,7 @@ export default function Admin() {
 
       // Zahlenfelder so behandeln wie im "Neue Buchung"-Formular:
       // leere Eingaben sind erlaubt und werden erst bei Berechnung/Speichern als 0 behandelt.
-      if (['nights', 'people', 'pricePerNight', 'cleaningFee', 'discountPercent'].includes(field)) {
+      if (['nights', 'people', 'pricePerNight', 'cleaningFee', 'discountPercent', 'cleaningBufferDays'].includes(field)) {
         if (value === '') {
           next[field] = '';
         } else {
@@ -193,6 +195,8 @@ export default function Admin() {
             next[field] = Math.max(1, Math.min(11, Math.floor(parsed || 0)));
           } else if (field === 'nights') {
             next[field] = Math.max(1, Math.floor(parsed || 0));
+          } else if (field === 'cleaningBufferDays') {
+            next[field] = Math.max(1, Math.min(30, Math.floor(parsed || 0)));
           } else if (field === 'discountPercent') {
             next[field] = Math.max(0, Math.min(100, parsed || 0));
           } else {
@@ -248,6 +252,7 @@ export default function Admin() {
         nights: Number(followUpDraft.nights) || 0,
         pricePerNight: Number(followUpDraft.pricePerNight) || 0,
         cleaningFee: Number(followUpDraft.cleaningFee) || 0,
+        cleaningBufferDays: Number(followUpDraft.cleaningBufferDays) || 3,
         subtotal: Number(followUpDraft.subtotal) || 0,
         discount: Number(followUpDraft.discount) || 0,
         vat: Number(followUpDraft.vat) || 0,
@@ -1244,6 +1249,10 @@ export default function Admin() {
                     <div>
                       <label className="block text-sm font-semibold mb-1">Reinigungsgebühr</label>
                       <input type="number" step="0.01" min="0" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.cleaningFee} onChange={(e) => updateFollowUpDraft('cleaningFee', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Reinigungs-Sperrtage nach Abreise</label>
+                      <input type="number" min="1" max="30" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.cleaningBufferDays ?? 3} onChange={(e) => updateFollowUpDraft('cleaningBufferDays', e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Rabatt (%)</label>
