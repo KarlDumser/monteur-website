@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { getApiUrl } from '../utils/api.js';
 import BookingEditor from '../components/BookingEditor.jsx';
 import NewBookingForm from '../components/NewBookingForm.jsx';
+import { EU_COUNTRIES, getCountryDisplayName } from '../utils/addressSchemas.js';
 
 export default function Admin() {
   const [bookings, setBookings] = useState([]);
@@ -138,8 +139,12 @@ export default function Admin() {
       phone: customer.phone || customer.mobile || lastBooking.phone || '',
       company: customer.name || lastBooking.company || '',
       street: lastBooking.street || '',
+      addressLine2: lastBooking.addressLine2 || '',
       zip: lastBooking.zip || '',
       city: lastBooking.city || '',
+      country: lastBooking.country || 'DE',
+      countryLabel:
+        lastBooking.countryLabel || getCountryDisplayName(lastBooking.country || 'DE', 'de'),
       wohnung: lastBooking.wohnung,
       wohnungLabel: lastBooking.wohnungLabel || wohnungen[lastBooking.wohnung] || 'Wohnung Hackerberg',
       startDate: newStartDate.toISOString().slice(0, 10),
@@ -205,6 +210,10 @@ export default function Admin() {
         }
       } else {
         next[field] = value;
+      }
+
+      if (field === 'country') {
+        next.countryLabel = getCountryDisplayName(value || 'DE', 'de');
       }
 
       if (field === 'startDate' || field === 'endDate') {
@@ -1200,6 +1209,10 @@ export default function Admin() {
                       <label className="block text-sm font-semibold mb-1">Straße</label>
                       <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.street} onChange={(e) => updateFollowUpDraft('street', e.target.value)} />
                     </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Adresszeile 2 (optional)</label>
+                      <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.addressLine2 || ''} onChange={(e) => updateFollowUpDraft('addressLine2', e.target.value)} />
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="block text-sm font-semibold mb-1">PLZ</label>
@@ -1209,6 +1222,16 @@ export default function Admin() {
                         <label className="block text-sm font-semibold mb-1">Ort</label>
                         <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.city} onChange={(e) => updateFollowUpDraft('city', e.target.value)} />
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">Land</label>
+                      <select className="w-full border rounded-lg px-3 py-2" value={followUpDraft.country || 'DE'} onChange={(e) => updateFollowUpDraft('country', e.target.value)}>
+                        {EU_COUNTRIES.map((code) => (
+                          <option key={code} value={code}>
+                            {getCountryDisplayName(code, 'de')}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Startdatum</label>

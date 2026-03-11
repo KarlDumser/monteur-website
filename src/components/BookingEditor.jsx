@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../utils/api';
+import { EU_COUNTRIES, getCountryDisplayName } from '../utils/addressSchemas';
 
 export default function BookingEditor({ booking, auth, onClose, onSave }) {
-  const [formData, setFormData] = useState({ ...booking });
+  const [formData, setFormData] = useState({
+    ...booking,
+    country: booking.country || 'DE',
+    countryLabel: booking.countryLabel || getCountryDisplayName(booking.country || 'DE', 'de'),
+    addressLine2: booking.addressLine2 || ''
+  });
   const [saving, setSaving] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [error, setError] = useState('');
@@ -55,6 +61,15 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === 'country') {
+      setFormData(prev => ({
+        ...prev,
+        country: value,
+        countryLabel: getCountryDisplayName(value, 'de')
+      }));
+      return;
+    }
 
     if (['people', 'pricePerNight', 'cleaningFee', 'nights'].includes(name)) {
       if (value === '') {
@@ -263,6 +278,16 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
                 className="w-full border rounded px-3 py-2"
               />
             </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Adresszeile 2 (optional)</label>
+              <input
+                type="text"
+                name="addressLine2"
+                value={formData.addressLine2 || ''}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium mb-1">PLZ *</label>
               <input
@@ -272,6 +297,21 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Land *</label>
+              <select
+                name="country"
+                value={formData.country || 'DE'}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              >
+                {EU_COUNTRIES.map((code) => (
+                  <option key={code} value={code}>
+                    {getCountryDisplayName(code, 'de')}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Stadt *</label>

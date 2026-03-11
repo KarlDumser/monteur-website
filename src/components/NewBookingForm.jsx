@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { getApiUrl } from '../utils/api';
+import { EU_COUNTRIES, getCountryDisplayName } from '../utils/addressSchemas';
 
 export default function NewBookingForm({ auth, customers = [], onClose, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -9,8 +10,11 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
     phone: '',
     company: '',
     street: '',
+    addressLine2: '',
     zip: '',
     city: '',
+    country: 'DE',
+    countryLabel: getCountryDisplayName('DE', 'de'),
     wohnung: 'hackerberg',
     wohnungLabel: 'Wohnung Hackerberg',
     startDate: '',
@@ -96,6 +100,9 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
     if (name === 'wohnung') {
       newData.wohnung = value;
       newData.wohnungLabel = wohnungen[value];
+    } else if (name === 'country') {
+      newData.country = value;
+      newData.countryLabel = getCountryDisplayName(value, 'de');
     } else if (name === 'startDate' || name === 'endDate') {
       newData[name] = value;
       
@@ -156,8 +163,11 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       phone: '015221557400',
       company: 'Musterbau GmbH',
       street: 'Musterstraße 12',
+      addressLine2: '2. OG links',
       zip: '82152',
       city: 'Krailling',
+      country: 'DE',
+      countryLabel: getCountryDisplayName('DE', 'de'),
       wohnung: 'hackerberg',
       wohnungLabel: wohnungen.hackerberg,
       startDate,
@@ -390,6 +400,17 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
                 className="w-full border rounded px-3 py-2"
               />
             </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Adresszeile 2 (optional)</label>
+              <input
+                type="text"
+                name="addressLine2"
+                placeholder="z.B. Firma, Stockwerk, Einheit"
+                value={formData.addressLine2 || ''}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium mb-1">PLZ</label>
               <input
@@ -400,6 +421,21 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Land</label>
+              <select
+                name="country"
+                value={formData.country || 'DE'}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              >
+                {EU_COUNTRIES.map((code) => (
+                  <option key={code} value={code}>
+                    {getCountryDisplayName(code, 'de')}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Stadt</label>
