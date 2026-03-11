@@ -135,6 +135,25 @@ Die App wird automatisch:
 
 **Admin-Zugang**: http://localhost:5173/admin
 
+### Admin Zugriff (du + Onkel)
+
+- Admin-Login ist absichtlich nicht im oeffentlichen Header sichtbar.
+- Direkter Einstieg immer ueber: `/admin`
+- Beispiel lokal: `http://localhost:5173/admin`
+- Produktion: `https://deine-domain/admin`
+
+Mehrere Admin-Logins konfigurieren:
+
+- In der Server-Umgebung `ADMIN_CREDENTIALS` setzen.
+- Format: `user1:pass1;user2:pass2`
+- Beispiel: `ADMIN_CREDENTIALS=karl:SehrStarkesPasswort1;onkel:SehrStarkesPasswort2`
+- Wenn `ADMIN_CREDENTIALS` gesetzt ist, wird `ADMIN_USER`/`ADMIN_PASS` ignoriert.
+
+Empfehlung:
+
+- Fuer jede Person eigenen Zugang verwenden (keine geteilten Credentials).
+- Passwoerter lang und einzigartig halten.
+
 **Test-Zahlungen mit Stripe**:
 - Kartennummer: `4242 4242 4242 4242`
 - Ablaufdatum: `12/26`

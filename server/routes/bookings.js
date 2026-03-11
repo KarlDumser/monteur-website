@@ -6,6 +6,7 @@ import { generateInvoice } from '../services/invoiceGenerator.js';
 import { sendBookingConfirmation } from '../services/emailService.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 import { sendBookingPushNotification } from '../services/pushoverService.js';
+import { validateAdminBasicAuthHeader } from '../utils/adminAuth.js';
 
 const router = express.Router();
 
@@ -16,22 +17,9 @@ const addDays = (date, days) => {
 };
 
 const isAdminRequest = (req) => {
-  const expectedUser = process.env.ADMIN_USER;
-  const expectedPass = process.env.ADMIN_PASS;
   const authHeader = req.headers.authorization || '';
-
-  if (!expectedUser || !expectedPass || !authHeader.startsWith('Basic ')) {
-    return false;
-  }
-
-  try {
-    const encoded = authHeader.slice('Basic '.length);
-    const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
-    const [user, pass] = decoded.split(':');
-    return user === expectedUser && pass === expectedPass;
-  } catch {
-    return false;
-  }
+  const { ok } = validateAdminBasicAuthHeader(authHeader);
+  return ok;
 };
 
 // Rechnung als PDF generieren und zum Download bereitstellen
@@ -197,9 +185,14 @@ router.post('/', async (req, res) => {
         email: booking.email,
         phone: booking.phone,
         company: booking.company,
+        vatId: booking.vatId,
         street: booking.street,
         zip: booking.zip,
         city: booking.city,
+        country: booking.country,
+        countryLabel: booking.countryLabel,
+        addressLine2: booking.addressLine2,
+        region: booking.region,
         wohnung: booking.wohnung,
         wohnungLabel: booking.wohnungLabel,
         startDate: remainingNightsStart,

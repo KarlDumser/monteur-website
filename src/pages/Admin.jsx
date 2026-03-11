@@ -686,7 +686,8 @@ export default function Admin() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white shadow-lg rounded-2xl p-8 w-full max-w-md">
           <h1 className="text-2xl font-bold mb-2">Admin Login</h1>
-          <p className="text-sm text-gray-600 mb-6">Bitte melden Sie sich an.</p>
+          <p className="text-sm text-gray-600 mb-1">Bitte melden Sie sich an.</p>
+          <p className="text-xs text-gray-500 mb-6">Direktzugang: /admin</p>
 
           {authError && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded mb-4">
@@ -720,7 +721,7 @@ export default function Admin() {
             <div>
               <label className="block text-sm font-semibold mb-2">Benutzername</label>
               <input
-                type="email"
+                type="text"
                 value={credentials.username}
                 onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
                 className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"

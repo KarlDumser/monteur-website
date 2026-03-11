@@ -6,8 +6,44 @@ import WebsiteVisit from '../models/WebsiteVisit.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
 import { sendBookingConfirmation } from '../services/emailService.js';
+import {
+  hasConfiguredAdminCredentials,
+  validateAdminBasicAuthHeader
+} from '../utils/adminAuth.js';
 
 const router = express.Router();
+
+const ADMIN_MAX_FAILED_ATTEMPTS = 5;
+const ADMIN_BLOCK_WINDOW_MS = 15 * 60 * 1000;
+const adminFailedAuthByIp = new Map();
+
+const getClientIp = (req) => {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.length > 0) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+};
+
+const getLockInfo = (ip) => {
+  const info = adminFailedAuthByIp.get(ip);
+  if (!info) return null;
+  if (Date.now() - info.firstFailedAt > ADMIN_BLOCK_WINDOW_MS) {
+    adminFailedAuthByIp.delete(ip);
+    return null;
+  }
+  return info;
+};
+
+const registerFailedAttempt = (ip) => {
+  const current = getLockInfo(ip);
+  if (!current) {
+    adminFailedAuthByIp.set(ip, { count: 1, firstFailedAt: Date.now() });
+    return;
+  }
+  current.count += 1;
+  adminFailedAuthByIp.set(ip, current);
+};
 
 // Bot Control via HTTP (via Cloudflare Tunnel)
 const BOT_CONTROL_URL = process.env.BOT_CONTROL_URL || '';
@@ -73,28 +109,39 @@ const botControlRequest = async (endpoint, method = 'GET', timeoutMs = 10000) =>
 };
 
 const requireAdminAuth = (req, res, next) => {
-  const expectedUser = process.env.ADMIN_USER;
-  const expectedPass = process.env.ADMIN_PASS;
+  const clientIp = getClientIp(req);
 
-  if (!expectedUser || !expectedPass) {
+  const lockInfo = getLockInfo(clientIp);
+  if (lockInfo && lockInfo.count >= ADMIN_MAX_FAILED_ATTEMPTS) {
+    const waitSeconds = Math.max(
+      1,
+      Math.ceil((ADMIN_BLOCK_WINDOW_MS - (Date.now() - lockInfo.firstFailedAt)) / 1000)
+    );
+    res.set('Retry-After', String(waitSeconds));
+    return res.status(429).json({ error: 'Too many failed login attempts. Please try again later.' });
+  }
+
+  if (!hasConfiguredAdminCredentials()) {
     return res.status(500).json({ error: 'Admin auth not configured' });
   }
 
   const authHeader = req.headers.authorization || '';
   if (!authHeader.startsWith('Basic ')) {
     res.set('WWW-Authenticate', 'Basic realm="Admin"');
+    registerFailedAttempt(clientIp);
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const encoded = authHeader.slice('Basic '.length);
-  const decoded = Buffer.from(encoded, 'base64').toString('utf-8');
-  const [user, pass] = decoded.split(':');
+  const { ok, username } = validateAdminBasicAuthHeader(authHeader);
 
-  if (user !== expectedUser || pass !== expectedPass) {
+  if (!ok) {
+    registerFailedAttempt(clientIp);
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  req.adminUser = user;
+  adminFailedAuthByIp.delete(clientIp);
+
+  req.adminUser = username;
   return next();
 };
 
@@ -988,9 +1035,14 @@ router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
       email: originalBooking.email,
       phone: originalBooking.phone,
       company: originalBooking.company,
+      vatId: originalBooking.vatId,
       street: originalBooking.street,
       zip: originalBooking.zip,
       city: originalBooking.city,
+      country: originalBooking.country,
+      countryLabel: originalBooking.countryLabel,
+      addressLine2: originalBooking.addressLine2,
+      region: originalBooking.region,
       wohnung: originalBooking.wohnung,
       wohnungLabel: originalBooking.wohnungLabel,
       startDate: newStartDate,
