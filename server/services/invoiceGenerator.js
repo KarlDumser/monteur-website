@@ -216,7 +216,9 @@ export async function generateInvoice(booking) {
 
          const periodLine = isFollowUpInvoice
             ? `Buchungsbeginn: ${startDateStr}`
-            : `Anreise/Abreise: ${startDateStr} - ${endDateStr}`;
+            : isSplitBooking
+               ? `Anreise: ${startDateStr}`
+               : `Anreise/Abreise: ${startDateStr} - ${endDateStr}`;
          const bookingEndLine = `Buchungsende: ${endDateStr}`;
          const addressLine = `Adresse der Wohnung ${wohnungKuerzel}: ${wohnungAdresse}`;
          const checkInOutLine = showCheckoutTime

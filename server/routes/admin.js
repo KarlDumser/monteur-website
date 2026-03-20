@@ -197,6 +197,8 @@ const getCleaningBufferDays = (value) => {
   return Math.min(parsed, 30);
 };
 
+const roundToTwo = (value) => Math.round((Number(value) || 0) * 100) / 100;
+
 const buildBlockedDateDeleteFilters = (booking) => {
   const filters = [];
   const cleaningBufferDays = getCleaningBufferDays(booking.cleaningBufferDays);
@@ -363,6 +365,54 @@ router.post('/bookings', async (req, res) => {
       bookingPayload.vatId = sanitizedVatId;
     } else {
       delete bookingPayload.vatId;
+    }
+
+    // Admin-Buchungen ueber 28 Naechte sollen wie Website-Buchungen als erste Teilrechnung
+    // fuer 28 Naechte gespeichert werden, damit E-Mail/Details deckungsgleich sind.
+    const requestedStartDate = new Date(bookingPayload.startDate);
+    const requestedEndDate = new Date(bookingPayload.endDate);
+    const requestedNights = Number.isFinite(Number(bookingPayload.nights))
+      ? Number(bookingPayload.nights)
+      : Math.max(0, Math.ceil((requestedEndDate - requestedStartDate) / (1000 * 60 * 60 * 24)));
+
+    const isFollowUpInvoice = Boolean(bookingPayload.isFollowUpInvoice);
+    const shouldAutoSplit =
+      !isFollowUpInvoice &&
+      !bookingPayload.isPartialBooking &&
+      requestedNights > 28;
+
+    if (shouldAutoSplit) {
+      const firstInvoiceNights = 28;
+      const paidThroughDate = addDays(requestedStartDate, firstInvoiceNights);
+
+      const pricePerNight = Number(bookingPayload.pricePerNight) || 0;
+      const cleaningFee = Number(bookingPayload.cleaningFee) || 0;
+      const firstSubtotal = roundToTwo(firstInvoiceNights * pricePerNight + cleaningFee);
+
+      const originalSubtotal = Number(bookingPayload.subtotal) || 0;
+      const originalDiscount = Number(bookingPayload.discount) || 0;
+      const discountRate = originalSubtotal > 0
+        ? Math.max(0, Math.min(1, originalDiscount / originalSubtotal))
+        : 0;
+
+      const firstDiscount = roundToTwo(firstSubtotal * discountRate);
+      const firstVat = roundToTwo((firstSubtotal - firstDiscount) * 0.07);
+      const firstTotal = roundToTwo(firstSubtotal - firstDiscount + firstVat);
+
+      bookingPayload.isPartialBooking = true;
+      bookingPayload.originalStartDate = requestedStartDate;
+      bookingPayload.originalEndDate = requestedEndDate;
+      bookingPayload.totalNights = requestedNights;
+      bookingPayload.paidThroughDate = paidThroughDate;
+
+      bookingPayload.startDate = requestedStartDate;
+      bookingPayload.endDate = paidThroughDate;
+      bookingPayload.nights = firstInvoiceNights;
+
+      bookingPayload.subtotal = firstSubtotal;
+      bookingPayload.discount = firstDiscount;
+      bookingPayload.vat = firstVat;
+      bookingPayload.total = firstTotal;
     }
 
     const booking = new Booking(bookingPayload);
