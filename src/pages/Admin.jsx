@@ -138,6 +138,7 @@ export default function Admin() {
       email: customer.email || lastBooking.email || '',
       phone: customer.phone || customer.mobile || lastBooking.phone || '',
       company: customer.name || lastBooking.company || '',
+      vatId: customer.ustId || lastBooking.vatId || '',
       street: lastBooking.street || '',
       addressLine2: lastBooking.addressLine2 || '',
       zip: lastBooking.zip || '',
@@ -1204,6 +1205,10 @@ export default function Admin() {
                     <div>
                       <label className="block text-sm font-semibold mb-1">Firma</label>
                       <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.company} onChange={(e) => updateFollowUpDraft('company', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold mb-1">USt-IdNr. (optional)</label>
+                      <input className="w-full border rounded-lg px-3 py-2" value={followUpDraft.vatId || ''} onChange={(e) => updateFollowUpDraft('vatId', e.target.value)} placeholder="z.B. DE123456789" />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Straße</label>

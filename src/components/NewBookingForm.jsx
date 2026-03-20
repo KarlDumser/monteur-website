@@ -9,6 +9,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
     email: '',
     phone: '',
     company: '',
+    vatId: '',
     street: '',
     addressLine2: '',
     zip: '',
@@ -162,6 +163,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       email: 'max.mustermann@example.com',
       phone: '015221557400',
       company: 'Musterbau GmbH',
+      vatId: '',
       street: 'Musterstraße 12',
       addressLine2: '2. OG links',
       zip: '82152',
@@ -215,7 +217,8 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       name: selectedCustomer.contactPerson || selectedCustomer.name || prev.name,
       email: selectedCustomer.email || prev.email,
       phone: selectedCustomer.phone || selectedCustomer.mobile || prev.phone,
-      company: selectedCustomer.name || prev.company
+      company: selectedCustomer.name || prev.company,
+      vatId: selectedCustomer.ustId || prev.vatId
     }));
   };
 
@@ -385,6 +388,17 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
                 name="company"
                 placeholder="Firmenname"
                 value={formData.company}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">USt-IdNr. (optional)</label>
+              <input
+                type="text"
+                name="vatId"
+                placeholder="z.B. DE123456789"
+                value={formData.vatId || ''}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
               />
