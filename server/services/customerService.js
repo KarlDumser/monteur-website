@@ -4,20 +4,23 @@ function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
 }
 
-function buildAddress(street, zip, city) {
+function buildAddress(street, zip, city, country) {
   const s = String(street || '').trim();
   const z = String(zip || '').trim();
   const c = String(city || '').trim();
-  return [s, [z, c].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  const co = String(country || '').trim();
+  return [s, [z, c].filter(Boolean).join(' '), co].filter(Boolean).join(', ');
 }
 
 export async function findOrCreateCustomerFromBooking(bookingData) {
   const email = normalizeEmail(bookingData.email);
   const company = String(bookingData.company || '').trim();
+  const vatId = String(bookingData.vatId || bookingData.ustId || '').trim();
   const street = String(bookingData.street || '').trim();
   const zip = String(bookingData.zip || '').trim();
   const city = String(bookingData.city || '').trim();
-  const address = buildAddress(street, zip, city);
+  const country = String(bookingData.countryLabel || bookingData.country || '').trim();
+  const address = buildAddress(street, zip, city, country);
 
   let customer = null;
 
@@ -39,6 +42,7 @@ export async function findOrCreateCustomerFromBooking(bookingData) {
       email,
       phone: String(bookingData.phone || '').trim(),
       address,
+      ustId: vatId,
       contactPerson: String(bookingData.name || '').trim(),
       preferredApartment: bookingData.wohnung === 'kombi' ? 'both' : bookingData.wohnung || null,
       isActive: true
@@ -49,6 +53,7 @@ export async function findOrCreateCustomerFromBooking(bookingData) {
     customer.address = address || customer.address;
     customer.contactPerson = String(bookingData.name || customer.contactPerson || '').trim();
     customer.email = email || customer.email;
+    customer.ustId = vatId || customer.ustId;
     customer.preferredApartment = bookingData.wohnung === 'kombi' ? 'both' : (bookingData.wohnung || customer.preferredApartment);
     customer.isActive = true;
     customer.updatedAt = new Date();

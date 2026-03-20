@@ -357,6 +357,14 @@ router.get('/bookings', async (req, res) => {
 router.post('/bookings', async (req, res) => {
   try {
     const { sendConfirmationEmail = true, customerId = null, ...bookingPayload } = req.body || {};
+
+    const sanitizedVatId = String(bookingPayload.vatId || '').trim();
+    if (sanitizedVatId) {
+      bookingPayload.vatId = sanitizedVatId;
+    } else {
+      delete bookingPayload.vatId;
+    }
+
     const booking = new Booking(bookingPayload);
     booking.cleaningBufferDays = getCleaningBufferDays(bookingPayload.cleaningBufferDays);
 
@@ -370,6 +378,9 @@ router.post('/bookings', async (req, res) => {
     }
 
     booking.customerId = customer?._id || null;
+    if (!booking.vatId && customer?.ustId) {
+      booking.vatId = String(customer.ustId).trim();
+    }
     await booking.save();
 
     await BlockedDate.create({
@@ -1074,6 +1085,12 @@ router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
       return res.status(400).json({ error: 'Folgerechnung nur möglich bei Buchungen über 30 Tagen' });
     }
 
+    let customerVatId = '';
+    if (!originalBooking.vatId && originalBooking.customerId) {
+      const linkedCustomer = await Customer.findById(originalBooking.customerId).select('ustId');
+      customerVatId = String(linkedCustomer?.ustId || '').trim();
+    }
+
     // Berechne neue Daten - für die nächsten 4 Wochen
     const newStartDate = new Date(originalBooking.endDate);
     const newEndDate = new Date(originalBooking.endDate);
@@ -1085,7 +1102,7 @@ router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
       email: originalBooking.email,
       phone: originalBooking.phone,
       company: originalBooking.company,
-      vatId: originalBooking.vatId,
+      vatId: originalBooking.vatId || customerVatId,
       street: originalBooking.street,
       zip: originalBooking.zip,
       city: originalBooking.city,
@@ -1180,6 +1197,7 @@ router.put('/customers/:id', async (req, res) => {
         name: customer.name,
         email: customer.email,
         company: customer.name,
+        vatId: String(customer.ustId || '').trim(),
         updatedAt: new Date()
       };
 
