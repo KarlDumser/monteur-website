@@ -173,9 +173,11 @@ export default function Payment() {
               <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
                 {isInquiryBooking ? 'Modus: Buchungsanfrage (10-27 Naechte) ' : `${t('payment.paymentType')}: `}<strong>{isInquiryBooking ? 'Unverbindliche Anfrage' : t('payment.onInvoice')}</strong>
               </div>
-              <p className="text-xs text-gray-600 mb-4">
-                {t('payment.onlyInvoiceHint')}
-              </p>
+              {!isInquiryBooking && (
+                <p className="text-xs text-gray-600 mb-4">
+                  {t('payment.onlyInvoiceHint')}
+                </p>
+              )}
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
@@ -250,9 +252,11 @@ export default function Payment() {
               </form>
             </div>
 
-            <p className="text-xs text-gray-500 bg-gray-50 p-4 rounded-lg text-center">
-              {t('payment.invoiceByEmail')}
-            </p>
+            {!isInquiryBooking && (
+              <p className="text-xs text-gray-500 bg-gray-50 p-4 rounded-lg text-center">
+                {t('payment.invoiceByEmail')}
+              </p>
+            )}
           </div>
         </div>
       </div>

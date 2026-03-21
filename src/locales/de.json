@@ -381,6 +381,7 @@
       "acceptPrivacyPrefix": "Ich akzeptiere die ",
       "privacyPolicyLink": "Datenschutzerklaerung",
       "acceptPrivacySuffix": " und erklaere mich einverstanden, dass meine Daten zur Buchungsabwicklung verarbeitet werden.",
+      "acceptPrivacySuffixInquiry": " und erklaere mich einverstanden, dass meine Daten zur Bearbeitung meiner Anfrage verarbeitet werden.",
       "acceptTermsPrefix": "Ich habe die ",
         "termsAndWithdrawalLink": "AGB",
       "acceptTermsSuffix": " zur Kenntnis genommen und akzeptiert.",

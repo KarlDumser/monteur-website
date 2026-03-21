@@ -622,7 +622,7 @@ export default function BookingPage() {
                 if (selectedNights >= 10 && selectedNights < 28) {
                   return (
                     <p className="text-sm text-amber-800 mt-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                      Zeitraum 10-27 Naechte: Es wird eine Buchungsanfrage gesendet, diese wird jedoch sofort geprüft und mit Ihnen Kontakt aufgenommen. Direkte Buchung ist ab 28 Naechten moeglich.
+                     Es wird eine Buchungsanfrage gesendet, da Sie einen Zeitraum zwischen 10 und 27 Nächten ausgewählt haben. Ihre Anfrage wird jedoch umgehend geprüft, und wir nehmen schnellstmöglich Kontakt mit Ihnen auf. Direkte Buchungen sind erst ab 28 Nächten möglich.
                     </p>
                   );
                 }
@@ -930,10 +930,15 @@ export default function BookingPage() {
             <p><strong>{t('bookingPage.form.country', { defaultValue: 'Land:' })}</strong> {getCountryDisplayName(countryCode, i18n.language)}</p>
           </div>
 
-          <form
-            onSubmit={handleCustomerDataSubmit}
-            className="bg-white shadow-xl rounded-2xl p-8 space-y-6 border border-gray-100"
-          >
+          {(() => {
+            const totalNights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
+            const isInquiryMode = totalNights >= INQUIRY_MIN_NIGHTS && totalNights < 28;
+            
+            return (
+              <form
+                onSubmit={handleCustomerDataSubmit}
+                className="bg-white shadow-xl rounded-2xl p-8 space-y-6 border border-gray-100"
+              >
             <div className="bg-blue-50 p-4 rounded-xl">
               <h3 className="text-sm font-bold text-gray-800 mb-3">{t('bookingPage.form.companySectionTitle')}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1117,7 +1122,7 @@ export default function BookingPage() {
                   <a href="/datenschutz" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                     {t('bookingPage.form.privacyPolicyLink')}
                   </a>
-                  <span>{t('bookingPage.form.acceptPrivacySuffix')}</span>
+                  <span>{isInquiryMode ? t('bookingPage.form.acceptPrivacySuffixInquiry') : t('bookingPage.form.acceptPrivacySuffix')}</span>
                 </label>
               </div>
 
@@ -1158,7 +1163,9 @@ export default function BookingPage() {
                 })()}
               </button>
             </div>
-          </form>
+              </form>
+            );
+          })()}
         </div>
       )}
 
