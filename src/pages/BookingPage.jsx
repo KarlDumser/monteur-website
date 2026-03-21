@@ -622,7 +622,7 @@ export default function BookingPage() {
                 if (selectedNights >= 10 && selectedNights < 28) {
                   return (
                     <p className="text-sm text-amber-800 mt-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                      Zeitraum 10-27 Naechte: Es wird eine Buchungsanfrage gesendet. Direkte Buchung ist ab 28 Naechten moeglich.
+                      Zeitraum 10-27 Naechte: Es wird eine Buchungsanfrage gesendet, dieser wird jedoch sofort geprüft und mit Ihnen Kontakt aufgenommen. Direkte Buchung ist ab 28 Naechten moeglich.
                     </p>
                   );
                 }
@@ -894,7 +894,7 @@ export default function BookingPage() {
                                 onClick={() => handleWohnungSelection(key)}
                                 className="mt-6 w-full font-bold py-3 px-4 rounded-xl transition shadow-lg bg-green-600 text-white hover:bg-green-700"
                               >
-                                {t('bookingPage.select.bookThisApartment')}
+                                {nights >= 10 && nights < 28 ? t('bookingPage.select.askForApartment') : t('bookingPage.select.bookThisApartment')}
                               </button>
                             </div>
                           </div>
@@ -1152,7 +1152,10 @@ export default function BookingPage() {
                 type="submit"
                 className="flex-1 bg-blue-600 text-white font-semibold py-3 px-6 rounded-xl hover:bg-blue-700 transition"
               >
-                {t('bookingPage.form.continueToBindingBooking')}
+                {(() => {
+                  const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
+                  return nights >= 10 && nights < 28 ? t('bookingPage.form.continueToInquiry') : t('bookingPage.form.continueToBindingBooking');
+                })()}
               </button>
             </div>
           </form>

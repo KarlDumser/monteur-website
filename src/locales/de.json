@@ -119,6 +119,7 @@
     "preparing": "Zahlung wird vorbereitet...",
     "bookingDataMissing": "Fehler: Buchungsdaten nicht gefunden",
     "title": "Buchung überprüfen",
+    "inquiryTitle": "Buchungsanfrage überprüfen",
     "bookingDetails": "Buchungsdetails",
     "partialIntro": "Sie reservieren den gesamten Zeitraum",
     "nights": "Nächte",
@@ -334,6 +335,7 @@
       "followUpInvoices": "Folgerechnungen:",
       "followUpInvoicesText": "Fuer die weiteren {{remainingNights}} Naechte erhalten Sie rechtzeitig eine Rechnung",
       "bookThisApartment": "✓ Diese Wohnung buchen",
+      "askForApartment": "✓ Diese Wohnung anfragen",
       "backToDateSelection": "<- Zurueck zur Datumsauswahl"
     },
     "form": {
@@ -383,11 +385,12 @@
         "termsAndWithdrawalLink": "AGB",
       "acceptTermsSuffix": " zur Kenntnis genommen und akzeptiert.",
       "backToApartmentSelection": "<- Zurueck zur Wohnungsauswahl",
-      "continueToBindingBooking": "Weiter zur verbindlichen Buchung ->"
+      "continueToBindingBooking": "Weiter zur verbindlichen Buchung ->",
+      "continueToInquiry": "Weiter zur unverbindlichen Anfrage ->"
     },
     "alerts": {
       "invalidPeopleRange": "Bitte geben Sie eine gueltige Personenzahl zwischen 1 und {{max}} ein.",
-      "minNightsError": "Mindestbuchungsdauer 28 Tage (27 Naechte). Fuer kuerzere Aufenthalte kontaktieren Sie uns bitte telefonisch.",
+      "minNightsError": "Mindestbuchungsdauer 10 Tage (11 Naechte).",
       "capacityWarningTitle": "⚠️ WICHTIGER HINWEIS",
       "capacityWarningPeople": "Sie haben {{count}} Personen angegeben.",
       "capacityWarningApartment": "Die Wohnung \"{{name}}\" ist allerdings nur fuer maximal {{max}} Personen ausgelegt.",

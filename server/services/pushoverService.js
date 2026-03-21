@@ -75,7 +75,13 @@ export async function sendPushNotification(title, message, url = null) {
  * @param {Object} booking - Booking object
  * @param {string} baseUrl - Base URL for admin link (e.g., https://monteur-website.domain.com)
  */
-export async function sendBookingPushNotification(booking, baseUrl) {
+/**
+ * Sends booking notification
+ * @param {Object} booking - Booking object
+ * @param {string} baseUrl - Base URL for admin link (e.g., https://monteur-website.domain.com)
+ * @param {boolean} isInquiry - Optional: set to true for inquiry notifications
+ */
+export async function sendBookingPushNotification(booking, baseUrl, isInquiry = false) {
   try {
     // Baue Admin-Link
     const adminLink = `${baseUrl}/admin?booking=${booking._id}`;
@@ -84,10 +90,13 @@ export async function sendBookingPushNotification(booking, baseUrl) {
     const startDate = new Date(booking.startDate).toLocaleDateString('de-DE');
     const wohnungName = booking.wohnungLabel || booking.wohnung;
     
-    const title = `📅 Neue Buchung: ${wohnungName}`;
+    const title = isInquiry 
+      ? `❓ Neue Buchungsanfrage: ${wohnungName}`
+      : `📅 Neue Buchung: ${wohnungName}`;
     const message = `${booking.name}
 ${startDate}
-💰 ${booking.total}€`;
+💰 ${booking.total}€
+${isInquiry ? '⏳ Unverbindliche Anfrage' : '✅ Buchung bestätigt'}`;
 
     return sendPushNotification(title, message, adminLink);
   } catch (error) {

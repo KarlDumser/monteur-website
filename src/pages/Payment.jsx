@@ -52,7 +52,7 @@ export default function Payment() {
             <div className="flex items-center justify-center w-10 h-10 rounded-full font-bold text-white bg-blue-600">4</div>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-8 break-words text-center">{t('payment.title')}</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-8 break-words text-center">{isInquiryBooking ? t('payment.inquiryTitle') : t('payment.title')}</h1>
 
           <div className="bg-white rounded-lg shadow-lg p-8 space-y-6">
             
@@ -171,7 +171,7 @@ export default function Payment() {
             <div>
               <h2 className="text-xl font-bold text-gray-800 mb-4">{isInquiryBooking ? 'Anfrage senden' : t('payment.paymentMethod')}</h2>
               <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-                {isInquiryBooking ? 'Modus: Buchungsanfrage (10-27 Naechte)' : `${t('payment.paymentType')}: `}<strong>{isInquiryBooking ? 'Unverbindliche Anfrage' : t('payment.onInvoice')}</strong>
+                {isInquiryBooking ? 'Modus: Buchungsanfrage (10-27 Naechte) ' : `${t('payment.paymentType')}: `}<strong>{isInquiryBooking ? 'Unverbindliche Anfrage' : t('payment.onInvoice')}</strong>
               </div>
               <p className="text-xs text-gray-600 mb-4">
                 {t('payment.onlyInvoiceHint')}

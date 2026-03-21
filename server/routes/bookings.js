@@ -322,39 +322,40 @@ router.post('/', async (req, res) => {
     console.log('   Email:', booking.email);
     console.log('   Wohnung:', booking.wohnung);
     console.log('   Betrag:', booking.total, '€');
+    console.log('   Typ:', booking.isInquiry ? 'ANFRAGE (unverbindlich)' : 'DIREKTBUCHUNG');
     
-    if (!booking.isInquiry) {
-      console.log('\n📧 Starte Email-Versand im Hintergrund...');
-      sendBookingConfirmation(booking, 'confirmation')
-        .then(result => {
-          console.log('\n📬 HINTERGRUND-EMAIL-RESULT:');
-          console.log('   Status:', result.status);
-          if (result.status === 'sent') {
-            console.log('✅ Bestätigungs-Email erfolgreich versendet');
-            console.log('   Message ID:', result.messageId);
-          } else {
-            console.warn('⚠️ Email-Versand übersprungen/fehlgeschlagen');
-            console.warn('   Grund:', result.reason || result.error);
-            console.warn('   Details:', result);
-          }
-          console.log('');
-        })
-        .catch(err => {
-          console.error('❌ FEHLER beim Email-Versand (Hintergrund):');
-          console.error('   Message:', err.message);
-          console.error('   Stack:', err.stack);
-        });
-    }
+    // Email im Hintergrund versenden (für Direktbuchung + Anfrage)
+    console.log('\n📧 Starte Email-Versand im Hintergrund...');
+    const emailType = booking.isInquiry ? 'inquiry-confirmation' : 'confirmation';
+    sendBookingConfirmation(booking, emailType)
+      .then(result => {
+        console.log('\n📬 HINTERGRUND-EMAIL-RESULT:');
+        console.log('   Status:', result.status);
+        if (result.status === 'sent') {
+          console.log(`✅ ${booking.isInquiry ? 'Anfrage' : 'Bestätigungs'}-Email erfolgreich versendet`);
+          console.log('   Message ID:', result.messageId);
+        } else {
+          console.warn('⚠️ Email-Versand übersprungen/fehlgeschlagen');
+          console.warn('   Grund:', result.reason || result.error);
+          console.warn('   Details:', result);
+        }
+        console.log('');
+      })
+      .catch(err => {
+        console.error('❌ FEHLER beim Email-Versand (Hintergrund):');
+        console.error('   Message:', err.message);
+        console.error('   Stack:', err.stack);
+      });
 
     // Sende Push-Benachrichtigung im Hintergrund
     if (process.env.PUSHOVER_API_TOKEN && process.env.PUSHOVER_USER_KEY) {
       const baseUrl = process.env.BASE_URL || 'https://monteur-wohnung.dumser.net';
-      sendBookingPushNotification(booking, baseUrl)
+      sendBookingPushNotification(booking, baseUrl, booking.isInquiry)
         .then(result => {
           console.log('\n📱 PUSHOVER RESULT:');
           console.log('   Status:', result.status);
           if (result.status === 'sent') {
-            console.log('✅ Push-Benachrichtigung erfolgreich versendet');
+            console.log(`✅ ${booking.isInquiry ? 'Anfrage' : 'Buchungs'}-Push erfolgreich versendet`);
           }
         })
         .catch(err => {

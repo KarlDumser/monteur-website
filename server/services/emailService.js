@@ -61,13 +61,17 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     console.log('   Email-Typ:', type);
     console.log('   Empfänger:', booking.email);
 
-    // Generiere PDF-Rechnung
-    console.log('\n📄 Generiere PDF-Rechnung...');
-    const invoicePDF = await generateInvoice(booking);
-    console.log('✅ PDF-Rechnung erstellt');
-    console.log('   Dateiname:', invoicePDF.fileName);
-    console.log('   Größe:', (invoicePDF.buffer.length / 1024).toFixed(2), 'KB');
-
+    // Generiere PDF-Rechnung (nicht für Anfragen)
+    let invoicePDF = null;
+    if (type !== 'inquiry-confirmation') {
+      console.log('\n📄 Generiere PDF-Rechnung...');
+      invoicePDF = await generateInvoice(booking);
+      console.log('✅ PDF-Rechnung erstellt');
+      console.log('   Dateiname:', invoicePDF.fileName);
+      console.log('   Größe:', (invoicePDF.buffer.length / 1024).toFixed(2), 'KB');
+    } else {
+      console.log('\n📄 Keine PDF-Rechnung für unverbindliche Anfrage');
+    }
 
     // Bereite Email-Daten vor
     const wohnungName = booking.wohnungLabel
@@ -80,7 +84,21 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     const endDate = formatGermanDate(booking.endDate);
     const invoiceNumber = `FD-${formatGermanDate(booking.createdAt)}`;
 
-    // Betreff je nach Typ - zeige Gesamtzeitraum für Teilbuchungen
+    // Betreff je nach Typ
+    let subject;
+    if (type === 'inquiry-confirmation') {
+      subject = `Buchungsanfrage erhalten: ${wohnungName} (${startDate} - ${endDate})`;
+    } else {
+      // Zeige Gesamtzeitraum für Teilbuchungen
+      const displayStartDate = booking.originalStartDate ? formatGermanDate(booking.originalStartDate) : startDate;
+      const displayEndDate = booking.originalEndDate ? formatGermanDate(booking.originalEndDate) : endDate;
+      const isFollowUpInvoice = Boolean(booking.isFollowUpInvoice);
+      subject = type === 'invoice-resend'
+        ? `Aktualisierte Rechnung: ${wohnungName} (${startDate} - ${endDate})`
+        : `${isFollowUpInvoice ? 'Folgebuchung bestätigt' : 'Buchungsbestätigung'}: ${wohnungName} (${displayStartDate} - ${displayEndDate})`;
+    }
+
+    // Berechne weitere Variablen nur wenn nicht Inquiry
     const displayStartDate = booking.originalStartDate ? formatGermanDate(booking.originalStartDate) : startDate;
     const displayEndDate = booking.originalEndDate ? formatGermanDate(booking.originalEndDate) : endDate;
     const isSplitBooking = Boolean(booking.originalStartDate);
@@ -93,11 +111,68 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     const periodEndValue = isFollowUpInvoice
       ? (isFinalFollowUpInvoice ? `${endDate} (Check-out bis 10:00 Uhr)` : endDate)
       : (booking.originalStartDate ? endDate : `${endDate} (bis 10:00 Uhr)`);
-    const subject = type === 'invoice-resend'
-      ? `Aktualisierte Rechnung: ${wohnungName} (${startDate} - ${endDate})`
-      : `${isFollowUpInvoice ? 'Folgebuchung bestätigt' : 'Buchungsbestätigung'}: ${wohnungName} (${displayStartDate} - ${displayEndDate})`;
 
-    const htmlContent = `
+    const htmlContent = type === 'inquiry-confirmation'
+      ? `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">Vielen Dank für Ihre Buchungsanfrage!</h2>
+        <p>Sehr geehrte Damen und Herren${booking.company ? ' von ' + booking.company : ''},</p>
+        <p>wir haben Ihre unverbindliche Buchungsanfrage erhalten und werden diese schnellstmöglich prüfen und uns mit Ihnen in Verbindung setzen.</p>
+        
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #374151;">Ihre Anfrage-Details</h3>
+          <div style="background-color: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 14px; border-left: 4px solid #fbbf24; color: #92400e;">
+            <strong>Status:</strong> Unverbindliche Anfrage - wird in Kürze geprüft
+          </div>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0;"><strong>Wohnung:</strong></td>
+              <td>${wohnungName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Anreise:</strong></td>
+              <td>${startDate} (16:00-19:00 Uhr)</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Abreise:</strong></td>
+              <td>${endDate} (bis 10:00 Uhr)</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Nächte:</strong></td>
+              <td>${booking.nights}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Personen:</strong></td>
+              <td>${booking.people}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Geschätzter Betrag:</strong></td>
+              <td><strong>${booking.total.toFixed(2)} €</strong></td>
+            </tr>
+          </table>
+        </div>
+        
+        <div style="background-color: #eef6ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #60a5fa;">
+          <p style="margin: 5px 0; color: #1e3a8a;">
+            <strong>Was ist der nächste Schritt?</strong><br>
+            Wir kontaktieren Sie in Kürze per Telefon oder E-Mail, um die Details zu besprechen und Ihre Anfrage zu bestätigen. Der oben angegebene Betrag ist eine geschätzte Summe und dient Only zur Information.
+          </p>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p>Bei Fragen oder Wünschen stehen wir Ihnen gerne zur Verfügung.</p>
+        <p>
+          Mit freundlichen Grüßen<br>
+          <strong>Christine Dumser</strong><br>
+          Ferienwohnungen Christine Dumser<br>
+          Frühlingstr. 8<br>
+          82152 Krailling b. München<br>
+          Tel: +49(0)89 8571174<br>
+          Email: ${fromAddress}
+        </p>
+      </div>
+    `
+      : `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">${type === 'invoice-resend' ? 'Aktualisierte Rechnung' : 'Vielen Dank für Ihre Buchung!'}</h2>
         <p>Sehr geehrte Damen und Herren${booking.company ? ' von ' + booking.company : ''},</p>
@@ -214,13 +289,15 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
           ],
           Subject: subject,
           HTMLPart: htmlContent,
-          Attachments: [
-            {
-              ContentType: "application/pdf",
-              Filename: invoicePDF.fileName,
-              Base64Content: invoicePDF.buffer.toString('base64')
-            }
-          ]
+          ...(invoicePDF ? {
+            Attachments: [
+              {
+                ContentType: "application/pdf",
+                Filename: invoicePDF.fileName,
+                Base64Content: invoicePDF.buffer.toString('base64')
+              }
+            ]
+          } : {})
         },
         ...(sendOwnerCopy
           ? [{
@@ -236,13 +313,15 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
               ],
               Subject: `[Kopie] ${subject}`,
               HTMLPart: htmlContent,
-              Attachments: [
-                {
-                  ContentType: "application/pdf",
-                  Filename: invoicePDF.fileName,
-                  Base64Content: invoicePDF.buffer.toString('base64')
-                }
-              ]
+              ...(invoicePDF ? {
+                Attachments: [
+                  {
+                    ContentType: "application/pdf",
+                    Filename: invoicePDF.fileName,
+                    Base64Content: invoicePDF.buffer.toString('base64')
+                  }
+                ]
+              } : {})
             }]
           : [])
       ]
@@ -254,8 +333,12 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     console.log('  Interne Kopie an:', sendOwnerCopy ? ownerInbox : 'deaktiviert (gleich wie Empfänger oder leer)');
     console.log('  Betreff:', subject);
     console.log('  HTML-Länge:', htmlContent.length, 'Zeichen');
-    console.log('  Anhänge: 1');
-    console.log('    [1]', invoicePDF.fileName, '(', (invoicePDF.buffer.length / 1024).toFixed(2), 'KB)');
+    if (invoicePDF) {
+      console.log('  Anhänge: 1');
+      console.log('    [1]', invoicePDF.fileName, '(', (invoicePDF.buffer.length / 1024).toFixed(2), 'KB)');
+    } else {
+      console.log('  Anhänge: 0 (Buchungsanfrage ohne PDF)');
+    }
     console.log('  Payload-Größe:', JSON.stringify(mailjetPayload).length, 'Bytes');
 
     // Sende Email via Mailjet API
