@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react';
 import { getApiUrl } from '../utils/api';
 import { EU_COUNTRIES, getCountryDisplayName } from '../utils/addressSchemas';
 
+const getAutoPriceByPeople = (peopleValue) => {
+  const people = Number(peopleValue) || 0;
+  if (people <= 4) return 100;
+  if (people === 5) return 105;
+  return 110;
+};
+
 export default function BookingEditor({ booking, auth, onClose, onSave }) {
   const [formData, setFormData] = useState({
     ...booking,
@@ -71,7 +78,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
       return;
     }
 
-    if (['people', 'pricePerNight', 'cleaningFee', 'nights'].includes(name)) {
+    if (['people', 'pricePerNight', 'cleaningFee', 'nights', 'cleaningBufferDays'].includes(name)) {
       if (value === '') {
         setFormData(prev => ({
           ...prev,
@@ -85,7 +92,16 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
       if (name === 'people') {
         setFormData(prev => ({
           ...prev,
-          [name]: Math.max(1, Math.min(11, Math.floor(numberValue || 0)))
+          [name]: Math.max(1, Math.min(11, Math.floor(numberValue || 0))),
+          pricePerNight: getAutoPriceByPeople(numberValue)
+        }));
+        return;
+      }
+
+      if (name === 'cleaningBufferDays') {
+        setFormData(prev => ({
+          ...prev,
+          [name]: Math.max(0, Math.min(30, Math.floor(numberValue || 0)))
         }));
         return;
       }
@@ -130,6 +146,10 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
       vat: Number(formData.vat) || 0,
       total: Number(formData.total) || 0
     };
+
+    payload.cleaningBufferDays = Number.isFinite(Number(formData.cleaningBufferDays))
+      ? Number(formData.cleaningBufferDays)
+      : 3;
 
     try {
       const apiUrl = getApiUrl();
@@ -268,6 +288,16 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
                 className="w-full border rounded px-3 py-2"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">USt-IdNr. (optional)</label>
+              <input
+                type="text"
+                name="vatId"
+                value={formData.vatId || ''}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium mb-1">Straße *</label>
               <input
@@ -349,6 +379,26 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
                 className="w-full border rounded px-3 py-2"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Check-in</label>
+              <input
+                type="time"
+                name="checkInTime"
+                value={formData.checkInTime || '16:00'}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Check-out</label>
+              <input
+                type="time"
+                name="checkOutTime"
+                value={formData.checkOutTime || '10:00'}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
 
             <div>
               <label className="block text-sm font-medium mb-1">Buchungsdatum *</label>
@@ -410,9 +460,21 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
               <input
                 type="number"
                 name="cleaningFee"
-                value={formData.cleaningFee || 0}
+                value={formData.cleaningFee ?? ''}
                 onChange={handleChange}
                 step="0.01"
+                className="w-full border rounded px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Reinigungs-Sperrtage nach Abreise</label>
+              <input
+                type="number"
+                name="cleaningBufferDays"
+                value={formData.cleaningBufferDays ?? ''}
+                onChange={handleChange}
+                min="0"
+                max="30"
                 className="w-full border rounded px-3 py-2"
               />
             </div>

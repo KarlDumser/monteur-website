@@ -191,13 +191,22 @@ const addDays = (date, days) => {
 
 const getCleaningBufferDays = (value) => {
   const parsed = Number.parseInt(value, 10);
-  if (Number.isNaN(parsed) || parsed < 1) {
+  if (Number.isNaN(parsed) || parsed < 0) {
     return 3;
   }
   return Math.min(parsed, 30);
 };
 
 const roundToTwo = (value) => Math.round((Number(value) || 0) * 100) / 100;
+
+const activeBookableFilter = {
+  deletedAt: null,
+  bookingStatus: { $ne: 'cancelled' },
+  $or: [
+    { isInquiry: { $ne: true } },
+    { inquiryStatus: 'approved' }
+  ]
+};
 
 const buildBlockedDateDeleteFilters = (booking) => {
   const filters = [];
@@ -217,21 +226,69 @@ const buildBlockedDateDeleteFilters = (booking) => {
   };
 
   pushFilter(booking.startDate, booking.endDate, 'Buchung');
-  pushFilter(addDays(booking.endDate, 1), addDays(booking.endDate, cleaningBufferDays), 'Reinigung');
+  if (cleaningBufferDays > 0) {
+    pushFilter(addDays(booking.endDate, 1), addDays(booking.endDate, cleaningBufferDays), 'Reinigung');
+  }
 
   if (booking.isPartialBooking && booking.paidThroughDate && booking.originalEndDate) {
     const secondPeriodStart = addDays(booking.paidThroughDate, 1);
 
     pushFilter(secondPeriodStart, booking.originalEndDate, 'Reservierung');
     pushFilter(secondPeriodStart, booking.originalEndDate, 'Buchung');
-    pushFilter(
-      addDays(booking.originalEndDate, 1),
-      addDays(booking.originalEndDate, cleaningBufferDays),
-      'Reinigung'
-    );
+    if (cleaningBufferDays > 0) {
+      pushFilter(
+        addDays(booking.originalEndDate, 1),
+        addDays(booking.originalEndDate, cleaningBufferDays),
+        'Reinigung'
+      );
+    }
   }
 
   return filters;
+};
+
+const createBookingBlocksForBooking = async (booking) => {
+  await BlockedDate.create({
+    wohnung: booking.wohnung,
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    reason: 'Buchung',
+    createdBy: booking.email || 'admin'
+  });
+
+  if (booking.isPartialBooking && booking.paidThroughDate && booking.originalEndDate) {
+    const secondPeriodStart = addDays(booking.paidThroughDate, 1);
+
+    await BlockedDate.create({
+      wohnung: booking.wohnung,
+      startDate: secondPeriodStart,
+      endDate: booking.originalEndDate,
+      reason: 'Reservierung',
+      createdBy: booking.email || 'admin'
+    });
+
+    if (booking.cleaningBufferDays > 0) {
+      await BlockedDate.create({
+        wohnung: booking.wohnung,
+        startDate: addDays(booking.originalEndDate, 1),
+        endDate: addDays(booking.originalEndDate, booking.cleaningBufferDays),
+        reason: 'Reinigung',
+        createdBy: 'system-cleaning-buffer'
+      });
+    }
+
+    return;
+  }
+
+  if (booking.cleaningBufferDays > 0) {
+    await BlockedDate.create({
+      wohnung: booking.wohnung,
+      startDate: addDays(booking.endDate, 1),
+      endDate: addDays(booking.endDate, booking.cleaningBufferDays),
+      reason: 'Reinigung',
+      createdBy: 'system-cleaning-buffer'
+    });
+  }
 };
 
 // Bot Console: Status abrufen
@@ -355,6 +412,98 @@ router.get('/bookings', async (req, res) => {
   }
 });
 
+router.get('/inquiries', async (req, res) => {
+  try {
+    const inquiries = await Booking.find({
+      deletedAt: null,
+      isInquiry: true,
+      inquiryStatus: 'pending'
+    }).sort({ createdAt: -1 });
+
+    res.json(inquiries);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.patch('/inquiries/:id/approve', async (req, res) => {
+  try {
+    const inquiry = await Booking.findOne({
+      _id: req.params.id,
+      deletedAt: null,
+      isInquiry: true,
+      inquiryStatus: 'pending'
+    });
+
+    if (!inquiry) {
+      return res.status(404).json({ error: 'Anfrage nicht gefunden' });
+    }
+
+    const overlap = await Booking.findOne({
+      ...activeBookableFilter,
+      _id: { $ne: inquiry._id },
+      wohnung: inquiry.wohnung,
+      startDate: { $lte: inquiry.endDate },
+      endDate: { $gte: inquiry.startDate }
+    });
+
+    if (overlap) {
+      return res.status(409).json({ error: 'Zeitraum inzwischen nicht mehr verfügbar.' });
+    }
+
+    const blockedOverlap = await BlockedDate.findOne({
+      wohnung: inquiry.wohnung,
+      startDate: { $lte: inquiry.endDate },
+      endDate: { $gte: inquiry.startDate }
+    });
+
+    if (blockedOverlap) {
+      return res.status(409).json({ error: 'Zeitraum ist blockiert.' });
+    }
+
+    inquiry.isInquiry = false;
+    inquiry.inquiryStatus = 'approved';
+    inquiry.updatedAt = new Date();
+    inquiry.bookingStatus = 'confirmed';
+    inquiry.cleaningBufferDays = getCleaningBufferDays(inquiry.cleaningBufferDays);
+    await inquiry.save();
+
+    await createBookingBlocksForBooking(inquiry);
+
+    sendBookingConfirmation(inquiry, 'confirmation').catch((err) => {
+      console.error('Inquiry approval email failed:', err.message);
+    });
+
+    res.json(inquiry);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.patch('/inquiries/:id/reject', async (req, res) => {
+  try {
+    const inquiry = await Booking.findOne({
+      _id: req.params.id,
+      deletedAt: null,
+      isInquiry: true,
+      inquiryStatus: 'pending'
+    });
+
+    if (!inquiry) {
+      return res.status(404).json({ error: 'Anfrage nicht gefunden' });
+    }
+
+    inquiry.inquiryStatus = 'rejected';
+    inquiry.bookingStatus = 'cancelled';
+    inquiry.updatedAt = new Date();
+    await inquiry.save();
+
+    res.json(inquiry);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Neue Buchung erstellen
 router.post('/bookings', async (req, res) => {
   try {
@@ -376,8 +525,10 @@ router.post('/bookings', async (req, res) => {
       : Math.max(0, Math.ceil((requestedEndDate - requestedStartDate) / (1000 * 60 * 60 * 24)));
 
     const isFollowUpInvoice = Boolean(bookingPayload.isFollowUpInvoice);
+    const isInquiryBooking = Boolean(bookingPayload.isInquiry) || bookingPayload.bookingMode === 'inquiry';
     const shouldAutoSplit =
       !isFollowUpInvoice &&
+      !isInquiryBooking &&
       !bookingPayload.isPartialBooking &&
       requestedNights > 28;
 
@@ -433,41 +584,7 @@ router.post('/bookings', async (req, res) => {
     }
     await booking.save();
 
-    await BlockedDate.create({
-      wohnung: booking.wohnung,
-      startDate: booking.startDate,
-      endDate: booking.endDate,
-      reason: 'Buchung',
-      createdBy: booking.email || 'admin'
-    });
-
-    if (booking.isPartialBooking && booking.paidThroughDate && booking.originalEndDate) {
-      const secondPeriodStart = addDays(booking.paidThroughDate, 1);
-
-      await BlockedDate.create({
-        wohnung: booking.wohnung,
-        startDate: secondPeriodStart,
-        endDate: booking.originalEndDate,
-        reason: 'Reservierung',
-        createdBy: booking.email || 'admin'
-      });
-
-      await BlockedDate.create({
-        wohnung: booking.wohnung,
-        startDate: addDays(booking.originalEndDate, 1),
-        endDate: addDays(booking.originalEndDate, booking.cleaningBufferDays),
-        reason: 'Reinigung',
-        createdBy: 'system-cleaning-buffer'
-      });
-    } else {
-      await BlockedDate.create({
-        wohnung: booking.wohnung,
-        startDate: addDays(booking.endDate, 1),
-        endDate: addDays(booking.endDate, booking.cleaningBufferDays),
-        reason: 'Reinigung',
-        createdBy: 'system-cleaning-buffer'
-      });
-    }
+    await createBookingBlocksForBooking(booking);
 
     // ========== AUTO-EMAIL: Admin-erstellte Buchungen ==========
     console.log('\n╔═══════════════════════════════════════════════════════╗');
@@ -856,7 +973,13 @@ router.get('/statistics', async (req, res) => {
     const last30Start = new Date(now);
     last30Start.setDate(last30Start.getDate() - 30);
 
-    const baseBookingFilter = { deletedAt: null };
+    const baseBookingFilter = {
+      deletedAt: null,
+      $or: [
+        { isInquiry: { $ne: true } },
+        { inquiryStatus: 'approved' }
+      ]
+    };
 
     const [
       totalBookings,
@@ -871,7 +994,10 @@ router.get('/statistics', async (req, res) => {
       yearlyStats,
       monthlyStatsCurrentYear,
       recentBookings,
-      visitorFacets
+      visitorFacets,
+      revenueByApartment,
+      revenueByApartmentCurrentYear,
+      dailyVisitorsLast30
     ] = await Promise.all([
       Booking.countDocuments(baseBookingFilter),
       Booking.countDocuments({ ...baseBookingFilter, paymentStatus: 'paid' }),
@@ -1028,6 +1154,49 @@ router.get('/statistics', async (req, res) => {
             ]
           }
         }
+      ]),
+      Booking.aggregate([
+        { $match: { ...baseBookingFilter, paymentStatus: 'paid' } },
+        {
+          $group: {
+            _id: '$wohnung',
+            revenuePaid: { $sum: '$total' },
+            bookings: { $sum: 1 }
+          }
+        }
+      ]),
+      Booking.aggregate([
+        {
+          $match: {
+            ...baseBookingFilter,
+            paymentStatus: 'paid',
+            createdAt: { $gte: yearStart, $lt: nextYearStart }
+          }
+        },
+        {
+          $group: {
+            _id: '$wohnung',
+            revenuePaid: { $sum: '$total' },
+            bookings: { $sum: 1 }
+          }
+        }
+      ]),
+      WebsiteVisit.aggregate([
+        { $match: { visitDate: { $gte: last30Start, $lte: now } } },
+        {
+          $group: {
+            _id: { dateKey: '$dateKey', visitorHash: '$visitorHash' },
+            views: { $sum: '$views' }
+          }
+        },
+        {
+          $group: {
+            _id: '$_id.dateKey',
+            views: { $sum: '$views' },
+            uniqueVisitors: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
       ])
     ]);
 
@@ -1077,6 +1246,24 @@ router.get('/statistics', async (req, res) => {
       };
     });
 
+    const normalizeApartmentRevenue = (rows = []) => {
+      const summary = {
+        hackerberg: { revenuePaid: 0, bookings: 0 },
+        neubau: { revenuePaid: 0, bookings: 0 },
+        kombi: { revenuePaid: 0, bookings: 0 }
+      };
+
+      for (const row of rows) {
+        if (!row?._id || !summary[row._id]) continue;
+        summary[row._id] = {
+          revenuePaid: Number(row.revenuePaid || 0),
+          bookings: Number(row.bookings || 0)
+        };
+      }
+
+      return summary;
+    };
+
     res.json({
       totalBookings,
       paidBookings,
@@ -1113,15 +1300,22 @@ router.get('/statistics', async (req, res) => {
         currentMonthViews: extractFacetValue(visitorFacets, 'currentMonthViews'),
         currentMonthUniqueVisitors: extractFacetValue(visitorFacets, 'currentMonthUniqueVisitors'),
         last30DaysViews: extractFacetValue(visitorFacets, 'last30DaysViews'),
-        last30DaysUniqueVisitors: extractFacetValue(visitorFacets, 'last30DaysUniqueVisitors')
-      }
+        last30DaysUniqueVisitors: extractFacetValue(visitorFacets, 'last30DaysUniqueVisitors'),
+        dailyLast30Days: dailyVisitorsLast30.map((item) => ({
+          date: item._id,
+          views: Number(item.views || 0),
+          uniqueVisitors: Number(item.uniqueVisitors || 0)
+        }))
+      },
+      apartmentRevenuePaid: normalizeApartmentRevenue(revenueByApartment),
+      apartmentRevenuePaidCurrentYear: normalizeApartmentRevenue(revenueByApartmentCurrentYear)
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Folgerechnung erstellen für längere Buchungen
+// Folgebuchung erstellen für längere Buchungen
 router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
   try {
     const originalBooking = await Booking.findOne({ _id: req.params.id, deletedAt: null });
@@ -1132,7 +1326,7 @@ router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
 
     // Prüfe ob Buchung länger als einen Monat ist
     if (originalBooking.nights < 30) {
-      return res.status(400).json({ error: 'Folgerechnung nur möglich bei Buchungen über 30 Tagen' });
+      return res.status(400).json({ error: 'Folgebuchung nur möglich bei Buchungen über 30 Tagen' });
     }
 
     let customerVatId = '';
@@ -1181,7 +1375,7 @@ router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
     await newBooking.save();
 
     res.status(201).json({
-      message: 'Folgerechnung erfolgreich erstellt',
+      message: 'Folgebuchung erfolgreich erstellt',
       booking: newBooking
     });
   } catch (error) {

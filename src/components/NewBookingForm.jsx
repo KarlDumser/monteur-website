@@ -2,6 +2,50 @@ import { useState, useEffect, useRef } from 'react';
 import { getApiUrl } from '../utils/api';
 import { EU_COUNTRIES, getCountryDisplayName } from '../utils/addressSchemas';
 
+const getAutoPriceByPeople = (peopleValue) => {
+  const people = Number(peopleValue) || 0;
+  if (people <= 4) return 100;
+  if (people === 5) return 105;
+  return 110;
+};
+
+const parseAddressString = (address) => {
+  const raw = String(address || '').trim();
+  if (!raw) {
+    return { street: '', zip: '', city: '', country: 'DE', countryLabel: getCountryDisplayName('DE', 'de') };
+  }
+
+  const parts = raw.split(',').map((entry) => entry.trim()).filter(Boolean);
+  const street = parts[0] || '';
+  const zipCity = parts[1] || '';
+  const countryText = (parts[2] || '').toLowerCase();
+
+  let zip = '';
+  let city = '';
+  if (zipCity) {
+    const match = zipCity.match(/^([0-9A-Za-z\-\s]+)\s+(.+)$/);
+    if (match) {
+      zip = match[1].trim();
+      city = match[2].trim();
+    } else {
+      city = zipCity;
+    }
+  }
+
+  const country = EU_COUNTRIES.find((code) => {
+    const label = getCountryDisplayName(code, 'de').toLowerCase();
+    return countryText && (label === countryText || label.includes(countryText) || countryText.includes(label));
+  }) || 'DE';
+
+  return {
+    street,
+    zip,
+    city,
+    country,
+    countryLabel: getCountryDisplayName(country, 'de')
+  };
+};
+
 export default function NewBookingForm({ auth, customers = [], onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     customerId: '',
@@ -21,9 +65,9 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
     startDate: '',
     endDate: '',
     nights: 0,
-    people: 1,
-    pricePerNight: 0,
-    cleaningFee: 0,
+    people: 4,
+    pricePerNight: 100,
+    cleaningFee: 100,
     cleaningBufferDays: 3,
     subtotal: 0,
     discount: 0,
@@ -32,7 +76,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
     bookingStatus: 'confirmed',
     paymentStatus: 'pending',
     sendConfirmationEmail: true,
-    checkInTime: '15:00',
+    checkInTime: '16:00',
     checkOutTime: '10:00'
   });
   const [saving, setSaving] = useState(false);
@@ -119,9 +163,11 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       } else {
         const numberValue = Number(value);
         if (name === 'people') {
-          newData[name] = Math.max(1, Math.min(11, Math.floor(numberValue || 0)));
+          const clampedPeople = Math.max(1, Math.min(11, Math.floor(numberValue || 0)));
+          newData[name] = clampedPeople;
+          newData.pricePerNight = getAutoPriceByPeople(clampedPeople);
         } else if (name === 'cleaningBufferDays') {
-          newData[name] = Math.max(1, Math.min(30, Math.floor(numberValue || 0)));
+          newData[name] = Math.max(0, Math.min(30, Math.floor(numberValue || 0)));
         } else {
           newData[name] = Math.max(0, numberValue || 0);
         }
@@ -181,7 +227,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       cleaningBufferDays: 3,
       bookingStatus: 'confirmed',
       paymentStatus: 'pending',
-      checkInTime: '15:00',
+      checkInTime: '16:00',
       checkOutTime: '10:00'
     }));
 
@@ -200,7 +246,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
     }
   };
 
-  const applyCustomerToForm = (customerId) => {
+  const applyCustomerToForm = async (customerId) => {
     const selectedCustomer = customers.find((customer) => String(customer._id) === String(customerId));
 
     if (!selectedCustomer) {
@@ -211,6 +257,24 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       return;
     }
 
+    let latestBooking = null;
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/customers/${selectedCustomer._id}/bookings`, {
+        headers: { Authorization: `Basic ${auth}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data?.bookings) && data.bookings.length > 0) {
+          latestBooking = [...data.bookings].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+        }
+      }
+    } catch {
+      latestBooking = null;
+    }
+
+    const parsedAddress = parseAddressString(selectedCustomer.address);
+
     setFormData((prev) => ({
       ...prev,
       customerId: String(selectedCustomer._id),
@@ -218,7 +282,13 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       email: selectedCustomer.email || prev.email,
       phone: selectedCustomer.phone || selectedCustomer.mobile || prev.phone,
       company: selectedCustomer.name || prev.company,
-      vatId: selectedCustomer.ustId || prev.vatId
+      vatId: selectedCustomer.ustId || latestBooking?.vatId || prev.vatId,
+      street: latestBooking?.street || parsedAddress.street || prev.street,
+      addressLine2: latestBooking?.addressLine2 || prev.addressLine2,
+      zip: latestBooking?.zip || parsedAddress.zip || prev.zip,
+      city: latestBooking?.city || parsedAddress.city || prev.city,
+      country: latestBooking?.country || parsedAddress.country || prev.country,
+      countryLabel: latestBooking?.countryLabel || parsedAddress.countryLabel || prev.countryLabel
     }));
   };
 
@@ -248,7 +318,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       nights: Number(formData.nights) || 0,
       pricePerNight: Number(formData.pricePerNight) || 0,
       cleaningFee: Number(formData.cleaningFee) || 0,
-      cleaningBufferDays: Number(formData.cleaningBufferDays) || 3,
+      cleaningBufferDays: Number.isFinite(Number(formData.cleaningBufferDays)) ? Number(formData.cleaningBufferDays) : 3,
       subtotal: Number(formData.subtotal) || 0,
       discount: Number(formData.discount) || 0,
       vat: Number(formData.vat) || 0,
@@ -565,7 +635,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
                 name="cleaningBufferDays"
                 value={formData.cleaningBufferDays}
                 onChange={handleChange}
-                min="1"
+                min="0"
                 max="30"
                 className="w-full border rounded px-3 py-2"
               />

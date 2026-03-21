@@ -51,6 +51,7 @@ export default function BookingPage() {
   const MAX_PEOPLE_HACKERBERG = 5;
   const MAX_PEOPLE_FRUEHLING = 6;
   const MAX_PEOPLE = 11;
+  const INQUIRY_MIN_NIGHTS = 10;
 
   const isGermanAddress = countryCode === 'DE';
   const isIrishAddress = countryCode === 'IE';
@@ -199,8 +200,10 @@ export default function BookingPage() {
     }
 
     const nights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
-    if (nights < 27) {
-      setMinNightsError(t('bookingPage.alerts.minNightsError'));
+    if (nights < INQUIRY_MIN_NIGHTS) {
+      setMinNightsError(t('bookingPage.alerts.minNightsError', {
+        defaultValue: 'Mindestbuchungszeitraum: 10 Naechte. Direktbuchung ist ab 28 Naechten moeglich.'
+      }));
       setMinNightsErrorAnim(false); // Reset for retrigger
       setTimeout(() => setMinNightsErrorAnim(true), 10);
       // Kalenderfeld hervorheben und zum Fehler scrollen
@@ -302,7 +305,8 @@ export default function BookingPage() {
   const proceedToPayment = (wohnungKey) => {
     // Redirect to payment page with booking details
     const totalNights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
-    const isPartialBooking = totalNights > 28;
+    const isInquiryBooking = totalNights >= INQUIRY_MIN_NIGHTS && totalNights < 28;
+    const isPartialBooking = !isInquiryBooking && totalNights > 28;
     const nightsForInvoice = isPartialBooking ? 28 : totalNights;
     
     const pricePerNight = getPricePerNight(wohnungKey);
@@ -355,7 +359,10 @@ export default function BookingPage() {
       originalStartDate: isPartialBooking ? format(range[0].startDate, "dd.MM.yyyy") : null,
       originalEndDate: isPartialBooking ? format(range[0].endDate, "dd.MM.yyyy") : null,
       totalNights: isPartialBooking ? totalNights : null,
-      paidThroughDate: isPartialBooking ? format(paidThroughDate, "dd.MM.yyyy") : null
+      paidThroughDate: isPartialBooking ? format(paidThroughDate, "dd.MM.yyyy") : null,
+      bookingMode: isInquiryBooking ? 'inquiry' : 'direct',
+      isInquiry: isInquiryBooking,
+      inquiryStatus: isInquiryBooking ? 'pending' : 'none'
     };
     
     // Save to localStorage for payment page
@@ -588,8 +595,10 @@ export default function BookingPage() {
                     setStartDateInput(format(item.selection.startDate, "dd.MM.yyyy"));
                     setEndDateInput(format(item.selection.endDate, "dd.MM.yyyy"));
                     const nights = Math.max(0, Math.ceil((item.selection.endDate - item.selection.startDate) / (1000 * 60 * 60 * 24)));
-                    if (nights > 0 && nights < 27) {
-                      setMinNightsError(t('bookingPage.alerts.minNightsError'));
+                    if (nights > 0 && nights < INQUIRY_MIN_NIGHTS) {
+                      setMinNightsError(t('bookingPage.alerts.minNightsError', {
+                        defaultValue: 'Mindestbuchungszeitraum: 10 Naechte. Direktbuchung ist ab 28 Naechten moeglich.'
+                      }));
                       setMinNightsErrorAnim(false); // Reset for retrigger
                       setTimeout(() => setMinNightsErrorAnim(true), 10);
                     } else {
@@ -608,6 +617,17 @@ export default function BookingPage() {
                   "dd.MM.yyyy"
                 )} ({Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)))} {t('bookingPage.common.nights')})
               </p>
+              {(() => {
+                const selectedNights = Math.max(0, Math.ceil((range[0].endDate - range[0].startDate) / (1000 * 60 * 60 * 24)));
+                if (selectedNights >= 10 && selectedNights < 28) {
+                  return (
+                    <p className="text-sm text-amber-800 mt-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                      Zeitraum 10-27 Naechte: Es wird eine Buchungsanfrage gesendet. Direkte Buchung ist ab 28 Naechten moeglich.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
               {minNightsError && (
                 <div
                   ref={minNightsErrorRef}

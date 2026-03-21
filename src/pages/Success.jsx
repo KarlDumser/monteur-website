@@ -6,6 +6,7 @@ export default function Success() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [bookingId, setBookingId] = useState('');
+  const [isInquiry, setIsInquiry] = useState(false);
 
   useEffect(() => {
     // Hole die Email aus der Buchungs-Info (wurde vom Payment-Prozess gespeichert)
@@ -17,6 +18,7 @@ export default function Success() {
         console.log('✅ Parsed booking:', booking);
         setEmail(booking.email);
         setBookingId(booking._id);
+        setIsInquiry(Boolean(booking.isInquiry || booking.bookingMode === 'inquiry'));
       } else {
         console.warn('⚠️ Keine booking-Info im localStorage found');
       }
@@ -49,10 +51,12 @@ export default function Success() {
           </svg>
         </div>
         
-        <h1 className="text-4xl font-bold text-green-600 mb-4">{t('success.title')}</h1>
+        <h1 className="text-4xl font-bold text-green-600 mb-4">{isInquiry ? 'Anfrage versendet' : t('success.title')}</h1>
         
         <p className="text-gray-600 text-lg mb-6">
-          {t('success.confirmationPrefix')} <span className="font-semibold text-gray-800">{email || t('success.yourEmail')}</span> {t('success.confirmationSuffix')}
+          {isInquiry
+            ? `Ihre Anfrage wurde an ${email || t('success.yourEmail')} uebermittelt. Wir pruefen Verfuegbarkeit und melden uns zeitnah.`
+            : <>{t('success.confirmationPrefix')} <span className="font-semibold text-gray-800">{email || t('success.yourEmail')}</span> {t('success.confirmationSuffix')}</>}
         </p>
         
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 text-left">
@@ -60,7 +64,7 @@ export default function Success() {
             <strong>{t('success.nextStepsTitle')}</strong><br/>
             {t('success.nextStepsText')}
           </p>
-          {bookingId && (
+          {bookingId && !isInquiry && (
             <div className="mt-4">
               <a
                 href={`/api/bookings/${bookingId}/invoice`}

@@ -5,8 +5,53 @@ import BookingEditor from '../components/BookingEditor.jsx';
 import NewBookingForm from '../components/NewBookingForm.jsx';
 import { EU_COUNTRIES, getCountryDisplayName } from '../utils/addressSchemas.js';
 
+const getAutoPriceByPeople = (peopleValue) => {
+  const people = Number(peopleValue) || 0;
+  if (people <= 4) return 100;
+  if (people === 5) return 105;
+  return 110;
+};
+
+const parseAddressString = (address) => {
+  const raw = String(address || '').trim();
+  if (!raw) {
+    return { street: '', zip: '', city: '', country: 'DE', countryLabel: getCountryDisplayName('DE', 'de') };
+  }
+
+  const parts = raw.split(',').map((entry) => entry.trim()).filter(Boolean);
+  const street = parts[0] || '';
+  const zipCity = parts[1] || '';
+  const countryText = (parts[2] || '').toLowerCase();
+
+  let zip = '';
+  let city = '';
+  if (zipCity) {
+    const match = zipCity.match(/^([0-9A-Za-z\-\s]+)\s+(.+)$/);
+    if (match) {
+      zip = match[1].trim();
+      city = match[2].trim();
+    } else {
+      city = zipCity;
+    }
+  }
+
+  const country = EU_COUNTRIES.find((code) => {
+    const label = getCountryDisplayName(code, 'de').toLowerCase();
+    return countryText && (label === countryText || label.includes(countryText) || countryText.includes(label));
+  }) || 'DE';
+
+  return {
+    street,
+    zip,
+    city,
+    country,
+    countryLabel: getCountryDisplayName(country, 'de')
+  };
+};
+
 export default function Admin() {
   const [bookings, setBookings] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
   const [deletedBookings, setDeletedBookings] = useState([]);
   const [blockedDates, setBlockedDates] = useState([]);
   const [stats, setStats] = useState(null);
@@ -124,9 +169,8 @@ export default function Admin() {
     newEndDate.setDate(newEndDate.getDate() + 28);
 
     const nights = calculateNights(newStartDate, newEndDate);
-    const pricePerNight = Number(lastBooking.pricePerNight || 0);
-    const cleaningFee = Number(lastBooking.cleaningFee || 0);
-    const cleaningBufferDays = Math.max(1, Math.min(30, Number(lastBooking.cleaningBufferDays || 3)));
+    const cleaningBufferDays = Math.max(0, Math.min(30, Number(lastBooking.cleaningBufferDays || 3)));
+    const parsedAddress = parseAddressString(customer.address);
     const subtotal = pricePerNight * nights + cleaningFee;
     const discount = 0;
     const vat = (subtotal - discount) * 0.07;
@@ -139,25 +183,25 @@ export default function Admin() {
       phone: customer.phone || customer.mobile || lastBooking.phone || '',
       company: customer.name || lastBooking.company || '',
       vatId: customer.ustId || lastBooking.vatId || '',
-      street: lastBooking.street || '',
+      street: lastBooking.street || parsedAddress.street || '',
       addressLine2: lastBooking.addressLine2 || '',
-      zip: lastBooking.zip || '',
-      city: lastBooking.city || '',
-      country: lastBooking.country || 'DE',
+      zip: lastBooking.zip || parsedAddress.zip || '',
+      city: lastBooking.city || parsedAddress.city || '',
+      country: lastBooking.country || parsedAddress.country || 'DE',
       countryLabel:
-        lastBooking.countryLabel || getCountryDisplayName(lastBooking.country || 'DE', 'de'),
+        lastBooking.countryLabel || parsedAddress.countryLabel || getCountryDisplayName(lastBooking.country || 'DE', 'de'),
       wohnung: lastBooking.wohnung,
       wohnungLabel: lastBooking.wohnungLabel || wohnungen[lastBooking.wohnung] || 'Wohnung Hackerberg',
       startDate: newStartDate.toISOString().slice(0, 10),
       endDate: newEndDate.toISOString().slice(0, 10),
       nights,
-      people: Number(lastBooking.people || 1),
-      pricePerNight,
-      cleaningFee,
+      people: 4,
+      pricePerNight: 100,
+      cleaningFee: 100,
       cleaningBufferDays,
       discountPercent: 0,
-      checkInTime: lastBooking.checkInTime || '15:00',
-      checkOutTime: lastBooking.checkOutTime || '10:00',
+      checkInTime: '16:00',
+      checkOutTime: '10:00',
       paymentStatus: 'pending',
       bookingStatus: 'confirmed',
       isFollowUpInvoice: true,
@@ -198,11 +242,13 @@ export default function Admin() {
         } else {
           const parsed = Number(value);
           if (field === 'people') {
-            next[field] = Math.max(1, Math.min(11, Math.floor(parsed || 0)));
+            const clampedPeople = Math.max(1, Math.min(11, Math.floor(parsed || 0)));
+            next[field] = clampedPeople;
+            next.pricePerNight = getAutoPriceByPeople(clampedPeople);
           } else if (field === 'nights') {
             next[field] = Math.max(1, Math.floor(parsed || 0));
           } else if (field === 'cleaningBufferDays') {
-            next[field] = Math.max(1, Math.min(30, Math.floor(parsed || 0)));
+            next[field] = Math.max(0, Math.min(30, Math.floor(parsed || 0)));
           } else if (field === 'discountPercent') {
             next[field] = Math.max(0, Math.min(100, parsed || 0));
           } else {
@@ -262,7 +308,7 @@ export default function Admin() {
         nights: Number(followUpDraft.nights) || 0,
         pricePerNight: Number(followUpDraft.pricePerNight) || 0,
         cleaningFee: Number(followUpDraft.cleaningFee) || 0,
-        cleaningBufferDays: Number(followUpDraft.cleaningBufferDays) || 3,
+        cleaningBufferDays: Number.isFinite(Number(followUpDraft.cleaningBufferDays)) ? Number(followUpDraft.cleaningBufferDays) : 3,
         subtotal: Number(followUpDraft.subtotal) || 0,
         discount: Number(followUpDraft.discount) || 0,
         vat: Number(followUpDraft.vat) || 0,
@@ -280,7 +326,7 @@ export default function Admin() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Erstellen der Folgerechnung');
+        throw new Error(data.error || 'Fehler beim Erstellen der Folgebuchung');
       }
 
       clearFollowUpCountdown();
@@ -291,11 +337,11 @@ export default function Admin() {
       showActionMessage(
         'success',
         payload.sendConfirmationEmail
-          ? `Folgerechnung für ${payload.name} erstellt und E-Mail versendet`
-          : `Folgerechnung für ${payload.name} ohne E-Mail-Versand erstellt`
+          ? `Folgebuchung für ${payload.name} erstellt und E-Mail versendet`
+          : `Folgebuchung für ${payload.name} ohne E-Mail-Versand erstellt`
       );
     } catch (err) {
-      showActionMessage('error', err.message || 'Fehler beim Erstellen der Folgerechnung');
+      showActionMessage('error', err.message || 'Fehler beim Erstellen der Folgebuchung');
     } finally {
       setFollowUpBusy(false);
     }
@@ -326,7 +372,7 @@ export default function Admin() {
     clearFollowUpCountdown();
     setFollowUpCountdownOpen(false);
     setFollowUpCountdown(20);
-    showActionMessage('success', 'Folgerechnung und E-Mail-Versand wurden abgebrochen');
+    showActionMessage('success', 'Folgebuchung und E-Mail-Versand wurden abgebrochen');
   };
 
   const showActionMessage = (type, text) => {
@@ -394,7 +440,19 @@ export default function Admin() {
         return;
       }
       const bookingsData = await bookingsRes.json();
-      setBookings(sortBookingsByCreatedAndStart(bookingsData));
+      setBookings(
+        sortBookingsByCreatedAndStart(
+          bookingsData.filter((booking) => !(booking.isInquiry && booking.inquiryStatus === 'pending'))
+        )
+      );
+
+      const inquiriesRes = await fetch(`${apiUrl}/admin/inquiries`, { headers });
+      if (inquiriesRes.ok) {
+        const inquiryData = await inquiriesRes.json();
+        setInquiries(inquiryData);
+      } else {
+        setInquiries([]);
+      }
 
       // Archivierte Buchungen laden
       const deletedRes = await fetch(`${apiUrl}/admin/deleted-bookings`, { headers });
@@ -468,6 +526,46 @@ export default function Admin() {
       }
     } catch (error) {
       console.error('Error unblocking:', error);
+    }
+  };
+
+  const handleApproveInquiry = async (inquiryId) => {
+    if (!confirm('Anfrage jetzt als Buchung bestaetigen?')) return;
+
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/inquiries/${inquiryId}/approve`, {
+        method: 'PATCH',
+        headers: { Authorization: `Basic ${auth}` }
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Anfrage konnte nicht bestaetigt werden');
+
+      showActionMessage('success', 'Anfrage bestaetigt und als Buchung uebernommen');
+      loadData();
+    } catch (error) {
+      showActionMessage('error', error.message || 'Anfrage konnte nicht bestaetigt werden');
+    }
+  };
+
+  const handleRejectInquiry = async (inquiryId) => {
+    if (!confirm('Anfrage wirklich ablehnen?')) return;
+
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/inquiries/${inquiryId}/reject`, {
+        method: 'PATCH',
+        headers: { Authorization: `Basic ${auth}` }
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Anfrage konnte nicht abgelehnt werden');
+
+      showActionMessage('success', 'Anfrage abgelehnt');
+      loadData();
+    } catch (error) {
+      showActionMessage('error', error.message || 'Anfrage konnte nicht abgelehnt werden');
     }
   };
 
@@ -1056,7 +1154,7 @@ export default function Admin() {
                         setShowFollowUpModal(true);
                       }}
                     >
-                      📋 Folgerechnung sicher erstellen
+                      📋 Folgebuchung sicher erstellen
                     </button>
                   )}
                 </div>
@@ -1110,7 +1208,7 @@ export default function Admin() {
               >
                 ×
               </button>
-              <h2 className="text-2xl font-bold mb-4">Folgerechnung erstellen</h2>
+              <h2 className="text-2xl font-bold mb-4">Folgebuchung erstellen</h2>
               <p className="text-gray-600 mb-2">
                 {followUpDraft
                   ? 'Kunde ausgewählt. Bitte prüfen und bearbeiten Sie nun die Buchungsdetails.'
@@ -1133,7 +1231,7 @@ export default function Admin() {
                           setFollowUpBusy(true);
                           await buildFollowUpDraftFromCustomer(customer);
                         } catch (err) {
-                          alert(err.message || 'Fehler beim Vorbereiten der Folgerechnung');
+                          alert(err.message || 'Fehler beim Vorbereiten der Folgebuchung');
                         } finally {
                           setFollowUpBusy(false);
                         }
@@ -1280,7 +1378,7 @@ export default function Admin() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Reinigungs-Sperrtage nach Abreise</label>
-                      <input type="number" min="1" max="30" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.cleaningBufferDays ?? 3} onChange={(e) => updateFollowUpDraft('cleaningBufferDays', e.target.value)} />
+                      <input type="number" min="0" max="30" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.cleaningBufferDays ?? 3} onChange={(e) => updateFollowUpDraft('cleaningBufferDays', e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Rabatt (%)</label>
@@ -1675,12 +1773,18 @@ export default function Admin() {
         )}
 
         {/* Tabs */}
-        <div className="mb-6 border-b">
+        <div className="mb-6 border-b overflow-x-auto whitespace-nowrap">
           <button
             onClick={() => setActiveTab('bookings')}
             className={`px-6 py-3 font-semibold ${activeTab === 'bookings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
           >
             Buchungen ({bookings.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('inquiries')}
+            className={`px-6 py-3 font-semibold ${activeTab === 'inquiries' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
+          >
+            Anfragen ({inquiries.length})
           </button>
           <button
             onClick={() => setActiveTab('blocked')}
@@ -1733,7 +1837,7 @@ export default function Admin() {
                 }}
                 className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg transition"
               >
-                📋 Folgerechnung erstellen
+                📋 Folgebuchung erstellen
               </button>
               <button
                 onClick={() => setShowNewBookingForm(true)}
@@ -1762,7 +1866,8 @@ export default function Admin() {
                       {new Date(booking.createdAt).toLocaleDateString('de-DE')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium">{booking.name}</div>
+                      <div className="font-medium">{booking.company || booking.name}</div>
+                      <div className="text-sm text-gray-500">{booking.name}</div>
                       <div className="text-sm text-gray-500">{booking.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -1832,9 +1937,71 @@ export default function Admin() {
           </div>
         )}
 
+        {activeTab === 'inquiries' && (
+          <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Datum</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Firma / Kontakt</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Wohnung</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zeitraum</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aktion</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {inquiries.map((inquiry) => (
+                  <tr key={inquiry._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {new Date(inquiry.createdAt).toLocaleDateString('de-DE')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium">{inquiry.company || inquiry.name}</div>
+                      <div className="text-sm text-gray-500">{inquiry.name}</div>
+                      <div className="text-sm text-gray-500">{inquiry.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {inquiry.wohnungLabel || inquiry.wohnung}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {new Date(inquiry.startDate).toLocaleDateString('de-DE')} - {new Date(inquiry.endDate).toLocaleDateString('de-DE')}
+                      <div className="text-gray-500">{inquiry.nights} Nächte</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleApproveInquiry(inquiry._id)}
+                          className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                        >
+                          Bestaetigen
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectInquiry(inquiry._id)}
+                          className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                        >
+                          Ablehnen
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {inquiries.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-6 text-sm text-gray-500">
+                      Keine offenen Anfragen vorhanden.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {/* Geloeschte Buchungen */}
         {activeTab === 'deleted' && (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white rounded-lg shadow max-h-[72vh] overflow-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
@@ -2146,6 +2313,47 @@ export default function Admin() {
                 </p>
               </div>
             </div>
+
+            <div className="bg-white rounded-lg shadow p-5">
+              <h3 className="text-gray-700 font-semibold mb-3">Umsatz bezahlt nach Wohnung (gesamt)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                {['hackerberg', 'neubau', 'kombi'].map((key) => (
+                  <div key={key} className="rounded border border-gray-200 p-3">
+                    <p className="text-gray-500">{key === 'hackerberg' ? 'Hackerberg' : key === 'neubau' ? 'Frühlingstraße' : 'Kombi'}</p>
+                    <p className="text-xl font-bold text-blue-700">
+                      {Number(stats.apartmentRevenuePaid?.[key]?.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                    </p>
+                    <p className="text-xs text-gray-500">{Number(stats.apartmentRevenuePaid?.[key]?.bookings || 0)} bezahlte Buchungen</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {Array.isArray(stats.visitors?.dailyLast30Days) && stats.visitors.dailyLast30Days.length > 0 && (
+              <div className="bg-white rounded-lg shadow overflow-x-auto">
+                <div className="px-5 pt-4 pb-2">
+                  <h3 className="text-gray-700 font-semibold">Tages-Besucher (letzte 30 Tage)</h3>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Datum</th>
+                      <th className="px-4 py-2 text-left">Aufrufe</th>
+                      <th className="px-4 py-2 text-left">Eindeutige Besucher</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {stats.visitors.dailyLast30Days.map((row) => (
+                      <tr key={row.date}>
+                        <td className="px-4 py-2 font-semibold">{row.date}</td>
+                        <td className="px-4 py-2">{row.views}</td>
+                        <td className="px-4 py-2">{row.uniqueVisitors}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {Array.isArray(stats.yearly) && stats.yearly.length > 0 && (
               <div className="bg-white rounded-lg shadow overflow-x-auto">

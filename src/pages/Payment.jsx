@@ -8,6 +8,7 @@ export default function Payment() {
   const [loading, setLoading] = useState(true);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [invoiceError, setInvoiceError] = useState(null);
+  const isInquiryBooking = bookingInfo?.bookingMode === 'inquiry' || bookingInfo?.isInquiry;
 
   useEffect(() => {
     const info = localStorage.getItem('bookingInfo');
@@ -168,9 +169,9 @@ export default function Payment() {
 
             {/* Payment Form */}
             <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-4">{t('payment.paymentMethod')}</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">{isInquiryBooking ? 'Anfrage senden' : t('payment.paymentMethod')}</h2>
               <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-                {t('payment.paymentType')}: <strong>{t('payment.onInvoice')}</strong>
+                {isInquiryBooking ? 'Modus: Buchungsanfrage (10-27 Naechte)' : `${t('payment.paymentType')}: `}<strong>{isInquiryBooking ? 'Unverbindliche Anfrage' : t('payment.onInvoice')}</strong>
               </div>
               <p className="text-xs text-gray-600 mb-4">
                 {t('payment.onlyInvoiceHint')}
@@ -192,6 +193,9 @@ export default function Payment() {
                       ...bookingInfo,
                       paymentStatus: 'pending',
                       paymentMethod: 'invoice',
+                      isInquiry: isInquiryBooking,
+                      inquiryStatus: isInquiryBooking ? 'pending' : 'none',
+                      bookingMode: isInquiryBooking ? 'inquiry' : 'direct',
                       startDate: parseGermanDate(bookingInfo.startDate),
                       endDate: parseGermanDate(bookingInfo.endDate),
                       ...(bookingInfo.isPartialBooking && {
@@ -236,7 +240,7 @@ export default function Payment() {
                   disabled={invoiceLoading}
                   className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-bold py-4 px-6 rounded-lg transition shadow-lg text-lg"
                 >
-                  {invoiceLoading ? t('payment.processing') : t('payment.bookNow')}
+                  {invoiceLoading ? t('payment.processing') : (isInquiryBooking ? 'Buchungsanfrage senden' : t('payment.bookNow'))}
                 </button>
                 {invoiceError && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">

@@ -74,6 +74,12 @@ const bookingSchema = new mongoose.Schema({
     enum: ['confirmed', 'cancelled', 'completed'],
     default: 'confirmed'
   },
+  isInquiry: { type: Boolean, default: false },
+  inquiryStatus: {
+    type: String,
+    enum: ['none', 'pending', 'approved', 'rejected'],
+    default: 'none'
+  },
 
   // Interne Notizen (für Admin)
   adminNote: { type: String, default: null },

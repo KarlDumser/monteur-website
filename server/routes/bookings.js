@@ -16,6 +16,23 @@ const addDays = (date, days) => {
   return result;
 };
 
+const getCleaningBufferDays = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed < 0) {
+    return 3;
+  }
+  return Math.min(parsed, 30);
+};
+
+const activeBookingFilter = {
+  deletedAt: null,
+  bookingStatus: { $ne: 'cancelled' },
+  $or: [
+    { isInquiry: { $ne: true } },
+    { inquiryStatus: 'approved' }
+  ]
+};
+
 const isAdminRequest = (req) => {
   const authHeader = req.headers.authorization || '';
   const { ok } = validateAdminBasicAuthHeader(authHeader);
@@ -45,7 +62,10 @@ router.get('/blocked', async (req, res) => {
     if (!wohnung) return res.status(400).json({ error: 'wohnung required' });
     // Get all BlockedDates and active bookings for this apartment
     const blocked = await BlockedDate.find({ wohnung });
-    const bookings = await Booking.find({ wohnung, bookingStatus: { $ne: 'cancelled' }, deletedAt: null });
+    const bookings = await Booking.find({
+      ...activeBookingFilter,
+      wohnung
+    });
     // Merge all periods
     const periods = [
       ...blocked.map(b => ({ start: b.startDate.toISOString().slice(0,10), end: b.endDate.toISOString().slice(0,10) })),
@@ -67,9 +87,8 @@ router.post('/check-availability', async (req, res) => {
     
     // Prüfe bestehende Buchungen
     const existingBookings = await Booking.find({
+      ...activeBookingFilter,
       wohnung,
-      bookingStatus: { $ne: 'cancelled' },
-      deletedAt: null,
       $or: [
         { startDate: { $lte: end }, endDate: { $gte: start } }
       ]
@@ -121,6 +140,8 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const adminRequest = isAdminRequest(req);
+    const bookingMode = String(req.body?.bookingMode || '').toLowerCase();
+    const isInquiryRequested = bookingMode === 'inquiry' || req.body?.isInquiry === true;
 
     if (req.body.paymentMethod && req.body.paymentMethod !== 'invoice') {
       return res.status(400).json({ error: 'Nur Zahlung auf Rechnung ist aktuell verfügbar.' });
@@ -130,10 +151,21 @@ router.post('/', async (req, res) => {
     const { wohnung, startDate, endDate } = req.body;
     const start = new Date(startDate);
     const end = new Date(endDate);
+    const requestedNights = Number(req.body?.nights) || Math.max(0, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+
+    if (!adminRequest) {
+      if (isInquiryRequested) {
+        if (requestedNights < 10 || requestedNights > 27) {
+          return res.status(400).json({ error: 'Anfragen sind nur für 10 bis 27 Nächte möglich.' });
+        }
+      } else if (requestedNights < 28) {
+        return res.status(400).json({ error: 'Direktbuchungen sind erst ab 28 Nächten möglich.' });
+      }
+    }
+
     const overlapping = await Booking.findOne({
+      ...activeBookingFilter,
       wohnung,
-      bookingStatus: { $ne: 'cancelled' },
-      deletedAt: null,
       $or: [
         { startDate: { $lte: end }, endDate: { $gte: start } }
       ]
@@ -157,9 +189,15 @@ router.post('/', async (req, res) => {
 
     const booking = new Booking({
       ...req.body,
+      nights: requestedNights,
+      bookingMode,
+      isInquiry: isInquiryRequested,
+      inquiryStatus: isInquiryRequested ? 'pending' : 'none',
+      isPartialBooking: isInquiryRequested ? false : Boolean(req.body.isPartialBooking),
       paymentMethod: 'invoice',
       paymentStatus: req.body.paymentStatus === 'paid' ? 'pending' : (req.body.paymentStatus || 'pending')
     });
+    booking.cleaningBufferDays = getCleaningBufferDays(req.body.cleaningBufferDays);
 
     const customer = await findOrCreateCustomerFromBooking(req.body);
     booking.customerId = customer._id;
@@ -168,7 +206,7 @@ router.post('/', async (req, res) => {
 
     // Bei Teilbuchung (>28 Tage): Automatisch zweite Buchung für restliche Tage erstellen
     let followUpBooking = null;
-    if (booking.isPartialBooking) {
+    if (!booking.isInquiry && booking.isPartialBooking) {
       const remainingNightsStart = addDays(new Date(booking.paidThroughDate), 1);
       const remainingNights = booking.totalNights - booking.nights;
       
@@ -222,62 +260,59 @@ router.post('/', async (req, res) => {
       console.log('   Betrag:', followUpTotal, '€');
     }
 
-    // Zeitraum für die Wohnung blockieren
-    try {
-      const BlockedDate = (await import('../models/BlockedDate.js')).default;
-      
-      if (booking.isPartialBooking && followUpBooking) {
-        // Bei Teilbuchung mit automatischer Follow-Up Buchung:
-        // 1. Erste Buchung (28 Tage)
-        await BlockedDate.create({
-          wohnung: booking.wohnung,
-          startDate: booking.startDate,
-          endDate: booking.endDate,
-          reason: 'Buchung',
-          createdBy: booking.email || 'system'
-        });
-        
-        // 2. Follow-Up Buchung (restliche Tage)
-        await BlockedDate.create({
-          wohnung: followUpBooking.wohnung,
-          startDate: followUpBooking.startDate,
-          endDate: followUpBooking.endDate,
-          reason: 'Buchung',
-          createdBy: followUpBooking.email || 'system'
-        });
-        
-        // Reinigungspuffer am Ende der Follow-Up Buchung
-        if (!adminRequest) {
-          await BlockedDate.create({
-            wohnung: booking.wohnung,
-            startDate: addDays(new Date(followUpBooking.endDate), 1),
-            endDate: addDays(new Date(followUpBooking.endDate), 3),
-            reason: 'Reinigung',
-            createdBy: 'system-cleaning-buffer'
-          });
-        }
-      } else {
-        // Standard-Buchung: ein Eintrag
-        await BlockedDate.create({
-          wohnung: booking.wohnung,
-          startDate: booking.startDate,
-          endDate: booking.endDate,
-          reason: 'Buchung',
-          createdBy: booking.email || 'system'
-        });
+    // Zeitraum nur bei echten Buchungen blockieren, nicht bei offenen Anfragen.
+    if (!booking.isInquiry) {
+      try {
+        const BlockedDate = (await import('../models/BlockedDate.js')).default;
 
-        if (!adminRequest) {
+        if (booking.isPartialBooking && followUpBooking) {
           await BlockedDate.create({
             wohnung: booking.wohnung,
-            startDate: addDays(booking.endDate, 1),
-            endDate: addDays(booking.endDate, 3),
-            reason: 'Reinigung',
-            createdBy: 'system-cleaning-buffer'
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            reason: 'Buchung',
+            createdBy: booking.email || 'system'
           });
+
+          await BlockedDate.create({
+            wohnung: followUpBooking.wohnung,
+            startDate: followUpBooking.startDate,
+            endDate: followUpBooking.endDate,
+            reason: 'Buchung',
+            createdBy: followUpBooking.email || 'system'
+          });
+
+          if (!adminRequest && booking.cleaningBufferDays > 0) {
+            await BlockedDate.create({
+              wohnung: booking.wohnung,
+              startDate: addDays(new Date(followUpBooking.endDate), 1),
+              endDate: addDays(new Date(followUpBooking.endDate), booking.cleaningBufferDays),
+              reason: 'Reinigung',
+              createdBy: 'system-cleaning-buffer'
+            });
+          }
+        } else {
+          await BlockedDate.create({
+            wohnung: booking.wohnung,
+            startDate: booking.startDate,
+            endDate: booking.endDate,
+            reason: 'Buchung',
+            createdBy: booking.email || 'system'
+          });
+
+          if (!adminRequest && booking.cleaningBufferDays > 0) {
+            await BlockedDate.create({
+              wohnung: booking.wohnung,
+              startDate: addDays(booking.endDate, 1),
+              endDate: addDays(booking.endDate, booking.cleaningBufferDays),
+              reason: 'Reinigung',
+              createdBy: 'system-cleaning-buffer'
+            });
+          }
         }
+      } catch (blockError) {
+        console.error('❌ Fehler beim Blockieren des Zeitraums:', blockError);
       }
-    } catch (blockError) {
-      console.error('❌ Fehler beim Blockieren des Zeitraums:', blockError);
     }
 
     // Versende Email im Hintergrund (nicht-blockierend)
@@ -288,26 +323,28 @@ router.post('/', async (req, res) => {
     console.log('   Wohnung:', booking.wohnung);
     console.log('   Betrag:', booking.total, '€');
     
-    console.log('\n📧 Starte Email-Versand im Hintergrund...');
-    sendBookingConfirmation(booking, 'confirmation')
-      .then(result => {
-        console.log('\n📬 HINTERGRUND-EMAIL-RESULT:');
-        console.log('   Status:', result.status);
-        if (result.status === 'sent') {
-          console.log('✅ Bestätigungs-Email erfolgreich versendet');
-          console.log('   Message ID:', result.messageId);
-        } else {
-          console.warn('⚠️ Email-Versand übersprungen/fehlgeschlagen');
-          console.warn('   Grund:', result.reason || result.error);
-          console.warn('   Details:', result);
-        }
-        console.log('');
-      })
-      .catch(err => {
-        console.error('❌ FEHLER beim Email-Versand (Hintergrund):');
-        console.error('   Message:', err.message);
-        console.error('   Stack:', err.stack);
-      });
+    if (!booking.isInquiry) {
+      console.log('\n📧 Starte Email-Versand im Hintergrund...');
+      sendBookingConfirmation(booking, 'confirmation')
+        .then(result => {
+          console.log('\n📬 HINTERGRUND-EMAIL-RESULT:');
+          console.log('   Status:', result.status);
+          if (result.status === 'sent') {
+            console.log('✅ Bestätigungs-Email erfolgreich versendet');
+            console.log('   Message ID:', result.messageId);
+          } else {
+            console.warn('⚠️ Email-Versand übersprungen/fehlgeschlagen');
+            console.warn('   Grund:', result.reason || result.error);
+            console.warn('   Details:', result);
+          }
+          console.log('');
+        })
+        .catch(err => {
+          console.error('❌ FEHLER beim Email-Versand (Hintergrund):');
+          console.error('   Message:', err.message);
+          console.error('   Stack:', err.stack);
+        });
+    }
 
     // Sende Push-Benachrichtigung im Hintergrund
     if (process.env.PUSHOVER_API_TOKEN && process.env.PUSHOVER_USER_KEY) {
