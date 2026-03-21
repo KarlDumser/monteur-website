@@ -2384,6 +2384,39 @@ export default function Admin() {
                     ))}
                   </tbody>
                 </table>
+                
+                {/* Per-Apartment Breakdown */}
+                {Array.isArray(stats.yearlyByApartment) && stats.yearlyByApartment.length > 0 && (
+                  <div className="px-5 py-4 border-t border-gray-200">
+                    <h4 className="text-gray-600 font-semibold mb-3">Pro Wohnung</h4>
+                    <table className="w-full text-xs">
+                      <thead className="bg-gray-100 text-gray-600">
+                        <tr>
+                          <th className="px-4 py-2 text-left">Jahr</th>
+                          <th className="px-4 py-2 text-left">Wohnung</th>
+                          <th className="px-4 py-2 text-left">Buchungen</th>
+                          <th className="px-4 py-2 text-left">Bezahlt</th>
+                          <th className="px-4 py-2 text-left">Nächte</th>
+                          <th className="px-4 py-2 text-left">Umsatz bezahlt</th>
+                          <th className="px-4 py-2 text-left">Umsatz gesamt</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {stats.yearlyByApartment.map((row, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="px-4 py-2">{row.year}</td>
+                            <td className="px-4 py-2 font-medium">{row.apartment}</td>
+                            <td className="px-4 py-2">{row.bookings}</td>
+                            <td className="px-4 py-2">{row.paidBookings}</td>
+                            <td className="px-4 py-2">{row.nights}</td>
+                            <td className="px-4 py-2">{Number(row.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€</td>
+                            <td className="px-4 py-2">{Number(row.revenueAll || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
@@ -2414,6 +2447,37 @@ export default function Admin() {
                     ))}
                   </tbody>
                 </table>
+                
+                {/* Per-Apartment Breakdown */}
+                {Array.isArray(stats.monthlyByApartment) && stats.monthlyByApartment.length > 0 && (
+                  <div className="px-5 py-4 border-t border-gray-200">
+                    <h4 className="text-gray-600 font-semibold mb-3">Pro Wohnung</h4>
+                    <table className="w-full text-xs">
+                      <thead className="bg-gray-100 text-gray-600">
+                        <tr>
+                          <th className="px-4 py-2 text-left">Monat</th>
+                          <th className="px-4 py-2 text-left">Wohnung</th>
+                          <th className="px-4 py-2 text-left">Buchungen</th>
+                          <th className="px-4 py-2 text-left">Bezahlt</th>
+                          <th className="px-4 py-2 text-left">Nächte</th>
+                          <th className="px-4 py-2 text-left">Umsatz bezahlt</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {stats.monthlyByApartment.map((row, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="px-4 py-2">{String(row.month).padStart(2, '0')}</td>
+                            <td className="px-4 py-2 font-medium">{row.apartment}</td>
+                            <td className="px-4 py-2">{row.bookings}</td>
+                            <td className="px-4 py-2">{row.paidBookings}</td>
+                            <td className="px-4 py-2">{row.nights}</td>
+                            <td className="px-4 py-2">{Number(row.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>

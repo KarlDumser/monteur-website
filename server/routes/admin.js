@@ -993,6 +993,8 @@ router.get('/statistics', async (req, res) => {
       previousYearAgg,
       yearlyStats,
       monthlyStatsCurrentYear,
+      yearlyStatsByApartment,
+      monthlyStatsByApartmentCurrentYear,
       recentBookings,
       visitorFacets,
       revenueByApartment,
@@ -1118,6 +1120,57 @@ router.get('/statistics', async (req, res) => {
           }
         },
         { $sort: { _id: 1 } }
+      ]),
+      // Yearly stats by apartment
+      Booking.aggregate([
+        { $match: baseBookingFilter },
+        {
+          $group: {
+            _id: { year: { $year: '$createdAt' }, appartment: '$wohnung' },
+            bookings: { $sum: 1 },
+            paidBookings: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0]
+              }
+            },
+            revenuePaid: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0]
+              }
+            },
+            revenueAll: { $sum: '$total' },
+            nights: { $sum: '$nights' }
+          }
+        },
+        { $sort: { '_id.year': 1, '_id.appartment': 1 } }
+      ]),
+      // Monthly stats by apartment (current year)
+      Booking.aggregate([
+        {
+          $match: {
+            ...baseBookingFilter,
+            createdAt: { $gte: yearStart, $lt: nextYearStart }
+          }
+        },
+        {
+          $group: {
+            _id: { month: { $month: '$createdAt' }, appartment: '$wohnung' },
+            bookings: { $sum: 1 },
+            paidBookings: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0]
+              }
+            },
+            revenuePaid: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0]
+              }
+            },
+            revenueAll: { $sum: '$total' },
+            nights: { $sum: '$nights' }
+          }
+        },
+        { $sort: { '_id.month': 1, '_id.appartment': 1 } }
       ]),
       Booking.find(baseBookingFilter).sort({ createdAt: -1 }).limit(5),
       WebsiteVisit.aggregate([
@@ -1292,6 +1345,24 @@ router.get('/statistics', async (req, res) => {
         nights: growth(currentYearData.nights, previousYearData.nights)
       },
       monthly,
+      monthlyByApartment: monthlyStatsByApartmentCurrentYear.map((item) => ({
+        month: item._id.month,
+        apartment: item._id.appartment,
+        bookings: item.bookings,
+        paidBookings: item.paidBookings,
+        revenuePaid: item.revenuePaid,
+        revenueAll: item.revenueAll,
+        nights: item.nights
+      })),
+      yearlyByApartment: yearlyStatsByApartment.map((item) => ({
+        year: item._id.year,
+        apartment: item._id.appartment,
+        bookings: item.bookings,
+        paidBookings: item.paidBookings,
+        revenuePaid: item.revenuePaid,
+        revenueAll: item.revenueAll,
+        nights: item.nights
+      })),
       visitors: {
         totalViews: extractFacetValue(visitorFacets, 'totalViews'),
         uniqueVisitors: extractFacetValue(visitorFacets, 'uniqueVisitors'),

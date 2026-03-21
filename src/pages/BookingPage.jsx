@@ -622,7 +622,7 @@ export default function BookingPage() {
                 if (selectedNights >= 10 && selectedNights < 28) {
                   return (
                     <p className="text-sm text-amber-800 mt-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                      Zeitraum 10-27 Naechte: Es wird eine Buchungsanfrage gesendet, dieser wird jedoch sofort geprüft und mit Ihnen Kontakt aufgenommen. Direkte Buchung ist ab 28 Naechten moeglich.
+                      Zeitraum 10-27 Naechte: Es wird eine Buchungsanfrage gesendet, diese wird jedoch sofort geprüft und mit Ihnen Kontakt aufgenommen. Direkte Buchung ist ab 28 Naechten moeglich.
                     </p>
                   );
                 }
