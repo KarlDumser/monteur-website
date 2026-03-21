@@ -406,7 +406,14 @@ export default function Home() {
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                {section.label}
+                {section.id === 'wohnungsdetails' ? (
+                  <span className="inline-flex flex-col leading-tight">
+                    <span>Wohnungs-</span>
+                    <span>details</span>
+                  </span>
+                ) : (
+                  section.label
+                )}
               </button>
             );
           })}
