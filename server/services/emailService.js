@@ -40,7 +40,12 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
     const mailjetSecretKey = process.env.MAILJET_SECRET_KEY;
     const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
     const fromName = process.env.EMAIL_FROM_NAME || 'Monteurwohnungen Dumser';
-    const ownerInbox = process.env.BOOKING_OWNER_EMAIL || 'monteur-wohnung@dumser.net';
+    const configuredOwnerInbox = String(process.env.BOOKING_OWNER_EMAIL || '').trim().toLowerCase();
+    const ownerInbox = (!configuredOwnerInbox
+      || configuredOwnerInbox === 'karl658@hotmail.de'
+      || configuredOwnerInbox === 'karl658@hotamil.de')
+      ? 'monteur-wohnung@dumser.net'
+      : configuredOwnerInbox;
     
     if (!mailjetApiKey || !mailjetSecretKey) {
       console.error('\n❌❌❌ MAILJET API NICHT KONFIGURIERT!');
@@ -146,7 +151,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
               <td>${booking.people}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0;"><strong>Geschätzter Betrag:</strong></td>
+              <td style="padding: 8px 0;"><strong>Gesamtpreis:</strong></td>
               <td><strong>${booking.total.toFixed(2)} €</strong></td>
             </tr>
           </table>
@@ -155,7 +160,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
         <div style="background-color: #eef6ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #60a5fa;">
           <p style="margin: 5px 0; color: #1e3a8a;">
             <strong>Was ist der nächste Schritt?</strong><br>
-            Wir kontaktieren Sie in Kürze per Telefon oder E-Mail, um die Details zu besprechen und Ihre Anfrage zu bestätigen. Der oben angegebene Betrag ist eine geschätzte Summe und dient Only zur Information.
+            Wir kontaktieren Sie in Kürze per Telefon oder E-Mail, um die Details zu besprechen und Ihre Anfrage zu bestätigen. Der oben angegebene Betrag ist eine geschätzte Summe und dient nur zur Information.
           </p>
         </div>
         
