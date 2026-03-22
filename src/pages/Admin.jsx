@@ -530,7 +530,7 @@ export default function Admin() {
   };
 
   const handleApproveInquiry = async (inquiryId) => {
-    if (!confirm('Anfrage jetzt als Buchung bestaetigen?')) return;
+    if (!confirm('Anfrage jetzt als Buchung bestätigen und automatisch E-Mail-Buchungsbestätigung versenden?')) return;
 
     try {
       const apiUrl = getApiUrl();
