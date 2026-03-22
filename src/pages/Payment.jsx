@@ -169,10 +169,14 @@ export default function Payment() {
 
             {/* Payment Form */}
             <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-4">{isInquiryBooking ? 'Anfrage senden' : t('payment.paymentMethod')}</h2>
-              <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-                {isInquiryBooking ? 'Modus: Buchungsanfrage (10-27 Naechte) ' : `${t('payment.paymentType')}: `}<strong>{isInquiryBooking ? 'Unverbindliche Anfrage' : t('payment.onInvoice')}</strong>
-              </div>
+              {!isInquiryBooking && (
+                <>
+                  <h2 className="text-xl font-bold text-gray-800 mb-4">{t('payment.paymentMethod')}</h2>
+                  <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                    {t('payment.paymentType')}: <strong>{t('payment.onInvoice')}</strong>
+                  </div>
+                </>
+              )}
               {!isInquiryBooking && (
                 <p className="text-xs text-gray-600 mb-4">
                   {t('payment.onlyInvoiceHint')}

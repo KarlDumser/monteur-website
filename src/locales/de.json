@@ -102,6 +102,7 @@
     "confirmationSuffix": "gesendet.",
     "nextStepsTitle": "Nächste Schritte:",
     "nextStepsText": "Sie erhalten in Kürze eine E-Mail mit allen weiteren Informationen und der Rechnung zu Ihrer Buchung.",
+    "nextStepsTextInquiry": "Sie erhalten in Kürze eine Bestätigungsmail Ihrer Anfrage. Wir prüfen die Verfügbarkeit und melden uns zeitnah telefonisch oder per E-Mail bei Ihnen.",
     "downloadInvoice": "Rechnung herunterladen",
     "backHome": "Zurück zur Startseite",
     "tipTitle": "Tipp:",
@@ -391,7 +392,7 @@
     },
     "alerts": {
       "invalidPeopleRange": "Bitte geben Sie eine gueltige Personenzahl zwischen 1 und {{max}} ein.",
-      "minNightsError": "Mindestbuchungsdauer 10 Tage (11 Naechte).",
+      "minNightsError": "Mindestbuchungsdauer 11 Tage (10 Naechte).",
       "capacityWarningTitle": "⚠️ WICHTIGER HINWEIS",
       "capacityWarningPeople": "Sie haben {{count}} Personen angegeben.",
       "capacityWarningApartment": "Die Wohnung \"{{name}}\" ist allerdings nur fuer maximal {{max}} Personen ausgelegt.",
