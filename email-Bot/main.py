@@ -1,6 +1,6 @@
 import time
 import os
-from gpt_logic import is_rental_related, clean_email_body, generate_reply, extract_booking_dates, analyze_booking_interest
+from gpt_logic import is_rental_related, extract_booking_dates, analyze_booking_interest
 from datetime import datetime, timedelta
 from email_reader import get_latest_email
 from email_sender import send_email
@@ -26,6 +26,7 @@ ALLOWED_DOMAINS = {
 }
 
 ANSWERED_CUSTOMERS_LOG = "logs/answered_customers.log"
+PROMPT_FORMAT_PATH = "promts/prompt_format.txt"
 
 # Strategie pro Website für Duplikat-Check
 # "sender" = Nutze Sender-Adresse (eindeutige Alias)
@@ -118,6 +119,12 @@ def log(text):
     with open("log.txt", "a", encoding="utf-8") as f:
         f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {text}\n")
 
+
+def get_static_reply() -> str:
+    """Liest die feste Antwortvorlage aus prompt_format.txt."""
+    with open(PROMPT_FORMAT_PATH, "r", encoding="utf-8") as f:
+        return f.read().strip()
+
 def is_mail_too_old(mail_date) -> bool:
     """Blockiert alte Mails, damit historische UNSEEN-Eintraege nie beantwortet werden."""
     if not mail_date:
@@ -202,15 +209,14 @@ def main():
                 print(f"⏳ Warte {BOT_REPLY_DELAY_SECONDS} Sekunden vor Antwort...")
                 time.sleep(BOT_REPLY_DELAY_SECONDS)
 
-            clean_body = clean_email_body(mail["body"])
-            reply = generate_reply(clean_body)
+            reply = get_static_reply()
 
-            print("🧐 AI-Antwort:")
+            print("🧾 Feste Antwortvorlage:")
             print("-" * 40)
             print(reply.strip())
             print("-" * 40)
 
-            log("AI-Antwort generiert:")
+            log("Feste Antwortvorlage geladen:")
             log(reply.strip())
 
             booking_status = analyze_booking_interest(reply)
