@@ -50,6 +50,8 @@ const parseAddressString = (address) => {
 };
 
 export default function Admin() {
+  const getStoredAdminAuth = () => localStorage.getItem('adminAuth') || sessionStorage.getItem('adminAuth') || '';
+
   const [bookings, setBookings] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [deletedBookings, setDeletedBookings] = useState([]);
@@ -57,7 +59,7 @@ export default function Admin() {
   const [stats, setStats] = useState(null);
   const [activeTab, setActiveTab] = useState('bookings');
   const [loading, setLoading] = useState(true);
-  const [auth, setAuth] = useState(() => sessionStorage.getItem('adminAuth') || '');
+  const [auth, setAuth] = useState(() => getStoredAdminAuth());
   const [authError, setAuthError] = useState('');
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [actionMessage, setActionMessage] = useState(null);
@@ -393,7 +395,7 @@ export default function Admin() {
 
   useEffect(() => {
     const syncAuth = () => {
-      setAuth(sessionStorage.getItem('adminAuth') || '');
+      setAuth(getStoredAdminAuth());
     };
 
     window.addEventListener('admin-auth-changed', syncAuth);
@@ -420,6 +422,7 @@ export default function Admin() {
   }, [auth, activeTab]);
 
   const handleLogout = () => {
+    localStorage.removeItem('adminAuth');
     sessionStorage.removeItem('adminAuth');
     setAuth('');
     window.dispatchEvent(new Event('admin-auth-changed'));
@@ -432,6 +435,7 @@ export default function Admin() {
       // Buchungen laden
       const bookingsRes = await fetch(`${apiUrl}/admin/bookings`, { headers });
       if (bookingsRes.status === 401) {
+        localStorage.removeItem('adminAuth');
         sessionStorage.removeItem('adminAuth');
         setAuth('');
         setAuthError('Zugriff verweigert. Bitte erneut anmelden.');
@@ -821,6 +825,7 @@ export default function Admin() {
                   setAuthError('Benutzername oder Passwort falsch.');
                   return;
                 }
+                localStorage.setItem('adminAuth', token);
                 sessionStorage.setItem('adminAuth', token);
                 setAuth(token);
                 setAuthError('');

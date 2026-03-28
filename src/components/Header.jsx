@@ -5,7 +5,8 @@ import { APP_VERSION } from '../config';
 
 export default function Header() {
   const { i18n, t } = useTranslation();
-  const [isAdminAuthed, setIsAdminAuthed] = useState(() => Boolean(sessionStorage.getItem('adminAuth')));
+  const getStoredAdminAuth = () => localStorage.getItem('adminAuth') || sessionStorage.getItem('adminAuth');
+  const [isAdminAuthed, setIsAdminAuthed] = useState(() => Boolean(getStoredAdminAuth()));
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
 
   const languages = [
@@ -20,7 +21,7 @@ export default function Header() {
 
   useEffect(() => {
     const syncAuth = () => {
-      setIsAdminAuthed(Boolean(sessionStorage.getItem('adminAuth')));
+      setIsAdminAuthed(Boolean(getStoredAdminAuth()));
     };
 
     window.addEventListener('admin-auth-changed', syncAuth);
@@ -44,6 +45,7 @@ export default function Header() {
   }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem('adminAuth');
     sessionStorage.removeItem('adminAuth');
     window.dispatchEvent(new Event('admin-auth-changed'));
   };

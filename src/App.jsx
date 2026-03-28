@@ -12,6 +12,7 @@ import AGB from "./pages/AGB";
 import Widerruf from "./pages/Widerruf";
 import Payment from "./pages/Payment";
 import Admin from "./pages/Admin";
+import AdminInstall from './pages/AdminInstall'
 import { apiCall } from './utils/api'
 
 const VISITOR_ID_KEY = 'mw_visitor_id';
@@ -36,7 +37,7 @@ const shouldSkipTracking = (pathname) => {
   if (!pathname || pathname.startsWith('/admin')) {
     return true;
   }
-  if (sessionStorage.getItem('adminAuth')) {
+  if (localStorage.getItem('adminAuth') || sessionStorage.getItem('adminAuth')) {
     return true;
   }
   return localStorage.getItem(EXCLUDED_TRACKING_KEY) === '1';
@@ -106,6 +107,8 @@ export default function App() {
           <Route path="/agb" element={<AGB />} />
           <Route path="/widerruf" element={<Widerruf />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin-install" element={<AdminInstall />} />
+          <Route path="/admin-install.html" element={<AdminInstall />} />
         </Routes>
       </Layout>
     </BrowserRouter>
