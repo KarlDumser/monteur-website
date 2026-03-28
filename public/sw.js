@@ -1,5 +1,13 @@
-const CACHE_NAME = 'monteurwohnung-v1'
-const URLS_TO_CACHE = ['/', '/index.html', '/site.webmanifest', '/favicon.svg', '/apple-touch-icon.png']
+const CACHE_NAME = 'monteurwohnung-v2'
+const URLS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/site.webmanifest',
+  '/admin-app.webmanifest',
+  '/admin-install.html',
+  '/favicon.svg',
+  '/apple-touch-icon.png',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(URLS_TO_CACHE)))
