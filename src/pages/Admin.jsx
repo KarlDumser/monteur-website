@@ -105,6 +105,16 @@ export default function Admin() {
   const [botLoading, setBotLoading] = useState(false);
   const [botError, setBotError] = useState('');
 
+  const [visitorYear, setVisitorYear] = useState(new Date().getFullYear());
+  const [visitorMonth, setVisitorMonth] = useState(new Date().getMonth() + 1);
+  const [monthlyVisitors, setMonthlyVisitors] = useState(null);
+  const [loadingMonthlyVisitors, setLoadingMonthlyVisitors] = useState(false);
+
+  const [revenueYear, setRevenueYear] = useState(new Date().getFullYear());
+  const [revenueMonth, setRevenueMonth] = useState(new Date().getMonth() + 1);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(null);
+  const [loadingMonthlyRevenue, setLoadingMonthlyRevenue] = useState(false);
+
   const wohnungen = {
     hackerberg: 'Wohnung Hackerberg',
     neubau: 'Wohnung Frühlingstraße',
@@ -142,6 +152,7 @@ export default function Admin() {
       setAuthError('Benutzername und Passwort erforderlich.');
       return;
     }
+
     setIsLoginAttempting(true);
     setAuthError('');
 
@@ -150,8 +161,6 @@ export default function Admin() {
 
     try {
       const apiUrl = getApiUrl();
-      console.log('🔐 Login attempt:', { username: credentials.username, apiUrl });
-
       const timeoutId = setTimeout(() => loginAbortRef.current?.abort(), 15000);
       const res = await fetch(`${apiUrl}/admin/statistics`, {
         headers: { Authorization: `Basic ${token}`, 'Content-Type': 'application/json' },
@@ -160,7 +169,6 @@ export default function Admin() {
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        console.warn('❌ Login failed - HTTP', res.status, res.statusText);
         if (res.status === 429) setAuthError('Zu viele Anmeldeversuche. Bitte warten Sie einige Minuten.');
         else if (res.status === 401) setAuthError('Benutzername oder Passwort falsch.');
         else if (res.status >= 500) setAuthError('Server-Fehler. Bitte versuchen Sie es später erneut.');
@@ -168,7 +176,6 @@ export default function Admin() {
         return;
       }
 
-      console.log('✅ Login successful');
       localStorage.setItem('adminAuth', token);
       sessionStorage.setItem('adminAuth', token);
       setAuth(token);
@@ -176,11 +183,9 @@ export default function Admin() {
       window.dispatchEvent(new Event('admin-auth-changed'));
     } catch (error) {
       if (error.name === 'AbortError') {
-        console.error('⏱️ Login timeout (15s)');
         setAuthError('Verbindungszeitüberschreitung. Server antwortet zu langsam. Bitte versuchen Sie es erneut.');
       } else {
-        console.error('🔴 Login error:', error.message);
-        setAuthError(`Verbindungsfehler: ${error.message}. Bitte versuchen Sie es erneut oder prüfen Sie Ihre Internetverbindung.`);
+        setAuthError(`Verbindungsfehler: ${error.message}. Bitte versuchen Sie es erneut.`);
       }
     } finally {
       setIsLoginAttempting(false);
@@ -480,6 +485,15 @@ export default function Admin() {
     return () => clearInterval(interval);
   }, [auth, activeTab]);
 
+  useEffect(() => {
+    if (!auth || activeTab !== 'statistics') {
+      return;
+    }
+
+    loadMonthlyVisitors(visitorYear, visitorMonth);
+    loadMonthlyRevenue(revenueYear, revenueMonth);
+  }, [auth, activeTab, visitorYear, visitorMonth, revenueYear, revenueMonth]);
+
   const handleLogout = () => {
     localStorage.removeItem('adminAuth');
     sessionStorage.removeItem('adminAuth');
@@ -675,6 +689,42 @@ export default function Admin() {
     setBotLoading(true);
     await Promise.all([loadBotStatus(), loadBotLogs()]);
     setBotLoading(false);
+  };
+
+  const loadMonthlyVisitors = async (year, month) => {
+    try {
+      setLoadingMonthlyVisitors(true);
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/statistics/monthly-visitors?year=${year}&month=${month}`, {
+        headers: { Authorization: `Basic ${auth}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Fehler beim Laden');
+      setMonthlyVisitors(data);
+    } catch (error) {
+      console.error('Error loading monthly visitors:', error);
+      showActionMessage('error', 'Fehler beim Laden der Besucherstatistiken');
+    } finally {
+      setLoadingMonthlyVisitors(false);
+    }
+  };
+
+  const loadMonthlyRevenue = async (year, month) => {
+    try {
+      setLoadingMonthlyRevenue(true);
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/statistics/revenue-by-month?year=${year}&month=${month}`, {
+        headers: { Authorization: `Basic ${auth}` }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Fehler beim Laden');
+      setMonthlyRevenue(data);
+    } catch (error) {
+      console.error('Error loading monthly revenue:', error);
+      showActionMessage('error', 'Fehler beim Laden der Umsatzstatistiken');
+    } finally {
+      setLoadingMonthlyRevenue(false);
+    }
   };
 
   const controlBot = async (action) => {
@@ -2362,6 +2412,55 @@ export default function Admin() {
             </div>
 
             <div className="bg-white rounded-lg shadow p-5">
+              <h3 className="text-gray-700 font-semibold mb-4">Besucherstatistik nach Jahr und Monat</h3>
+              <div className="flex flex-wrap gap-3 mb-4">
+                <select
+                  value={visitorYear}
+                  onChange={(e) => setVisitorYear(Number(e.target.value))}
+                  className="border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+                <select
+                  value={visitorMonth}
+                  onChange={(e) => setVisitorMonth(Number(e.target.value))}
+                  className="border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                    <option key={month} value={month}>
+                      {new Date(2000, month - 1, 1).toLocaleString('de-DE', { month: 'long' })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {loadingMonthlyVisitors ? (
+                <p className="text-sm text-gray-500">Lade Besucherstatistik...</p>
+              ) : monthlyVisitors ? (
+                <div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                    <div className="rounded border border-gray-200 p-3">
+                      <p className="text-xs text-gray-500">Aufrufe im Monat</p>
+                      <p className="text-xl font-bold text-blue-700">{monthlyVisitors.totalViews || 0}</p>
+                    </div>
+                    <div className="rounded border border-gray-200 p-3">
+                      <p className="text-xs text-gray-500">Eindeutige Besucher</p>
+                      <p className="text-xl font-bold text-green-700">{monthlyVisitors.totalUniqueVisitors || 0}</p>
+                    </div>
+                    <div className="rounded border border-gray-200 p-3">
+                      <p className="text-xs text-gray-500">Ø Aufrufe pro Besucher</p>
+                      <p className="text-xl font-bold text-purple-700">{monthlyVisitors.avgViewsPerVisitor || 0}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Keine Daten vorhanden.</p>
+              )}
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-5">
               <h3 className="text-gray-700 font-semibold mb-3">Umsatz bezahlt nach Wohnung (gesamt)</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                 {['hackerberg', 'neubau', 'kombi'].map((key) => (
@@ -2374,6 +2473,59 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-5">
+              <h3 className="text-gray-700 font-semibold mb-4">Umsatzstatistik nach Jahr und Monat</h3>
+              <div className="flex flex-wrap gap-3 mb-4">
+                <select
+                  value={revenueYear}
+                  onChange={(e) => setRevenueYear(Number(e.target.value))}
+                  className="border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+                <select
+                  value={revenueMonth}
+                  onChange={(e) => setRevenueMonth(Number(e.target.value))}
+                  className="border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                    <option key={month} value={month}>
+                      {new Date(2000, month - 1, 1).toLocaleString('de-DE', { month: 'long' })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {loadingMonthlyRevenue ? (
+                <p className="text-sm text-gray-500">Lade Umsatzstatistik...</p>
+              ) : monthlyRevenue ? (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+                  <div className="rounded border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Buchungen</p>
+                    <p className="text-xl font-bold text-blue-700">{monthlyRevenue.bookings || 0}</p>
+                  </div>
+                  <div className="rounded border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Bezahlte Buchungen</p>
+                    <p className="text-xl font-bold text-green-700">{monthlyRevenue.paidBookings || 0}</p>
+                  </div>
+                  <div className="rounded border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Umsatz bezahlt</p>
+                    <p className="text-xl font-bold text-purple-700">
+                      {Number(monthlyRevenue.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                    </p>
+                  </div>
+                  <div className="rounded border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Konversionsrate</p>
+                    <p className="text-xl font-bold text-orange-700">{monthlyRevenue.conversionRate || 0}%</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">Keine Daten vorhanden.</p>
+              )}
             </div>
 
             {Array.isArray(stats.visitors?.dailyLast30Days) && stats.visitors.dailyLast30Days.length > 0 && (

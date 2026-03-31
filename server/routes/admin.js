@@ -1386,8 +1386,155 @@ router.get('/statistics', async (req, res) => {
   }
 });
 
-// Folgebuchung erstellen für längere Buchungen
-router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
+  // Detaillierte Monatliche Besucher-Statistiken für beliebiges Jahr/Monat
+  router.get('/statistics/monthly-visitors', async (req, res) => {
+    try {
+      const yearParam = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
+      const monthParam = req.query.month ? parseInt(req.query.month) : new Date().getMonth() + 1;
+
+      const monthStart = new Date(yearParam, monthParam - 1, 1);
+      const monthEnd = new Date(yearParam, monthParam, 1);
+
+      const dailyStats = await WebsiteVisit.aggregate([
+        { $match: { visitDate: { $gte: monthStart, $lt: monthEnd } } },
+        {
+          $group: {
+            _id: '$dateKey',
+            views: { $sum: '$views' },
+            uniqueVisitors: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]);
+
+      const monthlyTotal = await WebsiteVisit.aggregate([
+        { $match: { visitDate: { $gte: monthStart, $lt: monthEnd } } },
+        {
+          $group: {
+            _id: null,
+            totalViews: { $sum: '$views' },
+            uniqueVisitors: { $addToSet: '$visitorHash' }
+          }
+        }
+      ]);
+
+      const visitorCount = monthlyTotal[0]?.uniqueVisitors?.length || 0;
+      const totalViews = monthlyTotal[0]?.totalViews || 0;
+
+      res.json({
+        year: yearParam,
+        month: monthParam,
+        monthName: new Date(yearParam, monthParam - 1).toLocaleString('de-DE', { month: 'long' }),
+        totalViews,
+        totalUniqueVisitors: visitorCount,
+        avgViewsPerVisitor: visitorCount > 0 ? (totalViews / visitorCount).toFixed(2) : 0,
+        daily: dailyStats.map((item) => ({
+          date: item._id,
+          views: Number(item.views || 0),
+          uniqueVisitors: Number(item.uniqueVisitors || 0)
+        }))
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Detaillierte Umsatz-Statistiken für beliebiges Jahr/Monat
+  router.get('/statistics/revenue-by-month', async (req, res) => {
+    try {
+      const yearParam = req.query.year ? parseInt(req.query.year) : new Date().getFullYear();
+      const monthParam = req.query.month ? parseInt(req.query.month) : new Date().getMonth() + 1;
+
+      const monthStart = new Date(yearParam, monthParam - 1, 1);
+      const monthEnd = new Date(yearParam, monthParam, 1);
+
+      const baseFilter = {
+        deletedAt: null,
+        $or: [
+          { isInquiry: { $ne: true } },
+          { inquiryStatus: 'approved' }
+        ]
+      };
+
+      const stats = await Booking.aggregate([
+        {
+          $match: {
+            ...baseFilter,
+            createdAt: { $gte: monthStart, $lt: monthEnd }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            bookings: { $sum: 1 },
+            paidBookings: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0]
+              }
+            },
+            revenuePaid: {
+              $sum: {
+                $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$total', 0]
+              }
+            },
+            revenueAll: { $sum: '$total' },
+            nights: { $sum: '$nights' },
+            avgBookingValue: { $avg: '$total' }
+          }
+        }
+      ]);
+
+      const byApartment = await Booking.aggregate([
+        {
+          $match: {
+            ...baseFilter,
+            createdAt: { $gte: monthStart, $lt: monthEnd },
+            paymentStatus: 'paid'
+          }
+        },
+        {
+          $group: {
+            _id: '$wohnung',
+            bookings: { $sum: 1 },
+            revenue: { $sum: '$total' },
+            nights: { $sum: '$nights' }
+          }
+        }
+      ]);
+
+      const data = stats[0] || {
+        bookings: 0,
+        paidBookings: 0,
+        revenuePaid: 0,
+        revenueAll: 0,
+        nights: 0,
+        avgBookingValue: 0
+      };
+
+      res.json({
+        year: yearParam,
+        month: monthParam,
+        monthName: new Date(yearParam, monthParam - 1).toLocaleString('de-DE', { month: 'long' }),
+        ...data,
+        conversionRate: data.bookings > 0 ? (
+          (data.paidBookings / data.bookings * 100).toFixed(1)
+        ) : 0,
+        byApartment: byApartment.reduce((acc, curr) => {
+          acc[curr._id] = {
+            bookings: curr.bookings,
+            revenue: curr.revenue,
+            nights: curr.nights
+          };
+          return acc;
+        }, {})
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Folgebuchung erstellen für längere Buchungen
+  router.post('/bookings/:id/create-follow-up-invoice', async (req, res) => {
   try {
     const originalBooking = await Booking.findOne({ _id: req.params.id, deletedAt: null });
     
