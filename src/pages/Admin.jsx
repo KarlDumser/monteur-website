@@ -49,6 +49,43 @@ const parseAddressString = (address) => {
   };
 };
 
+const MiniBarChart = ({ data, xKey, yKey, color = '#3B82F6', label, shortLabel = false }) => {
+  if (!data || data.length === 0) return null;
+  const max = Math.max(...data.map((d) => Number(d[yKey]) || 0), 1);
+  const barW = 100 / data.length;
+  const pad = barW * 0.12;
+  const mid = Math.floor((data.length - 1) / 2);
+  return (
+    <div className="mt-4 select-none">
+      {label && <p className="text-xs text-gray-500 mb-1 font-medium">{label}</p>}
+      <svg viewBox="0 0 100 36" className="w-full h-24" preserveAspectRatio="none">
+        {data.map((d, i) => {
+          const h = Math.max((Number(d[yKey]) / max) * 34, 0.5);
+          return (
+            <rect
+              key={i}
+              x={i * barW + pad}
+              y={36 - h}
+              width={barW - pad * 2}
+              height={h}
+              fill={color}
+              rx="0.4"
+              opacity="0.82"
+            />
+          );
+        })}
+      </svg>
+      <div className="flex justify-between text-xs text-gray-400 -mt-0.5 px-0.5">
+        {shortLabel
+          ? data.map((d) => <span key={String(d[xKey])}>{String(d[xKey])}</span>)
+          : [data[0], data[mid], data[data.length - 1]].map((d, i) => (
+              <span key={i}>{String(d?.[xKey] || '').slice(-2)}</span>
+            ))}
+      </div>
+    </div>
+  );
+};
+
 export default function Admin() {
   const getStoredAdminAuth = () => localStorage.getItem('adminAuth') || sessionStorage.getItem('adminAuth') || '';
 
@@ -2454,6 +2491,15 @@ export default function Admin() {
                       <p className="text-xl font-bold text-purple-700">{monthlyVisitors.avgViewsPerVisitor || 0}</p>
                     </div>
                   </div>
+                  {Array.isArray(monthlyVisitors.daily) && monthlyVisitors.daily.length > 0 && (
+                    <MiniBarChart
+                      data={monthlyVisitors.daily}
+                      xKey="date"
+                      yKey="views"
+                      color="#3B82F6"
+                      label="Tägliche Seitenaufrufe"
+                    />
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500">Keine Daten vorhanden.</p>
@@ -2503,25 +2549,40 @@ export default function Admin() {
               {loadingMonthlyRevenue ? (
                 <p className="text-sm text-gray-500">Lade Umsatzstatistik...</p>
               ) : monthlyRevenue ? (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-xs text-gray-500">Buchungen</p>
-                    <p className="text-xl font-bold text-blue-700">{monthlyRevenue.bookings || 0}</p>
+                <div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+                    <div className="rounded border border-gray-200 p-3">
+                      <p className="text-xs text-gray-500">Buchungen</p>
+                      <p className="text-xl font-bold text-blue-700">{monthlyRevenue.bookings || 0}</p>
+                    </div>
+                    <div className="rounded border border-gray-200 p-3">
+                      <p className="text-xs text-gray-500">Bezahlte Buchungen</p>
+                      <p className="text-xl font-bold text-green-700">{monthlyRevenue.paidBookings || 0}</p>
+                    </div>
+                    <div className="rounded border border-gray-200 p-3">
+                      <p className="text-xs text-gray-500">Umsatz bezahlt</p>
+                      <p className="text-xl font-bold text-purple-700">
+                        {Number(monthlyRevenue.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                      </p>
+                    </div>
+                    <div className="rounded border border-gray-200 p-3">
+                      <p className="text-xs text-gray-500">Konversionsrate</p>
+                      <p className="text-xl font-bold text-orange-700">{monthlyRevenue.conversionRate || 0}%</p>
+                    </div>
                   </div>
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-xs text-gray-500">Bezahlte Buchungen</p>
-                    <p className="text-xl font-bold text-green-700">{monthlyRevenue.paidBookings || 0}</p>
-                  </div>
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-xs text-gray-500">Umsatz bezahlt</p>
-                    <p className="text-xl font-bold text-purple-700">
-                      {Number(monthlyRevenue.revenuePaid || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                    </p>
-                  </div>
-                  <div className="rounded border border-gray-200 p-3">
-                    <p className="text-xs text-gray-500">Konversionsrate</p>
-                    <p className="text-xl font-bold text-orange-700">{monthlyRevenue.conversionRate || 0}%</p>
-                  </div>
+                  {Object.keys(monthlyRevenue.byApartment || {}).length > 0 && (
+                    <MiniBarChart
+                      data={Object.entries(monthlyRevenue.byApartment).map(([k, v]) => ({
+                        name: k === 'hackerberg' ? 'Hackerberg' : k === 'neubau' ? 'Frühlingstr.' : 'Kombi',
+                        revenue: Number(v.revenue || 0)
+                      }))}
+                      xKey="name"
+                      yKey="revenue"
+                      color="#8B5CF6"
+                      label="Umsatz bezahlt nach Wohnung (€)"
+                      shortLabel={true}
+                    />
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500">Keine Daten vorhanden.</p>
