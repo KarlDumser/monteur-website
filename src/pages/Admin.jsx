@@ -63,7 +63,9 @@ export default function Admin() {
   const [authError, setAuthError] = useState('');
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [actionMessage, setActionMessage] = useState(null);
+  const [isLoginAttempting, setIsLoginAttempting] = useState(false);
   const messageTimeoutRef = useRef(null);
+  const loginAbortRef = useRef(null);
 
   // Pop-Up für Details
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -120,6 +122,9 @@ export default function Admin() {
       if (followUpTimeoutRef.current) {
         clearTimeout(followUpTimeoutRef.current);
       }
+      if (loginAbortRef.current) {
+        loginAbortRef.current.abort();
+      }
     };
   }, []);
 
@@ -128,6 +133,58 @@ export default function Admin() {
     const end = new Date(endDate);
     const diffDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
     return Math.max(1, diffDays || 1);
+  };
+
+  const handleAdminLogin = async (e) => {
+    e.preventDefault();
+    if (isLoginAttempting) return;
+    if (!credentials.username || !credentials.password) {
+      setAuthError('Benutzername und Passwort erforderlich.');
+      return;
+    }
+    setIsLoginAttempting(true);
+    setAuthError('');
+
+    const token = btoa(`${credentials.username}:${credentials.password}`);
+    loginAbortRef.current = new AbortController();
+
+    try {
+      const apiUrl = getApiUrl();
+      console.log('🔐 Login attempt:', { username: credentials.username, apiUrl });
+
+      const timeoutId = setTimeout(() => loginAbortRef.current?.abort(), 15000);
+      const res = await fetch(`${apiUrl}/admin/statistics`, {
+        headers: { Authorization: `Basic ${token}`, 'Content-Type': 'application/json' },
+        signal: loginAbortRef.current.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        console.warn('❌ Login failed - HTTP', res.status, res.statusText);
+        if (res.status === 429) setAuthError('Zu viele Anmeldeversuche. Bitte warten Sie einige Minuten.');
+        else if (res.status === 401) setAuthError('Benutzername oder Passwort falsch.');
+        else if (res.status >= 500) setAuthError('Server-Fehler. Bitte versuchen Sie es später erneut.');
+        else setAuthError(`Anmeldung fehlgeschlagen (Fehler ${res.status}). Bitte versuchen Sie es erneut.`);
+        return;
+      }
+
+      console.log('✅ Login successful');
+      localStorage.setItem('adminAuth', token);
+      sessionStorage.setItem('adminAuth', token);
+      setAuth(token);
+      setAuthError('');
+      window.dispatchEvent(new Event('admin-auth-changed'));
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error('⏱️ Login timeout (15s)');
+        setAuthError('Verbindungszeitüberschreitung. Server antwortet zu langsam. Bitte versuchen Sie es erneut.');
+      } else {
+        console.error('🔴 Login error:', error.message);
+        setAuthError(`Verbindungsfehler: ${error.message}. Bitte versuchen Sie es erneut oder prüfen Sie Ihre Internetverbindung.`);
+      }
+    } finally {
+      setIsLoginAttempting(false);
+    }
   };
 
   const getDateOnlyTimestamp = (value) => {
@@ -815,27 +872,7 @@ export default function Admin() {
           )}
 
           <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const token = btoa(`${credentials.username}:${credentials.password}`);
-              try {
-                const apiUrl = getApiUrl();
-                const res = await fetch(`${apiUrl}/admin/statistics`, {
-                  headers: { Authorization: `Basic ${token}` }
-                });
-                if (!res.ok) {
-                  setAuthError('Benutzername oder Passwort falsch.');
-                  return;
-                }
-                localStorage.setItem('adminAuth', token);
-                sessionStorage.setItem('adminAuth', token);
-                setAuth(token);
-                setAuthError('');
-                window.dispatchEvent(new Event('admin-auth-changed'));
-              } catch (error) {
-                setAuthError('Login fehlgeschlagen.');
-              }
-            }}
+            onSubmit={handleAdminLogin}
             className="space-y-4"
           >
             <div>
@@ -845,6 +882,7 @@ export default function Admin() {
                 value={credentials.username}
                 onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
                 className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                disabled={isLoginAttempting}
                 required
               />
             </div>
@@ -855,14 +893,16 @@ export default function Admin() {
                 value={credentials.password}
                 onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
                 className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
+                disabled={isLoginAttempting}
                 required
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg"
+              disabled={isLoginAttempting}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 rounded-lg transition"
             >
-              Einloggen
+              {isLoginAttempting ? 'Wird angemeldet...' : 'Einloggen'}
             </button>
           </form>
         </div>
