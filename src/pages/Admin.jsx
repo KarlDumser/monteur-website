@@ -173,6 +173,8 @@ export default function Admin() {
     const nights = calculateNights(newStartDate, newEndDate);
     const cleaningBufferDays = Math.max(0, Math.min(30, Number(lastBooking.cleaningBufferDays || 3)));
     const parsedAddress = parseAddressString(customer.address);
+    const pricePerNight = 100;
+    const cleaningFee = 100;
     const subtotal = pricePerNight * nights + cleaningFee;
     const discount = 0;
     const vat = (subtotal - discount) * 0.07;
