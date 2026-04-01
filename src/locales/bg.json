@@ -50,7 +50,7 @@
     "images": "Снимки",
     "importantNote": "Особено важно",
     "featuresAndServices": "Обзавеждане и услуги:",
-    "earlyBookingPriceHint": "*При ранна резервация и {{count}} души.",
+    "earlyBookingPriceHint": "",
     "availabilityHeadline": "Наличности",
     "galleryWithCount": "📷 Галерия ({{count}} снимки)",
     "bookingStartHint": "📅 Стартирайте резервация: В следващата стъпка изберете желания период и проверете наличността на двата апартамента."

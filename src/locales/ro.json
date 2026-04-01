@@ -50,7 +50,7 @@
     "images": "Fotografii",
     "importantNote": "Deosebit de important",
     "featuresAndServices": "Dotari si servicii:",
-    "earlyBookingPriceHint": "*La rezervare timpurie si {{count}} persoane.",
+    "earlyBookingPriceHint": "",
     "availabilityHeadline": "Disponibilitati",
     "galleryWithCount": "📷 Galerie ({{count}} imagini)",
     "bookingStartHint": "📅 Incepeti rezervarea: In pasul urmator alegeti perioada dorita si verificati disponibilitatea ambelor apartamente."

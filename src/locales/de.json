@@ -50,7 +50,7 @@
     "images": "Bilder",
     "importantNote": "Besonders wichtig",
     "featuresAndServices": "Ausstattung & Services:",
-    "earlyBookingPriceHint": "*Bei Frühbucher und {{count}} Personen.",
+    "earlyBookingPriceHint": "",
     "availabilityHeadline": "Verfügbarkeiten",
     "galleryWithCount": "📷 Galerie ({{count}} Bilder)",
     "bookingStartHint": "📅 Buchung starten: Wählen Sie im nächsten Schritt Ihren gewünschten Zeitraum aus und prüfen Sie die Verfügbarkeit beider Wohnungen."

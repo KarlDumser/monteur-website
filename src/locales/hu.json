@@ -50,7 +50,7 @@
     "images": "Képek",
     "importantNote": "Kulonosen fontos",
     "featuresAndServices": "Felszereltseg es szolgaltatasok:",
-    "earlyBookingPriceHint": "*Elore foglalas es {{count}} fo eseten.",
+    "earlyBookingPriceHint": "",
     "availabilityHeadline": "Elerhetoseg",
     "galleryWithCount": "📷 Galeria ({{count}} kep)",
     "bookingStartHint": "📅 Foglalas inditasa: A kovetkezo lepesben valassza ki a kivant idoszakot, es ellenorizze mindket apartman elerhetoseget."

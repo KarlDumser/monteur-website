@@ -50,7 +50,7 @@
     "images": "Zdjęcia",
     "importantNote": "Szczególnie ważne",
     "featuresAndServices": "Wyposażenie i usługi:",
-    "earlyBookingPriceHint": "*Przy wcześniejszej rezerwacji i {{count}} osobach.",
+    "earlyBookingPriceHint": "",
     "availabilityHeadline": "Dostępność",
     "galleryWithCount": "📷 Galeria ({{count}} zdjęć)",
     "bookingStartHint": "📅 Rozpocznij rezerwację: w następnym kroku wybierz termin i sprawdź dostępność obu mieszkań."

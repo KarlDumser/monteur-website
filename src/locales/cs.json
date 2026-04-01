@@ -50,7 +50,7 @@
     "images": "Fotografie",
     "importantNote": "Zvlast dulezite",
     "featuresAndServices": "Vybaveni a sluzby:",
-    "earlyBookingPriceHint": "*Pri vcasne rezervaci a {{count}} osobach.",
+    "earlyBookingPriceHint": "",
     "availabilityHeadline": "Dostupnost",
     "galleryWithCount": "📷 Galerie ({{count}} obrazku)",
     "bookingStartHint": "📅 Spustit rezervaci: V dalsim kroku vyberte pozadovany termin a zkontrolujte dostupnost obou bytu."

@@ -344,9 +344,11 @@ export default function Home() {
 
                 <div className="bg-blue-50 rounded-lg p-4 mb-6">
                   <p className="text-2xl font-bold text-blue-900">{property.preis}</p>
-                  <p className="mt-1 text-xs text-blue-700">
-                    {t('home.earlyBookingPriceHint', { count: property.id === 1 ? '5' : '6' })}
-                  </p>
+                  {t('home.earlyBookingPriceHint', { count: property.id === 1 ? '5' : '6' }) && (
+                    <p className="mt-1 text-xs text-blue-700">
+                      {t('home.earlyBookingPriceHint', { count: property.id === 1 ? '5' : '6' })}
+                    </p>
+                  )}
                 </div>
 
                 {/* Kalender */}
