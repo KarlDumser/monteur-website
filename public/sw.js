@@ -1,7 +1,5 @@
-const CACHE_NAME = 'monteurwohnung-v2'
+const CACHE_NAME = 'monteurwohnung-v3'
 const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
   '/site.webmanifest',
   '/admin-app.webmanifest',
   '/admin-install.html',
@@ -32,7 +30,35 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => cachedResponse || fetch(event.request)),
-  )
+  // Always prefer fresh HTML/navigation responses to avoid stale index.html pointing to removed hashed bundles.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/index.html')),
+    )
+    return
+  }
+
+  const requestUrl = new URL(event.request.url)
+  const isStaticAsset = requestUrl.pathname.startsWith('/assets/')
+
+  if (isStaticAsset) {
+    // For hashed build assets we can serve cached quickly while updating in the background.
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        const networkFetch = fetch(event.request)
+          .then((response) => {
+            if (response && response.ok) {
+              const responseClone = response.clone()
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone))
+            }
+            return response
+          })
+
+        return cachedResponse || networkFetch
+      }),
+    )
+    return
+  }
+
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)))
 })

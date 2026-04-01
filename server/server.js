@@ -54,6 +54,11 @@ console.log(`📁 Frontend path: ${distPath}`);
 // Static files
 app.use(express.static(distPath));
 
+// Missing built assets must return 404, not index.html, to avoid MIME errors for module scripts
+app.get('/assets/*', (req, res) => {
+  res.status(404).type('text/plain').send('Asset not found');
+});
+
 // SPA Fallback
 app.use((req, res) => {
   if (!req.path.startsWith('/api')) {
