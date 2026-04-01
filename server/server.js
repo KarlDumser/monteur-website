@@ -54,13 +54,19 @@ console.log(`📁 Frontend path: ${distPath}`);
 // Static files
 app.use(express.static(distPath));
 
-// Missing built assets must return 404, not index.html, to avoid MIME errors for module scripts
-app.get('/assets/*', (req, res) => {
-  res.status(404).type('text/plain').send('Asset not found');
-});
-
 // SPA Fallback
 app.use((req, res) => {
+  if (req.path.startsWith('/api')) {
+    res.status(404).json({ error: 'API endpoint not found' });
+    return;
+  }
+
+  // Missing built assets must return 404, not index.html, to avoid MIME errors for module scripts
+  if (req.path.startsWith('/assets/')) {
+    res.status(404).type('text/plain').send('Asset not found');
+    return;
+  }
+
   if (!req.path.startsWith('/api')) {
     const indexPath = path.join(distPath, 'index.html');
     res.sendFile(indexPath, (err) => {
@@ -69,8 +75,6 @@ app.use((req, res) => {
         res.status(404).json({ error: 'Frontend not found. Run "npm run build" first.' });
       }
     });
-  } else {
-    res.status(404).json({ error: 'API endpoint not found' });
   }
 });
 
