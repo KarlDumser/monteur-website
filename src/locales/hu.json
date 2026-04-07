@@ -312,7 +312,7 @@
       "peopleLabel": "👥 Szemelyek szama",
       "peopleHint": "Hackerberg legfeljebb {{maxHackerberg}} szemely, Fruehlingstrasse legfeljebb {{maxFruehling}} szemely, kombi csomag 7-{{maxTotal}} szemelyre.",
       "checkAvailabilityButton": "Elerhetoseg ellenorzese ->",
-      "afterSubmitHint": "ℹ️ Elkuldes utan lathatja az elerheto apartmanokat. Ezutan a rendszer atiranyitja a fizeteshez (bankkartya vagy PayPal)."
+      "afterSubmitHint": "ℹ️ Elkuldes utan lathatja az elerheto apartmanokat. Ezutan e-mailben kapja meg a szamlat."
     },
     "select": {
       "capacityNoteTitle": "Kapacitasi megjegyzes",

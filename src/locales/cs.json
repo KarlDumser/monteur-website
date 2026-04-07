@@ -312,7 +312,7 @@
       "peopleLabel": "👥 Pocet osob",
       "peopleHint": "Hackerberg az pro {{maxHackerberg}} osob, Fruehlingstrasse az pro {{maxFruehling}} osob, kombi balicek pro 7-{{maxTotal}} osob.",
       "checkAvailabilityButton": "Overit dostupnost ->",
-      "afterSubmitHint": "ℹ️ Po odeslani uvidite dostupne byty. Potom budete presmerovani k platbe (kreditni karta nebo PayPal)."
+      "afterSubmitHint": "ℹ️ Po odeslani uvidite dostupne byty. Potom obdrzite fakturu e-mailem."
     },
     "select": {
       "capacityNoteTitle": "Poznamka ke kapacite",

@@ -312,7 +312,7 @@
       "peopleLabel": "👥 Liczba osob",
       "peopleHint": "Hackerberg do {{maxHackerberg}} osob, Fruehlingstrasse do {{maxFruehling}} osob, pakiet laczony dla 7-{{maxTotal}} osob.",
       "checkAvailabilityButton": "Sprawdz dostepnosc ->",
-      "afterSubmitHint": "ℹ️ Po wyslaniu zobaczysz dostepne mieszkania. Nastepnie nastapi przekierowanie do platnosci (karta kredytowa lub PayPal)."
+      "afterSubmitHint": "ℹ️ Po wyslaniu zobaczysz dostepne mieszkania. Nastepnie otrzymasz fakture e-mailem."
     },
     "select": {
       "capacityNoteTitle": "Informacja o pojemnosci",

@@ -312,7 +312,7 @@
       "peopleLabel": "👥 Numarul de persoane",
       "peopleHint": "Hackerberg pana la {{maxHackerberg}} persoane, Fruehlingstrasse pana la {{maxFruehling}} persoane, pachet combo pentru 7-{{maxTotal}} persoane.",
       "checkAvailabilityButton": "Verifica disponibilitatea ->",
-      "afterSubmitHint": "ℹ️ Dupa trimitere veti vedea apartamentele disponibile. Apoi urmeaza redirectionarea catre plata (card de credit sau PayPal)."
+      "afterSubmitHint": "ℹ️ Dupa trimitere veti vedea apartamentele disponibile. Apoi veti primi factura prin e-mail."
     },
     "select": {
       "capacityNoteTitle": "Informatii despre capacitate",
