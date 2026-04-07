@@ -157,22 +157,22 @@
     "invoiceByEmail": "Nach Buchung erhalten Sie Ihre Rechnung per E-Mail."
   },
   "calendar": {
-    "available": "Verfuegbar",
+    "available": "Verfügbar",
     "booked": "Gebucht"
   },
   "commute": {
     "title": "Entfernung zur Baustelle",
     "intro": "Geben Sie die Adresse Ihrer Baustelle ein. Wir berechnen automatisch Fahrzeit und Entfernung zu beiden Wohnungen.",
-    "placeholder": "z.B. Landsberger Strasse 312, 80687 Muenchen",
+    "placeholder": "z.B. Landsberger Straße 312, 80687 München",
     "submit": "Route berechnen",
     "calculating": "Berechne...",
     "siteLabel": "Baustelle",
-    "note": "Hinweis: Fahrzeiten basieren auf aktueller Routenschaetzung (Auto) und koennen je nach Verkehr variieren.",
+    "note": "Hinweis: Fahrzeiten basieren auf aktueller Routenschätzung (Auto) und können je nach Verkehr variieren.",
     "distanceDuration": "{{distance}} km - ca. {{duration}} Min.",
     "apartments": {
       "fruehling": {
-        "name": "Fruehlingstrasse - Neubau",
-        "address": "Fruehlingstrasse 8, 82152 Krailling, Deutschland"
+        "name": "Frühlingstraße - Neubau",
+        "address": "Frühlingstraße 8, 82152 Krailling, Deutschland"
       },
       "hackerberg": {
         "name": "Hackerberg - Penthouse",
@@ -185,7 +185,7 @@
       "routeFailed": "Routenberechnung fehlgeschlagen",
       "noRoute": "Keine Route gefunden",
       "emptyAddress": "Bitte geben Sie eine Baustellenadresse ein.",
-      "generic": "Die Berechnung konnte nicht durchgefuehrt werden."
+      "generic": "Die Berechnung konnte nicht durchgeführt werden."
     }
   },
   "properties": {
@@ -196,41 +196,41 @@
         "preis": "ab 18EUR pro Person/Nacht!",
         "zimmer": "2,5 Zimmer",
         "flaeche": "65 m²",
-        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "details": "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
         "features": [
           "Waschmaschine mit Trockner im Keller",
           "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
           "WLAN 150 Mbit/s frei",
           "Sat-TV",
-          "Parkplaetze direkt vor dem Haus",
+          "Parkplätze direkt vor dem Haus",
           "Ruhige Wohnlage",
-          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+          "Nähe: Biergarten, Naturbadesee, Geschäfte & Banken"
         ]
       },
       "neubau": {
-        "titel": "Wohnung Krailling, Fruehlingstrasse - Neubau",
+        "titel": "Wohnung Krailling, Frühlingstraße - Neubau",
         "beschreibung": "2-Zimmerwohnung mit eigenem Zugang, Garten mit Grillplatz",
         "preis": "ab 16EUR pro Person/Nacht!",
         "zimmer": "2 Zimmer",
         "flaeche": "58 m²",
-        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "details": "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
         "features": [
           "Waschmaschine mit Trockner",
           "2 Einzelbetten in jedem Zimmer (je eines Queen size)",
           "WLAN 150 Mbit/s frei",
           "Sat-TV",
-          "Parkplaetze fuer PKW & LKW mit Haenger vor dem Haus",
-          "Gartenbenutzung mit Grillmoeglichkeit",
+          "Parkplätze für PKW & LKW mit Hänger vor dem Haus",
+          "Gartenbenutzung mit Grillmöglichkeit",
           "Ruhige Wohnlage",
-          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+          "Nähe: Biergarten, Naturbadesee, Geschäfte & Banken"
         ]
       }
     },
     "booking": {
       "neubau": {
-        "titel": "Fruehlingstrasse - Neubau",
-        "beschreibung": "2-Zimmerwohnung mit vollausgestatteter Kueche, Bad, Garten mit Grillplatz. Ideal fuer handwerkliche Fachkraefte und Monteure.",
-        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "titel": "Frühlingstraße - Neubau",
+        "beschreibung": "2-Zimmerwohnung mit vollausgestatteter Küche, Bad, Garten mit Grillplatz. Ideal für handwerkliche Fachkräfte und Monteure.",
+        "details": "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
         "zimmer": "2 Zimmer",
         "flaeche": "58 m²",
         "internet": "WLAN 150 Mbit/s",
@@ -240,17 +240,17 @@
           "3 Einzelbetten in jedem Zimmer (je eines Queen size)",
           "WLAN 150 Mbit/s frei",
           "Sat-TV",
-          "Parkplaetze fuer PKW & LKW mit Haenger vor dem Haus",
-          "Gartenbenutzung mit Grillmoeglichkeit",
+          "Parkplätze für PKW & LKW mit Hänger vor dem Haus",
+          "Gartenbenutzung mit Grillmöglichkeit",
           "Ruhige Wohnlage",
-          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+          "Nähe: Biergarten, Naturbadesee, Geschäfte & Banken"
         ],
         "preis": "110 EUR/Nacht + 100 EUR Endreinigung"
       },
       "hackerberg": {
         "titel": "Hackerberg - Penthouse",
-        "beschreibung": "2-Zimmer-Penthouse mit grosszuegigem 35m² Balkon, Kueche, Bad und Panoramablick. 2 Einzelbetten in jedem Zimmer.",
-        "details": "Eigenem Zugang, voll ausgestattete Kueche und Bad (mit Wanne und Dusche)",
+        "beschreibung": "2-Zimmer-Penthouse mit großzügigem 35m² Balkon, Küche, Bad und Panoramablick. 2 Einzelbetten in jedem Zimmer.",
+        "details": "Eigenem Zugang, voll ausgestattete Küche und Bad (mit Wanne und Dusche)",
         "zimmer": "2,5 Zimmer",
         "flaeche": "65 m²",
         "internet": "WLAN 150 Mbit/s",
@@ -260,20 +260,20 @@
           "2 Einzelbetten im 1. Zimmer, 2 Einzelbetten im 2. Zimmer (eines davon Queen size)",
           "WLAN 150 Mbit/s frei",
           "Sat-TV",
-          "Parkplaetze direkt vor dem Haus",
+          "Parkplätze direkt vor dem Haus",
           "Ruhige Wohnlage",
-          "Nahe: Biergarten, Naturbadesee, Geschaefte & Banken"
+          "Nähe: Biergarten, Naturbadesee, Geschäfte & Banken"
         ],
         "preis": "110 EUR/Nacht + 100 EUR Endreinigung"
       },
       "kombi": {
-        "titel": "Kombi-Paket: Hackerberg + Fruehlingstrasse",
-        "beschreibung": "Beide Wohnungen zusammen. Ideal fuer groessere Teams mit 7-11 Personen.",
+        "titel": "Kombi-Paket: Hackerberg + Frühlingstraße",
+        "beschreibung": "Beide Wohnungen zusammen. Ideal für größere Teams mit 7-11 Personen.",
         "internet": "WLAN 100-150 Mbit/s",
-        "extras": "Zwei Wohnungen, zwei Kuechen, zwei Baeder",
+        "extras": "Zwei Wohnungen, zwei Küchen, zwei Bäder",
         "preis": "Kombi-Paket",
         "galleries": {
-          "fruehling": "Fruehlingstrasse",
+          "fruehling": "Frühlingstraße",
           "hackerberg": "Hackerberg"
         }
       }
@@ -282,82 +282,82 @@
   "bookingPage": {
     "steps": {
       "bookApartment": "Wohnung buchen",
-      "chooseDates": "Schritt 1: Waehlen Sie Ihre Anreisedaten",
-      "availableApartments": "Verfuegbare Wohnungen",
-      "chooseApartment": "Schritt 2: Waehlen Sie eine Wohnung",
+      "chooseDates": "Schritt 1: Wählen Sie Ihre Anreisedaten",
+      "availableApartments": "Verfügbare Wohnungen",
+      "chooseApartment": "Schritt 2: Wählen Sie eine Wohnung",
       "yourData": "Ihre Daten",
       "companyAndContact": "Schritt 3: Firmendaten und Kontaktinformationen"
     },
     "common": {
-      "nights": "Naechte"
+      "nights": "Nächte"
     },
     "dateSelect": {
-      "periodLabel": "📅 Zeitraum waehlen den Sie reservieren moechten",
+      "periodLabel": "📅 Zeitraum wählen den Sie reservieren möchten",
       "from": "Von (Anreise)",
       "to": "Bis (Abreise)",
-      "selectedLabel": "Gewaehlt:",
-      "earlyDiscountTitle": "🎉 Fruehbucherabatt: -10%",
+      "selectedLabel": "Gewählt:",
+      "earlyDiscountTitle": "🎉 Frühbucherabatt: -10%",
       "earlyDiscountText": "Sie buchen mindestens 2 Monate im Voraus!",
       "peopleLabel": "👥 Anzahl der Personen",
-      "peopleHint": "Hackerberg bis {{maxHackerberg}} Personen, Fruehlingstrasse bis {{maxFruehling}} Personen, Kombi-Paket fuer 7-{{maxTotal}} Personen.",
-      "checkAvailabilityButton": "Verfuegbarkeit pruefen ->",
-      "afterSubmitHint": "ℹ️ Nach dem Absenden sehen Sie die verfuegbaren Wohnungen. Danach erfolgt die Weiterleitung zur Bezahlung (Kreditkarte oder PayPal)."
+      "peopleHint": "Hackerberg bis {{maxHackerberg}} Personen, Frühlingstraße bis {{maxFruehling}} Personen, Kombi-Paket für 7-{{maxTotal}} Personen.",
+      "checkAvailabilityButton": "Verfügbarkeit prüfen ->",
+      "afterSubmitHint": "ℹ️ Nach dem Absenden sehen Sie die verfügbaren Wohnungen. Danach erhalten Sie die Rechnung per E-Mail."
     },
     "select": {
-      "capacityNoteTitle": "Hinweis zur Kapazitaet",
-      "capacityNoteText": "Fuer {{count}} Personen waere das Kombi-Paket erforderlich, ist im gewaehlten Zeitraum aber nicht verfuegbar. Einzelwohnungen sind verfuegbar, haben jedoch jeweils eine geringere Kapazitaet.",
+      "capacityNoteTitle": "Hinweis zur Kapazität",
+      "capacityNoteText": "Für {{count}} Personen wäre das Kombi-Paket erforderlich, ist im gewählten Zeitraum aber nicht verfügbar. Einzelwohnungen sind verfügbar, haben jedoch jeweils eine geringere Kapazität.",
       "billingInfoTitle": "💳 So funktioniert die Rechnungsabwicklung bei Langzeitbuchungen:",
       "billingInfoPoint1Title": "✓ Rechnung alle 4 Wochen (28 Tage):",
-      "billingInfoPoint1Text": "Sie erhalten immer eine Rechnung fuer die naechsten 28 Tage im Voraus bzw. bis zum Ende Ihres gewaehlten Buchungszeitraumes.",
+      "billingInfoPoint1Text": "Sie erhalten immer eine Rechnung für die nächsten 28 Tage im Voraus bzw. bis zum Ende Ihres gewählten Buchungszeitraumes.",
       "billingInfoPoint2Title": "✓ Automatische Folgezahlungen:",
-      "billingInfoPoint2Text": "Etwa eine Woche vor Ablauf des 4-Wochen-Zyklus erhalten Sie automatisch die naechste Rechnung - ohne Aufforderung.",
+      "billingInfoPoint2Text": "Etwa eine Woche vor Ablauf des 4-Wochen-Zyklus erhalten Sie automatisch die nächste Rechnung - ohne Aufforderung.",
       "billingInfoPoint3Title": "✓ Transparent:",
-      "billingInfoPoint3Text": "Sie sehen immer, wie lange noch bezahlt ist und wann die naechste Rechnung kommt.",
-      "noAvailabilityTitle": "Keine Verfuegbarkeit",
-      "noAvailabilityText": "Fuer den gewaehlten Zeitraum ist aktuell keine passende Wohnung verfuegbar.",
+      "billingInfoPoint3Text": "Sie sehen immer, wie lange noch bezahlt ist und wann die nächste Rechnung kommt.",
+      "noAvailabilityTitle": "Keine Verfügbarkeit",
+      "noAvailabilityText": "Für den gewählten Zeitraum ist aktuell keine passende Wohnung verfügbar.",
       "roomsLabel": "Zimmer:",
-      "areaLabel": "Flaeche:",
+      "areaLabel": "Fläche:",
       "soldOut": "Ausgebucht",
-      "nextFreeFrom": "Naechster freier Zeitraum ab:",
+      "nextFreeFrom": "Nächster freier Zeitraum ab:",
       "unknown": "unbekannt",
       "internetLabel": "Internet:",
       "equipmentLabel": "Ausstattung:",
       "equipmentServicesTitle": "Ausstattung & Services:",
       "galleryTitle": "📸 Bildergalerie",
       "pricePerNight": "Preis pro Nacht",
-      "forPeople": "fuer {{people}} Person",
-      "forPeople_plural": "fuer {{people}} Personen",
+      "forPeople": "für {{people}} Person",
+      "forPeople_plural": "für {{people}} Personen",
       "monthlyCleaning": "monatliche Reinigung",
       "finalCleaning": "Endreinigung",
       "invoiceSplitTitle": "Rechnung wird aufgeteilt",
-      "invoiceSplitIntro": "Da Sie laenger als 4 Wochen buchen, berechnen wir in zwei Schritten:",
+      "invoiceSplitIntro": "Da Sie länger als 4 Wochen buchen, berechnen wir in zwei Schritten:",
       "firstInvoiceNow": "Erste Rechnung (jetzt):",
       "inclCleaning": "inkl. Reinigung",
       "followUpInvoices": "Folgerechnungen:",
-      "followUpInvoicesText": "Fuer die weiteren {{remainingNights}} Naechte erhalten Sie rechtzeitig eine Rechnung",
+      "followUpInvoicesText": "Für die weiteren {{remainingNights}} Nächte erhalten Sie rechtzeitig eine Rechnung",
       "bookThisApartment": "✓ Diese Wohnung buchen",
       "askForApartment": "✓ Diese Wohnung anfragen",
-      "backToDateSelection": "<- Zurueck zur Datumsauswahl"
+      "backToDateSelection": "<- Zurück zur Datumsauswahl"
     },
     "form": {
-      "selectionSummaryTitle": "Auswahluebersicht",
+      "selectionSummaryTitle": "Auswahlübersicht",
       "apartmentLabel": "Wohnung:",
       "periodLabel": "Zeitraum:",
-      "nightsLabel": "Naechte:",
+      "nightsLabel": "Nächte:",
       "peopleLabel": "Personen:",
-      "companySectionTitle": "🏢 Firmendaten (fuer Rechnung)",
-      "b2bOnlyNotice": "Direktbuchungen ueber diese Website sind nur fuer Unternehmen (B2B) vorgesehen. Privatpersonen koennen nicht direkt online buchen.",
+      "companySectionTitle": "🏢 Firmendaten (für Rechnung)",
+      "b2bOnlyNotice": "Direktbuchungen über diese Website sind nur für Unternehmen (B2B) vorgesehen. Privatpersonen können nicht direkt online buchen.",
       "country": "Land",
       "companyName": "Firmenname",
-      "companyPlaceholder": "z.B. Mueller Haustechnik GmbH",
+      "companyPlaceholder": "z.B. Müller Haustechnik GmbH",
       "vatIdOptional": "USt-IdNr. (optional)",
       "vatIdPlaceholder": "z.B. PL1234567890",
-      "streetAndNumber": "Strasse und Hausnummer",
-      "streetPlaceholder": "z.B. Ottostrasse 8",
+      "streetAndNumber": "Straße und Hausnummer",
+      "streetPlaceholder": "z.B. Ottostraße 8",
       "addressLine1": "Adresszeile 1",
       "addressLine1Placeholder": "z.B. Main Street 12",
       "addressLine2Optional": "Adresszeile 2 (optional)",
-      "addressLine2Placeholder": "z.B. Gebaeude, Etage, Einheit",
+      "addressLine2Placeholder": "z.B. Gebäude, Etage, Einheit",
       "zip": "Postleitzahl",
       "zipPlaceholder": "z.B. 83521",
       "postalCode": "Postal Code",
@@ -380,36 +380,36 @@
       "landlinePlaceholder": "z.B. 089 8571174",
       "mobile": "Mobil",
       "acceptPrivacyPrefix": "Ich akzeptiere die ",
-      "privacyPolicyLink": "Datenschutzerklaerung",
-      "acceptPrivacySuffix": " und erklaere mich einverstanden, dass meine Daten zur Buchungsabwicklung verarbeitet werden.",
-      "acceptPrivacySuffixInquiry": " und erklaere mich einverstanden, dass meine Daten zur Bearbeitung meiner Anfrage verarbeitet werden.",
+      "privacyPolicyLink": "Datenschutzerklärung",
+      "acceptPrivacySuffix": " und erkläre mich einverstanden, dass meine Daten zur Buchungsabwicklung verarbeitet werden.",
+      "acceptPrivacySuffixInquiry": " und erkläre mich einverstanden, dass meine Daten zur Bearbeitung meiner Anfrage verarbeitet werden.",
       "acceptTermsPrefix": "Ich habe die ",
         "termsAndWithdrawalLink": "AGB",
       "acceptTermsSuffix": " zur Kenntnis genommen und akzeptiert.",
-      "backToApartmentSelection": "<- Zurueck zur Wohnungsauswahl",
+      "backToApartmentSelection": "<- Zurück zur Wohnungsauswahl",
       "continueToBindingBooking": "Weiter zur verbindlichen Buchung ->",
       "continueToInquiry": "Weiter zur unverbindlichen Anfrage ->"
     },
     "alerts": {
-      "invalidPeopleRange": "Bitte geben Sie eine gueltige Personenzahl zwischen 1 und {{max}} ein.",
-      "minNightsError": "Mindestbuchungsdauer 11 Tage (10 Naechte).",
+      "invalidPeopleRange": "Bitte geben Sie eine gültige Personenzahl zwischen 1 und {{max}} ein.",
+      "minNightsError": "Mindestbuchungsdauer 11 Tage (10 Nächte).",
       "capacityWarningTitle": "⚠️ WICHTIGER HINWEIS",
       "capacityWarningPeople": "Sie haben {{count}} Personen angegeben.",
-      "capacityWarningApartment": "Die Wohnung \"{{name}}\" ist allerdings nur fuer maximal {{max}} Personen ausgelegt.",
-      "capacityWarningContinue": "Moechten Sie trotzdem mit dieser Buchung fortfahren?",
-      "acceptPrivacy": "Bitte akzeptieren Sie die Datenschutzerklaerung.",
+      "capacityWarningApartment": "Die Wohnung \"{{name}}\" ist allerdings nur für maximal {{max}} Personen ausgelegt.",
+      "capacityWarningContinue": "Möchten Sie trotzdem mit dieser Buchung fortfahren?",
+      "acceptPrivacy": "Bitte akzeptieren Sie die Datenschutzerklärung.",
       "acceptTerms": "Bitte akzeptieren Sie die AGB.",
-      "invalidEmail": "Bitte geben Sie eine gueltige E-Mail-Adresse ein.",
-      "invalidCompany": "Bitte geben Sie einen gueltigen Firmennamen ein (mindestens 2 Zeichen).",
-      "invalidStreet": "Bitte geben Sie eine gueltige Strasse ein (mindestens 3 Zeichen).",
-      "invalidZip": "Bitte geben Sie eine gueltige PLZ ein (mindestens 4 Zeichen).",
-      "invalidPostalCodeByCountry": "Bitte geben Sie eine gueltige Postleitzahl fuer {{country}} ein.",
-      "invalidCity": "Bitte geben Sie einen gueltigen Ort ein (mindestens 2 Zeichen).",
-      "invalidName": "Bitte geben Sie einen gueltigen Namen ein (mindestens 2 Zeichen).",
-      "invalidMobile": "Bitte geben Sie eine gueltige Mobilnummer ein (mindestens 5 Zeichen).",
-      "invalidEmailTitle": "Bitte geben Sie eine gueltige E-Mail-Adresse ein (z.B. name@firma.de)",
-      "invalidPhoneTitle": "Bitte geben Sie eine gueltige Telefonnummer ein (z.B. 089 8571174)",
-      "invalidMobileTitle": "Bitte geben Sie eine gueltige Mobilnummer ein (z.B. 0172 1234567)"
+      "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+      "invalidCompany": "Bitte geben Sie einen gültigen Firmennamen ein (mindestens 2 Zeichen).",
+      "invalidStreet": "Bitte geben Sie eine gültige Straße ein (mindestens 3 Zeichen).",
+      "invalidZip": "Bitte geben Sie eine gültige PLZ ein (mindestens 4 Zeichen).",
+      "invalidPostalCodeByCountry": "Bitte geben Sie eine gültige Postleitzahl für {{country}} ein.",
+      "invalidCity": "Bitte geben Sie einen gültigen Ort ein (mindestens 2 Zeichen).",
+      "invalidName": "Bitte geben Sie einen gültigen Namen ein (mindestens 2 Zeichen).",
+      "invalidMobile": "Bitte geben Sie eine gültige Mobilnummer ein (mindestens 5 Zeichen).",
+      "invalidEmailTitle": "Bitte geben Sie eine gültige E-Mail-Adresse ein (z.B. name@firma.de)",
+      "invalidPhoneTitle": "Bitte geben Sie eine gültige Telefonnummer ein (z.B. 089 8571174)",
+      "invalidMobileTitle": "Bitte geben Sie eine gültige Mobilnummer ein (z.B. 0172 1234567)"
     }
   },
   "impressumPage": {
