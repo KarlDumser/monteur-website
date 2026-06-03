@@ -162,8 +162,13 @@ export default function Admin() {
 
   const emailInquiries = inquiries.filter((inquiry) => inquiry.inquirySource === 'email');
   const websiteInquiries = inquiries.filter((inquiry) => inquiry.inquirySource !== 'email');
+  const awaitingAdminConfirmationInquiries = inquiries.filter(
+    (inquiry) => inquiry.inquirySource === 'email' && inquiry.offerStatus === 'awaiting-admin-confirmation'
+  );
   const displayedInquiries = inquirySourceFilter === 'email'
     ? emailInquiries
+    : inquirySourceFilter === 'awaiting-admin-confirmation'
+      ? awaitingAdminConfirmationInquiries
     : inquirySourceFilter === 'website'
       ? websiteInquiries
       : inquiries;
@@ -2176,6 +2181,27 @@ export default function Admin() {
 
         {activeTab === 'inquiries' && (
           <div className="bg-white rounded-lg shadow overflow-x-auto">
+            {awaitingAdminConfirmationInquiries.length > 0 && (
+              <div className="mx-6 mt-5 mb-0 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-900">
+                      Mail-Angebote angenommen - warten auf Freigabe
+                    </p>
+                    <p className="text-sm text-emerald-800">
+                      {awaitingAdminConfirmationInquiries.length} Kunde{awaitingAdminConfirmationInquiries.length === 1 ? '' : 'n'} haben ein Angebot angenommen und warten jetzt auf Ihre finale Bestaetigung.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setInquirySourceFilter('awaiting-admin-confirmation')}
+                    className="bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold px-4 py-2 rounded-lg"
+                  >
+                    Jetzt anzeigen
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="px-6 pt-5 pb-3 flex flex-wrap items-center gap-2 border-b border-gray-100">
               <button
                 type="button"
@@ -2190,6 +2216,13 @@ export default function Admin() {
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold ${inquirySourceFilter === 'email' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
               >
                 Anfrage aus Mail ({emailInquiries.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setInquirySourceFilter('awaiting-admin-confirmation')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${inquirySourceFilter === 'awaiting-admin-confirmation' ? 'bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-800'}`}
+              >
+                Warten auf Freigabe ({awaitingAdminConfirmationInquiries.length})
               </button>
               <button
                 type="button"
