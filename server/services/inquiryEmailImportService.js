@@ -65,6 +65,19 @@ function inferWohnung(text) {
   return { wohnung: DEFAULT_WOHNUNG, wohnungLabel: DEFAULT_WOHNUNG_LABEL };
 }
 
+const ALLOWED_SENDER_PATTERNS = [
+  'dmz',
+  'mein-monteurzimmer',
+  'monteurzimmer',
+  'monteurunterkunft',
+  'monteurzimmerguru'
+];
+
+function isSenderAllowed(fromAddress) {
+  const addr = String(fromAddress || '').toLowerCase();
+  return ALLOWED_SENDER_PATTERNS.some((pattern) => addr.includes(pattern));
+}
+
 function detectProvider(fromAddress, subject) {
   const source = `${String(fromAddress || '').toLowerCase()} ${String(subject || '').toLowerCase()}`;
   if (source.includes('booking.com')) return 'booking.com';
@@ -219,6 +232,16 @@ async function fetchParsedMessage(client, uid) {
 async function importMessageFromParsedMail(client, parsedMessage, { markSeen = true } = {}) {
   const { uid, text, fromAddress, subject, messageId } = parsedMessage;
 
+  if (!isSenderAllowed(fromAddress)) {
+    return {
+      status: 'skipped',
+      reason: 'sender-not-in-allowlist',
+      uid,
+      messageId,
+      fromAddress
+    };
+  }
+
   if (messageId) {
     const duplicate = await Booking.findOne({ 'emailImport.messageId': messageId }).select('_id');
     if (duplicate) {
@@ -309,6 +332,7 @@ export async function listInquiryEmailCandidates({ seen = true, limit = 25 } = {
             subject: parsedMessage.subject,
             date: parsedMessage.date,
             seen: parsedMessage.seen,
+            senderAllowed: isSenderAllowed(parsedMessage.fromAddress),
             alreadyImported: Boolean(existingInquiryId),
             existingInquiryId,
             preview: parsedMessage.text.replace(/\s+/g, ' ').trim().slice(0, 240)

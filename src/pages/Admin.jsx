@@ -180,7 +180,7 @@ export default function Admin() {
     (inquiry) => inquiry.inquirySource === 'email' && inquiry.offerStatus === 'awaiting-admin-confirmation'
   );
   const selectableManualEmailUids = manualEmailCandidates
-    .filter((email) => email.uid && !email.alreadyImported)
+    .filter((email) => email.uid && !email.alreadyImported && email.senderAllowed !== false)
     .map((email) => email.uid);
   const allSelectableManualEmailsSelected = selectableManualEmailUids.length > 0
     && selectableManualEmailUids.every((uid) => manualEmailSelection.includes(uid));
@@ -2475,13 +2475,13 @@ export default function Admin() {
                   {manualEmailCandidates.map((email) => (
                     <label
                       key={email.uid}
-                      className={`flex gap-3 rounded-xl border px-4 py-3 ${email.alreadyImported ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                      className={`flex gap-3 rounded-xl border px-4 py-3 ${email.alreadyImported ? 'border-emerald-200 bg-emerald-50' : email.senderAllowed === false ? 'border-red-200 bg-red-50 opacity-60' : 'border-slate-200 bg-white hover:border-slate-300'}`}
                     >
                       <input
                         type="checkbox"
                         className="mt-1 h-4 w-4"
                         checked={manualEmailSelection.includes(email.uid)}
-                        disabled={email.alreadyImported || !email.uid}
+                        disabled={email.alreadyImported || !email.uid || email.senderAllowed === false}
                         onChange={() => toggleManualEmailSelection(email.uid)}
                       />
                       <div className="min-w-0 flex-1">
@@ -2508,6 +2508,10 @@ export default function Admin() {
                           {email.alreadyImported ? (
                             <span className="inline-block rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold px-2 py-0.5">
                               Bereits importiert
+                            </span>
+                          ) : email.senderAllowed === false ? (
+                            <span className="inline-block rounded-full bg-red-100 text-red-700 text-[11px] font-semibold px-2 py-0.5">
+                              Absender nicht erlaubt
                             </span>
                           ) : (
                             <span className="inline-block rounded-full bg-amber-100 text-amber-800 text-[11px] font-semibold px-2 py-0.5">
