@@ -2439,6 +2439,16 @@ export default function Admin() {
                   >
                     {deleteEmailImportsLoading ? 'Wird gelöscht...' : 'Email-Anfragen löschen'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={loadManualEmailDiagnostics}
+                    disabled={manualEmailDiagnosticsLoading}
+                    className="bg-white border border-slate-300 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400 text-slate-800 text-sm font-semibold px-4 py-2 rounded-lg"
+                  >
+                    {manualEmailDiagnosticsLoading ? 'Diagnose laeuft...' : 'Mail-Diagnose'}
+                  </button>
+                  <button
+                    type="button"
                     onClick={loadManualEmailCandidates}
                     disabled={manualEmailLoading}
                     className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-sm font-semibold px-4 py-2 rounded-lg"
