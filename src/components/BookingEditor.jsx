@@ -81,6 +81,27 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
       return;
     }
 
+    if (name === 'wohnung' && mode === 'offer') {
+      setFormData((prev) => {
+        const existingOptions = normalizeOfferOptions(prev.offerApartmentOptions, prev.wohnung);
+        let nextOptions = [...existingOptions];
+
+        if (value === 'kombi') {
+          // Kombi soll als eigenes Paket angeboten werden, plus beide Wohnungen separat.
+          nextOptions = normalizeOfferOptions(['hackerberg', 'neubau', 'kombi'], value);
+        } else if (!existingOptions.includes(value)) {
+          nextOptions = normalizeOfferOptions([...existingOptions, value], value);
+        }
+
+        return {
+          ...prev,
+          wohnung: value,
+          offerApartmentOptions: nextOptions
+        };
+      });
+      return;
+    }
+
     if (['people', 'pricePerNight', 'cleaningFee', 'nights', 'cleaningBufferDays'].includes(name)) {
       if (value === '') {
         setFormData(prev => ({
@@ -133,6 +154,29 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
       const next = existing.includes(option)
         ? existing.filter((entry) => entry !== option)
         : [...existing, option];
+
+      const normalizedNext = normalizeOfferOptions(next, prev.wohnung);
+      const fallbackWohnung = normalizedNext[0] || prev.wohnung;
+
+      return {
+        ...prev,
+        offerApartmentOptions: normalizedNext,
+        wohnung: normalizedNext.includes(prev.wohnung) ? prev.wohnung : fallbackWohnung
+      };
+    });
+  };
+
+  const toggleBothSeparateOptions = () => {
+    setFormData((prev) => {
+      const existing = normalizeOfferOptions(prev.offerApartmentOptions, prev.wohnung);
+      const hasHackerberg = existing.includes('hackerberg');
+      const hasNeubau = existing.includes('neubau');
+      const allSeparateSelected = hasHackerberg && hasNeubau;
+
+      const withoutSeparate = existing.filter((entry) => entry !== 'hackerberg' && entry !== 'neubau');
+      const next = allSeparateSelected
+        ? withoutSeparate
+        : [...withoutSeparate, 'hackerberg', 'neubau'];
 
       const normalizedNext = normalizeOfferOptions(next, prev.wohnung);
       const fallbackWohnung = normalizedNext[0] || prev.wohnung;
@@ -408,13 +452,27 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
             </div>
             {mode === 'offer' && (
               <div className="col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+                {(() => {
+                  const selectedOptions = normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung);
+                  const bothSeparateSelected = selectedOptions.includes('hackerberg') && selectedOptions.includes('neubau');
+
+                  return (
+                    <>
                 <p className="text-sm font-semibold text-amber-900 mb-2">Angebotsoptionen fuer Kundenwahl</p>
                 <p className="text-xs text-amber-800 mb-3">Wenn mehrere Optionen aktiv sind, kann der Kunde beim Annehmen zwischen den Wohnungen waehlen.</p>
                 <div className="flex flex-wrap gap-4 text-sm text-amber-900">
+                  <label className="inline-flex items-center gap-2 font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={bothSeparateSelected}
+                      onChange={toggleBothSeparateOptions}
+                    />
+                    Beide Wohnungen anbieten (separat)
+                  </label>
                   <label className="inline-flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung).includes('hackerberg')}
+                      checked={selectedOptions.includes('hackerberg')}
                       onChange={() => toggleOfferApartmentOption('hackerberg')}
                     />
                     Hackerberg
@@ -422,7 +480,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
                   <label className="inline-flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung).includes('neubau')}
+                      checked={selectedOptions.includes('neubau')}
                       onChange={() => toggleOfferApartmentOption('neubau')}
                     />
                     Fruehlingstrasse
@@ -430,12 +488,15 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
                   <label className="inline-flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung).includes('kombi')}
+                      checked={selectedOptions.includes('kombi')}
                       onChange={() => toggleOfferApartmentOption('kombi')}
                     />
-                    Beide zusammen (Kombi)
+                    Kombi als eigenes Paket
                   </label>
                 </div>
+                    </>
+                  );
+                })()}
               </div>
             )}
             <div>

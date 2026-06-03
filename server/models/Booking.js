@@ -103,7 +103,7 @@ const bookingSchema = new mongoose.Schema({
   },
   inquiryProvider: { type: String, default: '' },
   emailImport: {
-    messageId: { type: String, default: null },
+    messageId: { type: String },
     fromAddress: { type: String, default: '' },
     subject: { type: String, default: '' },
     importedAt: { type: Date, default: null },
