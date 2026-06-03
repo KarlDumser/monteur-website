@@ -136,6 +136,13 @@ export default function Admin() {
 
   const followUpIntervalRef = useRef(null);
   const followUpTimeoutRef = useRef(null);
+  const dragScrollStateRef = useRef({
+    active: null,
+    startX: 0,
+    startScrollLeft: 0,
+    didMove: false
+  });
+  const bodyUserSelectRef = useRef('');
 
   // Form für Zeitblockierung
   const [blockForm, setBlockForm] = useState({
@@ -186,6 +193,71 @@ export default function Admin() {
       : inquiries;
 
   useEffect(() => {
+    const handleMouseDown = (event) => {
+      if (event.button !== 0) return;
+      if (!(event.target instanceof HTMLElement)) return;
+
+      const target = event.target;
+      const container = target.closest('[data-drag-scroll="x"]');
+      if (!(container instanceof HTMLElement)) return;
+      if (container.scrollWidth <= container.clientWidth) return;
+
+      if (target.closest('button, a, input, textarea, select, label, [role="button"], [data-drag-scroll-ignore="true"]')) {
+        return;
+      }
+
+      dragScrollStateRef.current.active = container;
+      dragScrollStateRef.current.startX = event.clientX;
+      dragScrollStateRef.current.startScrollLeft = container.scrollLeft;
+      dragScrollStateRef.current.didMove = false;
+
+      container.style.cursor = 'grabbing';
+      bodyUserSelectRef.current = document.body.style.userSelect;
+      document.body.style.userSelect = 'none';
+    };
+
+    const handleMouseMove = (event) => {
+      const activeContainer = dragScrollStateRef.current.active;
+      if (!activeContainer) return;
+
+      const deltaX = event.clientX - dragScrollStateRef.current.startX;
+      if (Math.abs(deltaX) > 2) {
+        dragScrollStateRef.current.didMove = true;
+      }
+
+      activeContainer.scrollLeft = dragScrollStateRef.current.startScrollLeft - deltaX;
+      if (dragScrollStateRef.current.didMove) {
+        event.preventDefault();
+      }
+    };
+
+    const handleMouseUp = () => {
+      const activeContainer = dragScrollStateRef.current.active;
+      if (!activeContainer) return;
+
+      activeContainer.style.cursor = 'grab';
+      dragScrollStateRef.current.active = null;
+      document.body.style.userSelect = bodyUserSelectRef.current || '';
+    };
+
+    const handleClickCapture = (event) => {
+      if (!dragScrollStateRef.current.didMove) return;
+      if (!(event.target instanceof HTMLElement)) return;
+
+      const container = event.target.closest('[data-drag-scroll="x"]');
+      if (container) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      dragScrollStateRef.current.didMove = false;
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('click', handleClickCapture, true);
+
     return () => {
       if (messageTimeoutRef.current) {
         clearTimeout(messageTimeoutRef.current);
@@ -199,6 +271,11 @@ export default function Admin() {
       if (loginAbortRef.current) {
         loginAbortRef.current.abort();
       }
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('click', handleClickCapture, true);
+      document.body.style.userSelect = bodyUserSelectRef.current || '';
     };
   }, []);
 
@@ -2108,7 +2185,7 @@ export default function Admin() {
         )}
 
         {/* Tabs */}
-        <div className="mb-6 border-b overflow-x-auto whitespace-nowrap">
+        <div data-drag-scroll="x" className="mb-6 border-b overflow-x-auto whitespace-nowrap cursor-grab">
           <button
             onClick={() => setActiveTab('bookings')}
             className={`px-6 py-3 font-semibold ${activeTab === 'bookings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'}`}
@@ -2181,7 +2258,7 @@ export default function Admin() {
                 ➕ Neue Buchung erstellen
               </button>
             </div>
-            <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <div data-drag-scroll="x" className="bg-white rounded-lg shadow overflow-x-auto cursor-grab">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
@@ -2296,7 +2373,7 @@ export default function Admin() {
         )}
 
         {activeTab === 'inquiries' && (
-          <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <div data-drag-scroll="x" className="bg-white rounded-lg shadow overflow-x-auto cursor-grab">
             <div className="mx-6 mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -2604,7 +2681,7 @@ export default function Admin() {
 
         {/* Geloeschte Buchungen */}
         {activeTab === 'deleted' && (
-          <div className="bg-white rounded-lg shadow max-h-[72vh] overflow-auto">
+          <div data-drag-scroll="x" className="bg-white rounded-lg shadow max-h-[72vh] overflow-auto cursor-grab">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
@@ -2792,7 +2869,7 @@ export default function Admin() {
                 ➕ Neuen Kunden erstellen
               </button>
             </div>
-            <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <div data-drag-scroll="x" className="bg-white rounded-lg shadow overflow-x-auto cursor-grab">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
@@ -3059,7 +3136,7 @@ export default function Admin() {
             </div>
 
             {Array.isArray(stats.visitors?.dailyLast30Days) && stats.visitors.dailyLast30Days.length > 0 && (
-              <div className="bg-white rounded-lg shadow overflow-x-auto">
+              <div data-drag-scroll="x" className="bg-white rounded-lg shadow overflow-x-auto cursor-grab">
                 <div className="px-5 pt-4 pb-2">
                   <h3 className="text-gray-700 font-semibold">Tages-Besucher (letzte 30 Tage)</h3>
                 </div>
@@ -3085,7 +3162,7 @@ export default function Admin() {
             )}
 
             {Array.isArray(stats.yearly) && stats.yearly.length > 0 && (
-              <div className="bg-white rounded-lg shadow overflow-x-auto">
+              <div data-drag-scroll="x" className="bg-white rounded-lg shadow overflow-x-auto cursor-grab">
                 <div className="px-5 pt-4 pb-2">
                   <h3 className="text-gray-700 font-semibold">Jahresstatistik gesamt</h3>
                 </div>
@@ -3150,7 +3227,7 @@ export default function Admin() {
             )}
 
             {Array.isArray(stats.monthly) && stats.monthly.length > 0 && (
-              <div className="bg-white rounded-lg shadow overflow-x-auto">
+              <div data-drag-scroll="x" className="bg-white rounded-lg shadow overflow-x-auto cursor-grab">
                 <div className="px-5 pt-4 pb-2">
                   <h3 className="text-gray-700 font-semibold">Monatsstatistik {stats.currentYear}</h3>
                 </div>
