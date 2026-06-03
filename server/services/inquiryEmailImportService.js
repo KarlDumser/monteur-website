@@ -139,11 +139,12 @@ function buildInquiryPayload(parsed, emailMeta) {
   const nightsFromDates = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
   const nights = safeNumber(parsed.nights, nightsFromDates) || nightsFromDates;
   const people = Math.max(1, safeNumber(parsed.people, 1));
-  const total = Math.max(0, safeNumber(parsed.total, 0));
-  const subtotal = total;
+  const pricePerNight = 100;
+  const cleaningFee = 100;
   const vat = 0;
   const discount = 0;
-  const pricePerNight = nights > 0 ? Math.round((subtotal / nights) * 100) / 100 : subtotal;
+  const subtotal = pricePerNight * nights + cleaningFee;
+  const total = subtotal;
 
   const previewText = String(emailMeta.text || '').replace(/\s+/g, ' ').trim().slice(0, 1000);
 
@@ -164,7 +165,7 @@ function buildInquiryPayload(parsed, emailMeta) {
     nights,
     people,
     pricePerNight,
-    cleaningFee: 0,
+    cleaningFee,
     subtotal,
     discount,
     vat,
