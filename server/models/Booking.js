@@ -82,7 +82,7 @@ const bookingSchema = new mongoose.Schema({
   },
   offerStatus: {
     type: String,
-    enum: ['none', 'sent', 'accepted', 'missing-data'],
+    enum: ['none', 'sent', 'accepted', 'missing-data', 'awaiting-admin-confirmation', 'unavailable'],
     default: 'none'
   },
   inquirySource: {

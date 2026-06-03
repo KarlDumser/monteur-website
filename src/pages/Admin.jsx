@@ -1284,7 +1284,23 @@ export default function Admin() {
                     📄 {(selectedBooking.isInquiry || selectedBooking.offerStatus === 'sent') ? 'Angebot ansehen/herunterladen' : 'Rechnung herunterladen'}
                   </button>
 
-                  {(selectedBooking.isInquiry || selectedBooking.offerStatus === 'sent') && (
+                  {selectedBooking.offerStatus === 'awaiting-admin-confirmation' && (
+                    <button
+                      className="inline-block bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-4 rounded-lg transition"
+                      onClick={async () => {
+                        try {
+                          await handleApproveInquiry(selectedBooking._id);
+                          setSelectedBooking(null);
+                        } catch {
+                          // handled in shared action messaging
+                        }
+                      }}
+                    >
+                      ✉️ Buchung jetzt final bestaetigen
+                    </button>
+                  )}
+
+                  {(selectedBooking.isInquiry || selectedBooking.offerStatus === 'sent') && selectedBooking.offerStatus !== 'awaiting-admin-confirmation' && (
                     <button
                       className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition"
                       onClick={() => {
@@ -2229,6 +2245,12 @@ export default function Admin() {
                       {inquiry.offerStatus === 'sent' && (
                         <div className="text-yellow-600 font-semibold mt-1">Angebot gesendet</div>
                       )}
+                      {inquiry.offerStatus === 'awaiting-admin-confirmation' && (
+                        <div className="text-emerald-700 font-semibold mt-1">Kunde hat Angebot angenommen</div>
+                      )}
+                      {inquiry.offerStatus === 'unavailable' && (
+                        <div className="text-red-600 font-semibold mt-1">Angebot nicht mehr verfuegbar</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex gap-2">
@@ -2238,19 +2260,27 @@ export default function Admin() {
                         >
                           Details
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleSendOfferList(inquiry._id)}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
-                        >
-                          Angebot erstellen und senden
-                        </button>
+                        {inquiry.offerStatus !== 'awaiting-admin-confirmation' && (
+                          <button
+                            type="button"
+                            onClick={() => handleSendOfferList(inquiry._id)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                          >
+                            Angebot erstellen und senden
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleApproveInquiry(inquiry._id)}
-                          className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                          className={`text-white text-xs font-semibold px-3 py-1.5 rounded-md ${
+                            inquiry.offerStatus === 'awaiting-admin-confirmation'
+                              ? 'bg-emerald-700 hover:bg-emerald-800'
+                              : 'bg-green-600 hover:bg-green-700'
+                          }`}
                         >
-                          Bestaetigen
+                          {inquiry.inquirySource === 'email'
+                            ? (inquiry.offerStatus === 'awaiting-admin-confirmation' ? 'Final bestaetigen' : 'Direkt bestaetigen')
+                            : 'Bestaetigen'}
                         </button>
                         <button
                           type="button"

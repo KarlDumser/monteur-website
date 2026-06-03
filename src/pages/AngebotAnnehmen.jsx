@@ -53,7 +53,7 @@ export default function AngebotAnnehmen() {
         return;
       }
 
-      setSuccessMessage('Ihr Angebot wurde erfolgreich angenommen. Die Buchungsbestaetigung und Rechnung wurden soeben versendet.');
+      setSuccessMessage(data.message || 'Ihr Angebot wurde erfolgreich angenommen. Wir melden uns in Kuerze.');
     } catch (err) {
       setError(err.message || 'Angebot konnte nicht angenommen werden.');
     } finally {
@@ -124,7 +124,7 @@ export default function AngebotAnnehmen() {
               {processing ? 'Angebot wird angenommen...' : 'Angebot jetzt verbindlich annehmen'}
             </button>
             <p className="text-xs text-gray-500 mt-3 text-center">
-              Nach der Annahme wird Ihre Anfrage direkt als Buchung uebernommen.
+              Nach der Annahme pruefen wir die finale Verfuegbarkeit und bestaetigen Ihre Buchung schnellstmoeglich.
             </p>
           </div>
         </div>

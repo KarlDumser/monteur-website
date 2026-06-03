@@ -471,6 +471,7 @@ router.patch('/inquiries/:id/approve', async (req, res) => {
 
     inquiry.isInquiry = false;
     inquiry.inquiryStatus = 'approved';
+    inquiry.offerStatus = inquiry.offerStatus === 'awaiting-admin-confirmation' ? 'accepted' : inquiry.offerStatus;
     inquiry.updatedAt = new Date();
     inquiry.bookingStatus = 'confirmed';
     inquiry.cleaningBufferDays = getCleaningBufferDays(inquiry.cleaningBufferDays);

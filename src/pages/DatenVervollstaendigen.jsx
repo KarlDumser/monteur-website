@@ -92,7 +92,7 @@ export default function DatenVervollstaendigen() {
       <div className="container mx-auto px-4 py-12 max-w-2xl">
         <div className="bg-green-50 border border-green-200 text-green-800 rounded-xl p-6 text-center">
           <h1 className="text-2xl font-bold mb-3">Vielen Dank</h1>
-          <p>Ihre Daten wurden gespeichert. Die Buchung wurde bestaetigt und Rechnung sowie Buchungsbestaetigung wurden versendet.</p>
+          <p>Ihre Daten wurden gespeichert. Wir bestaetigen Ihre Buchung nun final und senden Ihnen anschliessend Buchungsbestaetigung und Rechnung per E-Mail.</p>
         </div>
       </div>
     );
@@ -103,7 +103,7 @@ export default function DatenVervollstaendigen() {
       <div className="bg-white shadow-xl rounded-2xl border border-gray-100 p-6">
         <h1 className="text-3xl font-bold mb-2 text-center">Daten vervollstaendigen</h1>
         <p className="text-center text-gray-600 mb-8">
-          Bitte ergaenzen Sie Ihre Rechnungsdaten. Danach wird Ihre Anfrage sofort als Buchung bestaetigt.
+          Bitte ergaenzen Sie Ihre Rechnungsdaten. Danach wird Ihre Buchung von uns final bestaetigt.
         </p>
 
         {error && (

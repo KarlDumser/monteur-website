@@ -5,7 +5,7 @@ import BlockedDate from '../models/BlockedDate.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
 import { sendBookingConfirmation, sendOfferEmail, sendMissingDataEmail } from '../services/emailService.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
-import { sendBookingPushNotification } from '../services/pushoverService.js';
+import { sendBookingPushNotification, sendPushNotification } from '../services/pushoverService.js';
 import { validateAdminBasicAuthHeader } from '../utils/adminAuth.js';
 
 const router = express.Router();
@@ -45,6 +45,70 @@ const hasRequiredInvoiceData = (booking) => {
     String(booking.zip || '').trim() &&
     String(booking.city || '').trim()
   );
+};
+
+const getPublicAppBaseUrl = () => {
+  const direct = [
+    process.env.APP_URL,
+    process.env.PUBLIC_APP_URL,
+    process.env.FRONTEND_URL,
+    process.env.WEBSITE_URL,
+    process.env.VITE_URL
+  ].find((entry) => {
+    const value = String(entry || '').trim().toLowerCase();
+    return value && !value.includes('localhost') && !value.includes('127.0.0.1');
+  });
+
+  if (direct) {
+    return String(direct).trim().replace(/\/$/, '');
+  }
+
+  const railwayDomain = String(process.env.RAILWAY_PUBLIC_DOMAIN || '').trim();
+  if (railwayDomain) {
+    return railwayDomain.startsWith('http') ? railwayDomain.replace(/\/$/, '') : `https://${railwayDomain}`;
+  }
+
+  const apiUrl = String(process.env.API_URL || '').trim().replace(/\/api\/?$/i, '').replace(/\/$/, '');
+  if (apiUrl && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
+    return apiUrl;
+  }
+
+  return 'https://monteurwohnung-dumser.de';
+};
+
+const findBlockingConflict = async (booking) => {
+  const overlap = await Booking.findOne({
+    ...activeBookingFilter,
+    _id: { $ne: booking._id },
+    wohnung: booking.wohnung,
+    startDate: { $lte: booking.endDate },
+    endDate: { $gte: booking.startDate }
+  });
+
+  if (overlap) {
+    return { type: 'booking', item: overlap };
+  }
+
+  const blockedOverlap = await BlockedDate.findOne({
+    wohnung: booking.wohnung,
+    startDate: { $lte: booking.endDate },
+    endDate: { $gte: booking.startDate }
+  });
+
+  if (blockedOverlap) {
+    return { type: 'blocked', item: blockedOverlap };
+  }
+
+  return null;
+};
+
+const notifyAdminOfferAccepted = async (booking) => {
+  const baseUrl = getPublicAppBaseUrl();
+  const adminLink = `${baseUrl}/admin?booking=${booking._id}`;
+  const startDate = new Date(booking.startDate).toLocaleDateString('de-DE');
+  const title = 'Angebot wurde angenommen';
+  const message = `${booking.company || booking.name}\n${booking.wohnungLabel || booking.wohnung}\n${startDate}\nJetzt im Admin final bestaetigen.`;
+  await sendPushNotification(title, message, adminLink);
 };
 
 const parseLegacyAddress = (address) => {
@@ -454,8 +518,20 @@ router.post('/:id/accept-offer', async (req, res) => {
       return res.status(400).json({ error: 'Dieses Angebot wurde bereits bearbeitet.' });
     }
 
+    const blockingConflict = await findBlockingConflict(booking);
+    if (blockingConflict) {
+      booking.offerStatus = 'unavailable';
+      booking.updatedAt = new Date();
+      await booking.save();
+
+      return res.status(409).json({
+        error: 'Das Angebot ist leider nicht mehr verfuegbar, da der Zeitraum inzwischen anderweitig vergeben wurde.'
+      });
+    }
+
     if (!hasRequiredInvoiceData(booking)) {
       booking.offerStatus = 'missing-data';
+      booking.updatedAt = new Date();
       await booking.save();
       await sendMissingDataEmail(booking);
 
@@ -463,6 +539,18 @@ router.post('/:id/accept-offer', async (req, res) => {
         success: true, 
         message: 'Angebot angenommen. Bitte vervollständigen Sie Ihre Daten.',
         redirectUrl: `/daten-vervollstaendigen/${booking._id}` 
+      });
+    }
+
+    if (booking.inquirySource === 'email') {
+      booking.offerStatus = 'awaiting-admin-confirmation';
+      booking.updatedAt = new Date();
+      await booking.save();
+      await notifyAdminOfferAccepted(booking);
+
+      return res.json({
+        success: true,
+        message: 'Vielen Dank. Ihr Angebot wurde angenommen und wird jetzt von uns final bestaetigt. Danach erhalten Sie Buchungsbestaetigung und Rechnung per E-Mail.'
       });
     }
 
@@ -478,7 +566,7 @@ router.post('/:id/accept-offer', async (req, res) => {
     await findOrCreateCustomerFromBooking(booking);
 
     await sendBookingConfirmation(booking, 'confirmation');
-    await sendBookingPushNotification(booking);
+    await sendBookingPushNotification(booking, getPublicAppBaseUrl());
 
     return res.json({ success: true, message: 'Angebot erfolgreich verbindlich gebucht!' });
 
@@ -519,6 +607,26 @@ router.post('/:id/complete-data', async (req, res) => {
     if (phone) booking.phone = String(phone).trim();
 
     if (hasRequiredInvoiceData(booking)) {
+      if (booking.inquirySource === 'email') {
+        const blockingConflict = await findBlockingConflict(booking);
+        if (blockingConflict) {
+          booking.offerStatus = 'unavailable';
+          booking.updatedAt = new Date();
+          await booking.save();
+
+          return res.status(409).json({
+            error: 'Das Angebot ist leider nicht mehr verfuegbar, da der Zeitraum inzwischen vergeben wurde.'
+          });
+        }
+
+        booking.offerStatus = 'awaiting-admin-confirmation';
+        booking.updatedAt = new Date();
+        await booking.save();
+        await notifyAdminOfferAccepted(booking);
+
+        return res.json({ success: true, message: 'Daten erfolgreich gespeichert. Ihre Buchung wird jetzt final bestaetigt.' });
+      }
+
       booking.isInquiry = false;
       booking.inquiryStatus = 'approved';
       booking.bookingStatus = 'confirmed';
@@ -530,7 +638,7 @@ router.post('/:id/complete-data', async (req, res) => {
       await createBookingBlocksForBooking(booking);
       await findOrCreateCustomerFromBooking(booking);
       await sendBookingConfirmation(booking, 'confirmation');
-      await sendBookingPushNotification(booking);
+      await sendBookingPushNotification(booking, getPublicAppBaseUrl());
       
       return res.json({ success: true, message: 'Daten erfolgreich gespeichert und Buchung bestätigt.' });
     } else {
