@@ -85,6 +85,16 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
     }
 
     if (name === 'wohnung' && mode === 'offer') {
+      if (value === 'separate-both') {
+        setOfferBothSeparately(true);
+        setFormData((prev) => ({
+          ...prev,
+          wohnung: prev.wohnung === 'kombi' ? 'hackerberg' : prev.wohnung
+        }));
+        return;
+      }
+
+      setOfferBothSeparately(false);
       setFormData((prev) => ({
         ...prev,
         wohnung: value
@@ -396,31 +406,16 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
               <label className="block text-sm font-medium mb-1">Wohnung *</label>
               <select
                 name="wohnung"
-                value={formData.wohnung}
+                value={mode === 'offer' && offerBothSeparately ? 'separate-both' : formData.wohnung}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
               >
                 <option value="hackerberg">Wohnung Hackerberg</option>
                 <option value="neubau">Wohnung Frühlingstraße</option>
                 <option value="kombi">Kombi (beide)</option>
+                {mode === 'offer' && <option value="separate-both">Separat beide Wohnungen anbieten</option>}
               </select>
             </div>
-            {mode === 'offer' && (
-              <div className="col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
-                <p className="text-sm font-semibold text-amber-900 mb-2">Angebot erweitern</p>
-                <label className="inline-flex items-center gap-2 text-sm text-amber-900">
-                  <input
-                    type="checkbox"
-                    checked={offerBothSeparately}
-                    onChange={(e) => setOfferBothSeparately(e.target.checked)}
-                  />
-                  Beide Wohnungen anbieten (separat)
-                </label>
-                <p className="text-xs text-amber-800 mt-2">
-                  Die gewaehlte Wohnung bleibt das Hauptangebot. Mit dieser Option werden Hackerberg und Fruehlingstrasse separat zusaetzlich angeboten. Kombi bleibt ein eigenes Paket, wenn bei Wohnung "Kombi" gewaehlt ist.
-                </p>
-              </div>
-            )}
             <div>
               <label className="block text-sm font-medium mb-1">Personen * (1-11)</label>
               <input
