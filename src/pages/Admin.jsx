@@ -108,6 +108,7 @@ export default function Admin() {
   // Pop-Up für Details
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
+  const [bookingEditorMode, setBookingEditorMode] = useState('edit');
   const [showNewBookingForm, setShowNewBookingForm] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [followUpDraft, setFollowUpDraft] = useState(null);
@@ -672,24 +673,30 @@ export default function Admin() {
     }
   };
 
-  const handleSendOfferList = async (inquiryId, inquiryEmail) => {
-    if (!confirm(`Angebot per E-Mail an ${inquiryEmail} versenden?`)) return;
-
-    try {
-      const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/admin/bookings/${inquiryId}/send-offer`, {
-        method: 'POST',
-        headers: { Authorization: `Basic ${auth}` }
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Angebot konnte nicht versendet werden');
-
-      showActionMessage('success', data.message || 'Angebot versendet');
-      loadData();
-    } catch (error) {
-      showActionMessage('error', error.message || 'Angebot konnte nicht versendet werden');
+  const handleSendOfferList = async (inquiryId) => {
+    const inquiry = inquiries.find((entry) => entry._id === inquiryId);
+    if (!inquiry) {
+      showActionMessage('error', 'Anfrage nicht gefunden');
+      return;
     }
+
+    setBookingEditorMode('offer');
+    setEditingBooking(inquiry);
+    setSelectedBooking(null);
+  };
+
+  const sendOfferForBooking = async (booking) => {
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/admin/bookings/${booking._id}/send-offer`, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${auth}` }
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Angebot konnte nicht versendet werden');
+
+    showActionMessage('success', data.message || 'Angebot versendet');
+    await loadData();
   };
 
   const handleRejectInquiry = async (inquiryId) => {
@@ -1280,27 +1287,13 @@ export default function Admin() {
                   {(selectedBooking.status === 'inquiry' || selectedBooking.status === 'angebot_gesendet') && (
                     <button
                       className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition"
-                      onClick={async () => {
-                        if (!confirm('Angebot an ' + selectedBooking.email + ' versenden?')) return;
-                        try {
-                          const apiUrl = getApiUrl();
-                          const auth = btoa('admin:secret'); // or grab it correctly if it's stored
-                          const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/send-offer`, {
-                            method: 'POST',
-                            headers: { Authorization: `Basic ${auth}` } // using the static auth since this replaces code that used auth... wait! let's use the `auth` var.
-                          });
-                          const data = await response.json();
-                          if (!response.ok) {
-                            throw new Error(data.error || 'Fehler beim Email-Versand');
-                          }
-                          showActionMessage('success', data.message);
-                          setSelectedBooking(null);
-                        } catch (err) {
-                          showActionMessage('error', err.message);
-                        }
+                      onClick={() => {
+                        setBookingEditorMode('offer');
+                        setEditingBooking(selectedBooking);
+                        setSelectedBooking(null);
                       }}
                     >
-                      ✉️ Angebot per E-Mail an Kunden senden
+                      ✉️ Angebot erstellen und senden
                     </button>
                   )}
 
@@ -1333,6 +1326,7 @@ export default function Admin() {
                   <button
                     className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition"
                     onClick={() => {
+                      setBookingEditorMode('edit');
                       setEditingBooking(selectedBooking);
                       setSelectedBooking(null);
                     }}
@@ -1365,11 +1359,18 @@ export default function Admin() {
           <BookingEditor
             booking={editingBooking}
             auth={auth}
-            onClose={() => setEditingBooking(null)}
+            mode={bookingEditorMode}
+            onClose={() => {
+              setEditingBooking(null);
+              setBookingEditorMode('edit');
+            }}
+            onOfferReady={sendOfferForBooking}
             onSave={(updated) => {
               setBookings((prev) => sortBookingsByCreatedAndStart(prev.map((b) => (b._id === updated._id ? updated : b))));
+              setInquiries((prev) => prev.map((entry) => (entry._id === updated._id ? updated : entry)));
               setEditingBooking(null);
-              showActionMessage('success', 'Buchung erfolgreich aktualisiert');
+              setBookingEditorMode('edit');
+              showActionMessage('success', bookingEditorMode === 'offer' ? 'Angebot erfolgreich erstellt und versendet' : 'Buchung erfolgreich aktualisiert');
             }}
           />
         )}
@@ -2211,10 +2212,10 @@ export default function Admin() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleSendOfferList(inquiry._id, inquiry.email)}
+                          onClick={() => handleSendOfferList(inquiry._id)}
                           className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
                         >
-                          Angebot senden
+                          Angebot erstellen und senden
                         </button>
                         <button
                           type="button"

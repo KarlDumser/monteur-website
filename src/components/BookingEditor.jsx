@@ -9,7 +9,7 @@ const getAutoPriceByPeople = (peopleValue) => {
   return 110;
 };
 
-export default function BookingEditor({ booking, auth, onClose, onSave }) {
+export default function BookingEditor({ booking, auth, onClose, onSave, mode = 'edit', onOfferReady }) {
   const [formData, setFormData] = useState({
     ...booking,
     country: booking.country || 'DE',
@@ -127,6 +127,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
   const handleSave = async () => {
     setSaving(true);
     setError('');
+    setSuccessMessage('');
 
     const people = Number(formData.people);
     if (!Number.isInteger(people) || people < 1 || people > 11) {
@@ -167,6 +168,14 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
       }
 
       const updated = await response.json();
+
+      if (mode === 'offer') {
+        if (typeof onOfferReady !== 'function') {
+          throw new Error('Angebot kann nicht versendet werden: Callback fehlt.');
+        }
+        await onOfferReady(updated);
+      }
+
       onSave(updated);
       onClose();
     } catch (err) {
@@ -230,7 +239,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Buchung bearbeiten</h2>
+          <h2 className="text-2xl font-bold">{mode === 'offer' ? 'Angebot erstellen und senden' : 'Buchung bearbeiten'}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
         </div>
 
@@ -551,13 +560,15 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
         </div>
 
         <div className="sticky bottom-0 bg-gray-50 border-t p-6 flex gap-3 justify-end">
-          <button
-            onClick={handleResendInvoice}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={sendingEmail || saving}
-          >
-            {sendingEmail ? 'Wird versendet...' : '📨 Rechnung erneut senden'}
-          </button>
+          {mode !== 'offer' && (
+            <button
+              onClick={handleResendInvoice}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={sendingEmail || saving}
+            >
+              {sendingEmail ? 'Wird versendet...' : '📨 Rechnung erneut senden'}
+            </button>
+          )}
           <button
             onClick={onClose}
             className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded"
@@ -570,7 +581,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave }) {
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
             disabled={saving || sendingEmail}
           >
-            {saving ? 'Speichert...' : 'Speichern'}
+            {saving ? (mode === 'offer' ? 'Erstellt und versendet...' : 'Speichert...') : (mode === 'offer' ? 'Speichern und Angebot senden' : 'Speichern')}
           </button>
         </div>
       </div>
