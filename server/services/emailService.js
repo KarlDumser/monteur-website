@@ -564,6 +564,15 @@ export async function sendOfferEmail(booking) {
       </div>
     `;
 
+    const ownerCopyHtmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background-color: #fff7ed; border: 1px solid #fdba74; color: #9a3412; padding: 12px 14px; border-radius: 8px; margin: 0 0 16px 0; font-weight: bold;">
+          KOPIE: Diese Angebots-E-Mail wurde als interne Kopie an Sie gesendet.
+        </div>
+        ${htmlContent}
+      </div>
+    `;
+
     // Mailjet Payload (vereinfacht, wie in sendBookingConfirmation)
     const payload = {
       Messages: [{
@@ -581,11 +590,23 @@ export async function sendOfferEmail(booking) {
       }]
     };
     
-    // Configured Owner Inbox for BCC
+    // Configured Owner Inbox for internal copy (separate message with disclaimer)
     const configuredOwnerInbox = String(process.env.BOOKING_OWNER_EMAIL || '').trim().toLowerCase();
     const ownerInbox = (!configuredOwnerInbox || configuredOwnerInbox === 'karl658@hotmail.de' || configuredOwnerInbox === 'karl658@hotamil.de') ? 'monteur-wohnung@dumser.net' : configuredOwnerInbox;
     if (ownerInbox && ownerInbox.toLowerCase() !== booking.email.toLowerCase()) {
-      payload.Messages[0].Bcc = [{ Email: ownerInbox }];
+      payload.Messages.push({
+        From: { Email: fromAddress, Name: process.env.EMAIL_FROM_NAME || 'Monteurwohnungen Dumser' },
+        To: [{ Email: ownerInbox, Name: 'Owner Copy' }],
+        Subject: `[Kopie] Angebot: ${wohnungName} (${startDate} - ${endDate})`,
+        HTMLPart: ownerCopyHtmlContent,
+        Attachments: [
+          {
+            ContentType: 'application/pdf',
+            Filename: fileName,
+            Base64Content: pdfBuffer.toString('base64')
+          }
+        ]
+      });
     }
 
     const response = await fetch('https://api.mailjet.com/v3.1/send', {
