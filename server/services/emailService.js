@@ -488,7 +488,13 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
  */
 export async function sendOfferEmail(booking) {
   try {
-    const baseUrl = process.env.API_URL || 'http://localhost:3000';
+    const baseUrl = String(
+      process.env.APP_URL ||
+      process.env.VITE_URL ||
+      process.env.PUBLIC_APP_URL ||
+      process.env.FRONTEND_URL ||
+      ''
+    ).trim() || String(process.env.API_URL || 'http://localhost:5173').replace(/\/api\/?$/, '');
     const acceptLink = `${baseUrl}/angebot-annehmen/${booking._id}`;
 
     const { buffer: pdfBuffer, fileName } = await generateInvoice(booking, true);

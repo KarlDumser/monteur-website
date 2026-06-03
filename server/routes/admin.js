@@ -1743,7 +1743,8 @@ router.post('/bookings/:id/send-offer', async (req, res) => {
     const result = await sendOfferEmail(booking);
 
     if (result.status === 'sent') {
-      booking.status = 'angebot_gesendet';
+      booking.offerStatus = 'sent';
+      booking.updatedAt = new Date();
       await booking.save();
       return res.json({ 
         success: true, 

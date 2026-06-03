@@ -1266,7 +1266,7 @@ export default function Admin() {
                         const bookingDate = selectedBooking.createdAt ? new Date(selectedBooking.createdAt) : new Date();
                         const datePart = `${bookingDate.getFullYear()}${String(bookingDate.getMonth() + 1).padStart(2, '0')}${String(bookingDate.getDate()).padStart(2, '0')}`;
                         const shortId = String(selectedBooking._id || '').slice(-4).toUpperCase();
-                        const isOffer = selectedBooking.status === 'inquiry' || selectedBooking.status === 'angebot_gesendet';
+                        const isOffer = selectedBooking.isInquiry || selectedBooking.offerStatus === 'sent';
                         const fallbackFileName = isOffer ? `Angebot-AG-${datePart}-${shortId}.pdf` : `Rechnung-FD-${datePart}-${shortId}.pdf`;
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
@@ -1281,10 +1281,10 @@ export default function Admin() {
                       }
                     }}
                   >
-                    📄 {(selectedBooking.status === 'inquiry' || selectedBooking.status === 'angebot_gesendet') ? 'Angebot ansehen/herunterladen' : 'Rechnung herunterladen'}
+                    📄 {(selectedBooking.isInquiry || selectedBooking.offerStatus === 'sent') ? 'Angebot ansehen/herunterladen' : 'Rechnung herunterladen'}
                   </button>
 
-                  {(selectedBooking.status === 'inquiry' || selectedBooking.status === 'angebot_gesendet') && (
+                  {(selectedBooking.isInquiry || selectedBooking.offerStatus === 'sent') && (
                     <button
                       className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition"
                       onClick={() => {
@@ -1297,7 +1297,7 @@ export default function Admin() {
                     </button>
                   )}
 
-                  {(selectedBooking.status !== 'inquiry' && selectedBooking.status !== 'angebot_gesendet') && (
+                  {(!selectedBooking.isInquiry && selectedBooking.offerStatus !== 'sent') && (
                     <button
                       className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition"
                       onClick={async () => {
@@ -1331,10 +1331,10 @@ export default function Admin() {
                       setSelectedBooking(null);
                     }}
                   >
-                    ✏️ {selectedBooking.status === 'inquiry' ? 'Anfrage bearbeiten' : 'Buchung bearbeiten'}
+                    ✏️ {selectedBooking.isInquiry ? 'Anfrage bearbeiten' : 'Buchung bearbeiten'}
                   </button>
 
-                  {selectedBooking.nights >= 30 && selectedBooking.status !== 'inquiry' && selectedBooking.status !== 'angebot_gesendet' && (
+                  {selectedBooking.nights >= 30 && !selectedBooking.isInquiry && selectedBooking.offerStatus !== 'sent' && (
                     <button
                       className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition"
                       onClick={() => {
@@ -2198,7 +2198,7 @@ export default function Admin() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {new Date(inquiry.startDate).toLocaleDateString('de-DE')} - {new Date(inquiry.endDate).toLocaleDateString('de-DE')}
                       <div className="text-gray-500">{inquiry.nights} Nächte</div>
-                      {inquiry.status === 'angebot_gesendet' && (
+                      {inquiry.offerStatus === 'sent' && (
                         <div className="text-yellow-600 font-semibold mt-1">Angebot gesendet</div>
                       )}
                     </td>

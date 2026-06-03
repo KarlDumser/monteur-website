@@ -37,6 +37,34 @@ const isAdminRequest = (req) => {
   return ok;
 };
 
+const hasRequiredInvoiceData = (booking) => {
+  return Boolean(
+    String(booking.phone || '').trim() &&
+    String(booking.company || '').trim() &&
+    String(booking.street || '').trim() &&
+    String(booking.zip || '').trim() &&
+    String(booking.city || '').trim()
+  );
+};
+
+const parseLegacyAddress = (address) => {
+  const raw = String(address || '').trim();
+  if (!raw) {
+    return { street: '', zip: '', city: '' };
+  }
+
+  const lines = raw.split(/\r?\n|,/).map((entry) => entry.trim()).filter(Boolean);
+  const street = lines[0] || '';
+  const zipCity = lines[1] || '';
+  const match = zipCity.match(/^(\d{4,5})\s+(.+)$/);
+
+  return {
+    street,
+    zip: match ? match[1] : '',
+    city: match ? match[2] : zipCity
+  };
+};
+
 // Rechnung als PDF generieren und zum Download bereitstellen
 router.get('/:id/invoice', async (req, res) => {
   try {
@@ -421,18 +449,16 @@ router.post('/:id/accept-offer', async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ error: 'Angebot nicht gefunden' });
-    
-    if (booking.status !== 'inquiry' && booking.status !== 'angebot_gesendet') {
-      return res.status(400).json({ error: 'Dieses Angebot wurde bereits bearbeitet (Status: ' + booking.status + ')' });
+
+    if (!booking.isInquiry || booking.inquiryStatus !== 'pending') {
+      return res.status(400).json({ error: 'Dieses Angebot wurde bereits bearbeitet.' });
     }
 
-    if (!booking.address || !booking.phone) {
-      // Missing data -> redirect to complete data page
-      booking.status = 'angebot_angenommen_daten_fehlen';
+    if (!hasRequiredInvoiceData(booking)) {
+      booking.offerStatus = 'missing-data';
       await booking.save();
-      // Send email requesting data
       await sendMissingDataEmail(booking);
-      
+
       return res.json({ 
         success: true, 
         message: 'Angebot angenommen. Bitte vervollständigen Sie Ihre Daten.',
@@ -440,17 +466,18 @@ router.post('/:id/accept-offer', async (req, res) => {
       });
     }
 
-    // Data is complete -> process as normal booking
-    booking.status = 'confirmed';
+    booking.isInquiry = false;
+    booking.inquiryStatus = 'approved';
+    booking.bookingStatus = 'confirmed';
+    booking.offerStatus = 'accepted';
+    booking.updatedAt = new Date();
+    booking.cleaningBufferDays = getCleaningBufferDays(booking.cleaningBufferDays);
     await booking.save();
-    
-    // Customer anlegen / aktualisieren
+
+    await createBookingBlocksForBooking(booking);
     await findOrCreateCustomerFromBooking(booking);
 
-    // Bestätigung & Rechnung sofort rausschicken
-    await sendBookingConfirmation(booking, 'invoice');
-    
-    // Admin Benachrichtigung
+    await sendBookingConfirmation(booking, 'confirmation');
     await sendBookingPushNotification(booking);
 
     return res.json({ success: true, message: 'Angebot erfolgreich verbindlich gebucht!' });
@@ -466,24 +493,48 @@ router.post('/:id/complete-data', async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
     if (!booking) return res.status(404).json({ error: 'Buchung nicht gefunden' });
-    
-    const { companyName, address, phone } = req.body;
-    
-    if (companyName) booking.companyName = companyName;
-    if (address) booking.address = address;
-    if (phone) booking.phone = phone;
-    
-    // Wenn Daten nun vollständig sind, endgültig bestätigen
-    if (booking.address && booking.phone) {
-      booking.status = 'confirmed';
+
+    const {
+      company,
+      companyName,
+      street,
+      zip,
+      city,
+      country,
+      countryLabel,
+      addressLine2,
+      phone,
+      address
+    } = req.body;
+
+    const parsedLegacyAddress = parseLegacyAddress(address);
+
+    if (company || companyName) booking.company = String(company || companyName).trim();
+    if (street || parsedLegacyAddress.street) booking.street = String(street || parsedLegacyAddress.street).trim();
+    if (zip || parsedLegacyAddress.zip) booking.zip = String(zip || parsedLegacyAddress.zip).trim();
+    if (city || parsedLegacyAddress.city) booking.city = String(city || parsedLegacyAddress.city).trim();
+    if (country) booking.country = String(country).trim();
+    if (countryLabel) booking.countryLabel = String(countryLabel).trim();
+    if (addressLine2 !== undefined) booking.addressLine2 = String(addressLine2 || '').trim();
+    if (phone) booking.phone = String(phone).trim();
+
+    if (hasRequiredInvoiceData(booking)) {
+      booking.isInquiry = false;
+      booking.inquiryStatus = 'approved';
+      booking.bookingStatus = 'confirmed';
+      booking.offerStatus = 'accepted';
+      booking.updatedAt = new Date();
+      booking.cleaningBufferDays = getCleaningBufferDays(booking.cleaningBufferDays);
       await booking.save();
 
+      await createBookingBlocksForBooking(booking);
       await findOrCreateCustomerFromBooking(booking);
-      await sendBookingConfirmation(booking, 'invoice');
+      await sendBookingConfirmation(booking, 'confirmation');
       await sendBookingPushNotification(booking);
       
       return res.json({ success: true, message: 'Daten erfolgreich gespeichert und Buchung bestätigt.' });
     } else {
+      booking.offerStatus = 'missing-data';
       await booking.save();
       return res.json({ success: true, message: 'Daten aktualisiert, aber noch nicht vollständig.' });
     }
