@@ -488,13 +488,7 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
  */
 export async function sendOfferEmail(booking) {
   try {
-    const baseUrl = String(
-      process.env.APP_URL ||
-      process.env.VITE_URL ||
-      process.env.PUBLIC_APP_URL ||
-      process.env.FRONTEND_URL ||
-      ''
-    ).trim() || String(process.env.API_URL || 'http://localhost:5173').replace(/\/api\/?$/, '');
+    const baseUrl = getPublicAppUrl();
     const acceptLink = `${baseUrl}/angebot-annehmen/${booking._id}`;
 
     const { buffer: pdfBuffer, fileName } = await generateInvoice(booking, true);
@@ -619,7 +613,7 @@ export async function sendOfferEmail(booking) {
  */
 export async function sendMissingDataEmail(booking) {
   try {
-    const baseUrl = process.env.VITE_URL || process.env.APP_URL || process.env.API_URL || 'http://localhost:5173';
+    const baseUrl = getPublicAppUrl();
     // Dies löst das Frontend-Formular für fehlende Daten auf, was wir bauen müssen.
     const formLink = `${baseUrl}/daten-vervollstaendigen/${booking._id}`;
     const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
@@ -680,4 +674,44 @@ function formatGermanDate(date) {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
   return `${day}.${month}.${year}`;
+}
+
+function normalizeUrl(value) {
+  return String(value || '').trim().replace(/\/$/, '');
+}
+
+function isLocalUrl(value) {
+  const normalized = normalizeUrl(value).toLowerCase();
+  return normalized.includes('localhost') || normalized.includes('127.0.0.1');
+}
+
+function getPublicAppUrl() {
+  const directCandidates = [
+    process.env.APP_URL,
+    process.env.PUBLIC_APP_URL,
+    process.env.FRONTEND_URL,
+    process.env.WEBSITE_URL,
+    process.env.VITE_URL
+  ].map(normalizeUrl).filter(Boolean);
+
+  const firstDirect = directCandidates.find((entry) => !isLocalUrl(entry));
+  if (firstDirect) {
+    return firstDirect;
+  }
+
+  const railwayDomain = normalizeUrl(process.env.RAILWAY_PUBLIC_DOMAIN);
+  if (railwayDomain) {
+    return railwayDomain.startsWith('http') ? railwayDomain : `https://${railwayDomain}`;
+  }
+
+  const apiUrl = normalizeUrl(process.env.API_URL).replace(/\/api\/?$/i, '');
+  if (apiUrl && !isLocalUrl(apiUrl)) {
+    return apiUrl;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://monteurwohnung-dumser.de';
+  }
+
+  return 'http://localhost:5173';
 }
