@@ -636,33 +636,15 @@ router.post('/:id/accept-offer', async (req, res) => {
       });
     }
 
-    if (booking.inquirySource === 'email') {
-      booking.offerStatus = 'awaiting-admin-confirmation';
-      booking.updatedAt = new Date();
-      await booking.save();
-      await notifyAdminOfferAccepted(booking);
-
-      return res.json({
-        success: true,
-        message: 'Vielen Dank. Ihr Angebot wurde angenommen und wird jetzt von uns final bestaetigt. Danach erhalten Sie Buchungsbestaetigung und Rechnung per E-Mail.'
-      });
-    }
-
-    booking.isInquiry = false;
-    booking.inquiryStatus = 'approved';
-    booking.bookingStatus = 'confirmed';
-    booking.offerStatus = 'accepted';
+    booking.offerStatus = 'awaiting-admin-confirmation';
     booking.updatedAt = new Date();
-    booking.cleaningBufferDays = getCleaningBufferDays(booking.cleaningBufferDays);
     await booking.save();
+    await notifyAdminOfferAccepted(booking);
 
-    await createBookingBlocksForBooking(booking);
-    await findOrCreateCustomerFromBooking(booking);
-
-    await sendBookingConfirmation(booking, 'confirmation');
-    await sendBookingPushNotification(booking, getPublicAppBaseUrl());
-
-    return res.json({ success: true, message: 'Angebot erfolgreich verbindlich gebucht!' });
+    return res.json({
+      success: true,
+      message: 'Vielen Dank. Ihr Angebot wurde angenommen und wartet jetzt auf unsere finale Bestaetigung.'
+    });
 
   } catch (error) {
     console.error('Fehler bei /accept-offer:', error);
@@ -701,40 +683,23 @@ router.post('/:id/complete-data', async (req, res) => {
     if (phone) booking.phone = String(phone).trim();
 
     if (hasRequiredInvoiceData(booking)) {
-      if (booking.inquirySource === 'email') {
-        const blockingConflict = await findBlockingConflict(booking);
-        if (blockingConflict) {
-          booking.offerStatus = 'unavailable';
-          booking.updatedAt = new Date();
-          await booking.save();
-
-          return res.status(409).json({
-            error: 'Das Angebot ist leider nicht mehr verfuegbar, da der Zeitraum inzwischen vergeben wurde.'
-          });
-        }
-
-        booking.offerStatus = 'awaiting-admin-confirmation';
+      const blockingConflict = await findBlockingConflict(booking);
+      if (blockingConflict) {
+        booking.offerStatus = 'unavailable';
         booking.updatedAt = new Date();
         await booking.save();
-        await notifyAdminOfferAccepted(booking);
 
-        return res.json({ success: true, message: 'Daten erfolgreich gespeichert. Ihre Buchung wird jetzt final bestaetigt.' });
+        return res.status(409).json({
+          error: 'Das Angebot ist leider nicht mehr verfuegbar, da der Zeitraum inzwischen vergeben wurde.'
+        });
       }
 
-      booking.isInquiry = false;
-      booking.inquiryStatus = 'approved';
-      booking.bookingStatus = 'confirmed';
-      booking.offerStatus = 'accepted';
+      booking.offerStatus = 'awaiting-admin-confirmation';
       booking.updatedAt = new Date();
-      booking.cleaningBufferDays = getCleaningBufferDays(booking.cleaningBufferDays);
       await booking.save();
+      await notifyAdminOfferAccepted(booking);
 
-      await createBookingBlocksForBooking(booking);
-      await findOrCreateCustomerFromBooking(booking);
-      await sendBookingConfirmation(booking, 'confirmation');
-      await sendBookingPushNotification(booking, getPublicAppBaseUrl());
-      
-      return res.json({ success: true, message: 'Daten erfolgreich gespeichert und Buchung bestätigt.' });
+      return res.json({ success: true, message: 'Daten erfolgreich gespeichert. Ihre Buchung wird jetzt final bestaetigt.' });
     } else {
       booking.offerStatus = 'missing-data';
       await booking.save();

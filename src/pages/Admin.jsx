@@ -182,7 +182,7 @@ export default function Admin() {
   const emailInquiries = inquiries.filter((inquiry) => inquiry.inquirySource === 'email');
   const websiteInquiries = inquiries.filter((inquiry) => inquiry.inquirySource !== 'email');
   const awaitingAdminConfirmationInquiries = inquiries.filter(
-    (inquiry) => inquiry.inquirySource === 'email' && inquiry.offerStatus === 'awaiting-admin-confirmation'
+    (inquiry) => inquiry.offerStatus === 'awaiting-admin-confirmation'
   );
   const selectableManualEmailUids = manualEmailCandidates
     .filter((email) => email.uid && !email.alreadyImported && email.senderAllowed !== false)
@@ -2608,7 +2608,7 @@ export default function Admin() {
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
                     <p className="text-sm font-semibold text-emerald-900">
-                      Mail-Angebote angenommen - warten auf Freigabe
+                      Angebote angenommen - warten auf Freigabe
                     </p>
                     <p className="text-sm text-emerald-800">
                       {awaitingAdminConfirmationInquiries.length} Kunde{awaitingAdminConfirmationInquiries.length === 1 ? '' : 'n'} haben ein Angebot angenommen und warten jetzt auf Ihre finale Bestaetigung.

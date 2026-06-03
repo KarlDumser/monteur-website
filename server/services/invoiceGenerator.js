@@ -15,6 +15,8 @@ const __dirname = path.dirname(__filename);
  */
 export async function generateInvoice(booking, isOffer = false) {
    const resolvedVatId = await resolveCustomerVatId(booking);
+   const rawDocumentId = booking?._id || booking?.id || '';
+   const safeDocumentId = String(rawDocumentId || 'MANUAL').trim() || 'MANUAL';
 
   return new Promise((resolve, reject) => {
     try {
@@ -23,7 +25,7 @@ export async function generateInvoice(booking, isOffer = false) {
          const footerY = 740;
       
              // Rechnungsnummer/Angebotsnummer für Dateinamen und PDF merken
-             const documentNumber = isOffer ? `A-${booking._id.toString().substring(0, 6).toUpperCase()}` : buildInvoiceNumber(booking);
+             const documentNumber = isOffer ? `A-${safeDocumentId.substring(0, 6).toUpperCase()}` : buildInvoiceNumber(booking);
              const docTypePrefix = isOffer ? 'Angebot' : 'Rechnung';
          const pdfFileName = `${docTypePrefix}-${documentNumber}.pdf`;
          doc.on('data', buffers.push.bind(buffers));
