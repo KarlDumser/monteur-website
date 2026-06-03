@@ -2104,6 +2104,12 @@ export default function Admin() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex gap-2">
                         <button
+                          onClick={() => setSelectedBooking(inquiry)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                        >
+                          Details
+                        </button>
+                        <button
                           type="button"
                           onClick={() => handleApproveInquiry(inquiry._id)}
                           className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"

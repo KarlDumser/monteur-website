@@ -131,6 +131,26 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
           </div>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
+              <td style="padding: 8px 0; width: 35%;"><strong>Kontaktperson:</strong></td>
+              <td>${booking.name || '-'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Firma:</strong></td>
+              <td>${booking.company || '-'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>E-Mail:</strong></td>
+              <td>${booking.email || '-'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Telefon:</strong></td>
+              <td>${booking.phone || '-'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Rechnungsadresse:</strong></td>
+              <td>${booking.street || '-'}, ${booking.zip || '-'} ${booking.city || '-'}</td>
+            </tr>
+            <tr>
               <td style="padding: 8px 0;"><strong>Wohnung:</strong></td>
               <td>${wohnungName}</td>
             </tr>
@@ -194,6 +214,26 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
           </div>
           ` : ''}
           <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; width: 35%;"><strong>Kontaktperson:</strong></td>
+              <td>${booking.name || '-'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Firma:</strong></td>
+              <td>${booking.company || '-'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>E-Mail:</strong></td>
+              <td>${booking.email || '-'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Telefon:</strong></td>
+              <td>${booking.phone || '-'}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Rechnungsadresse:</strong></td>
+              <td>${booking.street || '-'}, ${booking.zip || '-'} ${booking.city || '-'}</td>
+            </tr>
             <tr>
               <td style="padding: 8px 0;"><strong>Wohnung:</strong></td>
               <td>${wohnungName}</td>
