@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-const getApiBaseUrl = () => import.meta.env.VITE_API_URL || 'https://monteurwohnung-dumser.up.railway.app/api';
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'monteurwohnung-dumser.de' || host === 'www.monteurwohnung-dumser.de') {
+      return `${window.location.origin}/api`;
+    }
+  }
+
+  const configured = String(import.meta.env.VITE_API_URL || '').trim();
+  if (configured) return configured.replace(/\/+$/, '');
+  return 'https://monteurwohnung-dumser.up.railway.app/api';
+};
 
 export default function AngebotAnnehmen() {
   const { id } = useParams();
