@@ -239,6 +239,9 @@ export async function generateInvoice(booking, isOffer = false) {
             : (isFollowUpInvoice
                ? '• Der Zahlungseingang muss VOR Beginn des neuen Buchungszeitraumes erfolgen.'
                : '• Der Zahlungseingang muss VOR dem Check-In erfolgen.');
+         const closingLine = isOffer
+            ? 'Wir freuen uns auf Ihre Rueckmeldung zu diesem Angebot.'
+            : 'Vielen Dank fuer Ihren Aufenthalt!';
 
          const measure = (text, fontSize = 9, font = 'Helvetica') => {
             doc.font(font).fontSize(fontSize);
@@ -250,10 +253,8 @@ export async function generateInvoice(booking, isOffer = false) {
             (isFollowUpInvoice ? measure(bookingEndLine, 9) : measure(addressLine, 9) + measure(checkInOutLine, 9)) +
             (isFollowUpInvoice ? measure(followUpHintLine, 9, 'Helvetica-Bold') : 0) +
             (isFinalFollowUpInvoice ? measure(finalCheckoutLine, 9) + measure(finalKeyLine, 9) : 0) +
-            measure(paymentHeader, 9, 'Helvetica-Bold') +
-            measure(paymentLine1, 7.5) +
-            measure(paymentLine2, 7.5) +
-            measure('Vielen Dank für Ihren Aufenthalt!', 10) +
+            (isOffer ? 0 : measure(paymentHeader, 9, 'Helvetica-Bold') + measure(paymentLine1, 7.5) + measure(paymentLine2, 7.5)) +
+            measure(closingLine, 10) +
             measure(`Krailling, den ${invoiceDate}`, 9) +
             measure('Christine Dumser', 9) +
             78;
@@ -290,11 +291,13 @@ export async function generateInvoice(booking, isOffer = false) {
             writeLine(finalKeyLine, { fontSize: 9, gap: 8 });
          }
 
-         writeLine(paymentHeader, { font: 'Helvetica-Bold', fontSize: 9, gap: 3 });
-         writeLine(paymentLine1, { fontSize: 7.5, gap: 2 });
-         writeLine(paymentLine2, { fontSize: 7.5, gap: 8 });
+         if (!isOffer) {
+            writeLine(paymentHeader, { font: 'Helvetica-Bold', fontSize: 9, gap: 3 });
+            writeLine(paymentLine1, { fontSize: 7.5, gap: 2 });
+            writeLine(paymentLine2, { fontSize: 7.5, gap: 8 });
+         }
 
-         writeLine('Vielen Dank für Ihren Aufenthalt!', { fontSize: 10, gap: 7 });
+         writeLine(closingLine, { fontSize: 10, gap: 7 });
          writeLine(`Krailling, den ${invoiceDate}`, { fontSize: 9, gap: 3 });
          writeLine('Christine Dumser', { fontSize: 9, gap: 0 });
 
