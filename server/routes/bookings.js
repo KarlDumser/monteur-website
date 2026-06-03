@@ -102,6 +102,50 @@ const findBlockingConflict = async (booking) => {
   return null;
 };
 
+const createBookingBlocksForBooking = async (booking) => {
+  await BlockedDate.create({
+    wohnung: booking.wohnung,
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    reason: 'Buchung',
+    createdBy: booking.email || 'admin'
+  });
+
+  if (booking.isPartialBooking && booking.paidThroughDate && booking.originalEndDate) {
+    const secondPeriodStart = addDays(booking.paidThroughDate, 1);
+
+    await BlockedDate.create({
+      wohnung: booking.wohnung,
+      startDate: secondPeriodStart,
+      endDate: booking.originalEndDate,
+      reason: 'Reservierung',
+      createdBy: booking.email || 'admin'
+    });
+
+    if (booking.cleaningBufferDays > 0) {
+      await BlockedDate.create({
+        wohnung: booking.wohnung,
+        startDate: addDays(booking.originalEndDate, 1),
+        endDate: addDays(booking.originalEndDate, booking.cleaningBufferDays),
+        reason: 'Reinigung',
+        createdBy: 'system-cleaning-buffer'
+      });
+    }
+
+    return;
+  }
+
+  if (booking.cleaningBufferDays > 0) {
+    await BlockedDate.create({
+      wohnung: booking.wohnung,
+      startDate: addDays(booking.endDate, 1),
+      endDate: addDays(booking.endDate, booking.cleaningBufferDays),
+      reason: 'Reinigung',
+      createdBy: 'system-cleaning-buffer'
+    });
+  }
+};
+
 const notifyAdminOfferAccepted = async (booking) => {
   const baseUrl = getPublicAppBaseUrl();
   const adminLink = `${baseUrl}/admin?booking=${booking._id}`;

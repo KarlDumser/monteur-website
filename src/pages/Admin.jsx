@@ -1539,7 +1539,7 @@ export default function Admin() {
                         setSelectedBooking(null);
                       }}
                     >
-                      ✉️ Angebot erstellen und senden
+                      ✉️ Angebot erstellen
                     </button>
                   )}
 
@@ -2707,7 +2707,7 @@ export default function Admin() {
                             onClick={() => handleSendOfferList(inquiry._id)}
                             className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
                           >
-                            Angebot erstellen und senden
+                            Angebot erstellen
                           </button>
                         )}
                         <button
