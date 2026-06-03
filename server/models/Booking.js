@@ -80,6 +80,19 @@ const bookingSchema = new mongoose.Schema({
     enum: ['none', 'pending', 'approved', 'rejected'],
     default: 'none'
   },
+  inquirySource: {
+    type: String,
+    enum: ['website', 'email'],
+    default: 'website'
+  },
+  inquiryProvider: { type: String, default: '' },
+  emailImport: {
+    messageId: { type: String, default: null },
+    fromAddress: { type: String, default: '' },
+    subject: { type: String, default: '' },
+    importedAt: { type: Date, default: null },
+    rawTextPreview: { type: String, default: '' }
+  },
 
   // Interne Notizen (für Admin)
   adminNote: { type: String, default: null },
@@ -101,5 +114,6 @@ const bookingSchema = new mongoose.Schema({
 bookingSchema.index({ wohnung: 1, startDate: 1, endDate: 1 });
 bookingSchema.index({ email: 1 });
 bookingSchema.index({ deletedAt: 1 });
+bookingSchema.index({ 'emailImport.messageId': 1 }, { unique: true, sparse: true });
 
 export default mongoose.model('Booking', bookingSchema);

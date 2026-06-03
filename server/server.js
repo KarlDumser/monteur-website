@@ -38,6 +38,7 @@ import bookingRoutes from './routes/bookings.js';
 import adminRoutes from './routes/admin.js';
 import paymentRoutes from './routes/payment.js';
 import analyticsRoutes from './routes/analytics.js';
+import { startInquiryEmailImportWorker } from './services/inquiryEmailImportService.js';
 
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin', adminRoutes);
@@ -84,6 +85,8 @@ const PORT = process.env.PORT || 3001;
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server läuft auf Port ${PORT}`);
   console.log(`📡 API erreichbar unter http://localhost:${PORT}/api/health`);
+
+  startInquiryEmailImportWorker();
   
   // MongoDB NACH Server-Start verbinden
   mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/monteur-website', {

@@ -91,6 +91,7 @@ export default function Admin() {
 
   const [bookings, setBookings] = useState([]);
   const [inquiries, setInquiries] = useState([]);
+  const [inquirySourceFilter, setInquirySourceFilter] = useState('all');
   const [deletedBookings, setDeletedBookings] = useState([]);
   const [blockedDates, setBlockedDates] = useState([]);
   const [stats, setStats] = useState(null);
@@ -157,6 +158,14 @@ export default function Admin() {
     neubau: 'Wohnung Frühlingstraße',
     kombi: 'Kombi (beide)'
   };
+
+  const emailInquiries = inquiries.filter((inquiry) => inquiry.inquirySource === 'email');
+  const websiteInquiries = inquiries.filter((inquiry) => inquiry.inquirySource !== 'email');
+  const displayedInquiries = inquirySourceFilter === 'email'
+    ? emailInquiries
+    : inquirySourceFilter === 'website'
+      ? websiteInquiries
+      : inquiries;
 
   useEffect(() => {
     return () => {
@@ -2127,6 +2136,29 @@ export default function Admin() {
 
         {activeTab === 'inquiries' && (
           <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <div className="px-6 pt-5 pb-3 flex flex-wrap items-center gap-2 border-b border-gray-100">
+              <button
+                type="button"
+                onClick={() => setInquirySourceFilter('all')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${inquirySourceFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              >
+                Alle ({inquiries.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setInquirySourceFilter('email')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${inquirySourceFilter === 'email' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              >
+                Anfrage aus Mail ({emailInquiries.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setInquirySourceFilter('website')}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold ${inquirySourceFilter === 'website' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              >
+                Anfrage ueber Website ({websiteInquiries.length})
+              </button>
+            </div>
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
@@ -2138,7 +2170,7 @@ export default function Admin() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {inquiries.map((inquiry) => (
+                {displayedInquiries.map((inquiry) => (
                   <tr key={inquiry._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {new Date(inquiry.createdAt).toLocaleDateString('de-DE')}
@@ -2147,6 +2179,17 @@ export default function Admin() {
                       <div className="font-medium">{inquiry.company || inquiry.name}</div>
                       <div className="text-sm text-gray-500">{inquiry.name}</div>
                       <div className="text-sm text-gray-500">{inquiry.email}</div>
+                      <div className="mt-1">
+                        {inquiry.inquirySource === 'email' ? (
+                          <span className="inline-block rounded-full bg-amber-100 text-amber-800 text-[11px] font-semibold px-2 py-0.5">
+                            Anfrage aus Mail {inquiry.inquiryProvider ? `(${inquiry.inquiryProvider})` : ''}
+                          </span>
+                        ) : (
+                          <span className="inline-block rounded-full bg-blue-100 text-blue-800 text-[11px] font-semibold px-2 py-0.5">
+                            Anfrage ueber Website
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {inquiry.wohnungLabel || inquiry.wohnung}
@@ -2191,7 +2234,7 @@ export default function Admin() {
                     </td>
                   </tr>
                 ))}
-                {inquiries.length === 0 && (
+                {displayedInquiries.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-6 py-6 text-sm text-gray-500">
                       Keine offenen Anfragen vorhanden.

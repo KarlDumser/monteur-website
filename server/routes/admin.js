@@ -6,6 +6,7 @@ import WebsiteVisit from '../models/WebsiteVisit.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
 import { sendBookingConfirmation, sendOfferEmail, sendMissingDataEmail } from '../services/emailService.js';
+import { runInquiryEmailImportOnce } from '../services/inquiryEmailImportService.js';
 import {
   hasConfiguredAdminCredentials,
   validateAdminBasicAuthHeader
@@ -421,6 +422,15 @@ router.get('/inquiries', async (req, res) => {
     }).sort({ createdAt: -1 });
 
     res.json(inquiries);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/inquiries/import-email', async (req, res) => {
+  try {
+    const result = await runInquiryEmailImportOnce();
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
