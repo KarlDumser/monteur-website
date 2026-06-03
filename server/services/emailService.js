@@ -581,7 +581,7 @@ export async function sendOfferEmail(booking) {
         </div>
         
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-        <p>Sollten Sie noch Fragen haben, antworten Sie einfach auf diese E-Mail.</p>
+        <p>Bei Fragen melden Sie sich bitte direkt bei Karl Dumser unter 015221557400.</p>
         <p>
           Mit freundlichen Grüßen<br>
           <strong>Christine Dumser</strong><br>
