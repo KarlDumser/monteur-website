@@ -1326,7 +1326,7 @@ export default function Admin() {
               >
                 ×
               </button>
-              <h2 className="text-2xl font-bold mb-4">Buchungsdetails</h2>
+              <h2 className="text-2xl font-bold mb-4">{selectedBooking.isInquiry ? 'Anfragedetails' : 'Buchungsdetails'}</h2>
               {(() => {
                 const linkedCustomer = customers.find((c) => String(c._id) === String(selectedBooking.customerId || ''));
                 return (
@@ -1404,6 +1404,7 @@ export default function Admin() {
                 {selectedBooking.stripePaymentId && <div className="col-span-2 text-xs text-gray-500"><strong>Stripe Payment ID:</strong> {selectedBooking.stripePaymentId}</div>}
               </div>
 
+              {!selectedBooking.isInquiry && (
               <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
                 <div className="flex flex-col gap-3">
                   <div>
@@ -1464,6 +1465,7 @@ export default function Admin() {
                   </button>
                 </div>
               </div>
+              )}
 
               {/* Mini-Rechnung */}
               <div className="bg-gray-50 rounded-lg p-4 mt-2 mb-2">
