@@ -29,6 +29,7 @@ export default function AngebotAnnehmen() {
   const [booking, setBooking] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [selectedApartment, setSelectedApartment] = useState('');
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const offerOptions = normalizeOfferOptions(booking?.offerApartmentOptions, booking?.wohnung);
@@ -87,6 +88,7 @@ export default function AngebotAnnehmen() {
       }
 
       setSuccessMessage(data.message || 'Ihr Angebot wurde erfolgreich angenommen. Wir melden uns in Kuerze.');
+      setShowSuccessScreen(true);
     } catch (err) {
       setError(err.message || 'Angebot konnte nicht angenommen werden.');
     } finally {
@@ -131,6 +133,27 @@ export default function AngebotAnnehmen() {
 
   if (!booking) {
     return null;
+  }
+
+  if (showSuccessScreen) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-2xl">
+        <div className="bg-white shadow-xl rounded-2xl border border-green-200 overflow-hidden">
+          <div className="bg-green-600 text-white p-6">
+            <h1 className="text-3xl font-bold">Vielen Dank</h1>
+            <p className="mt-2 text-green-100">Ihr Angebot wurde erfolgreich angenommen.</p>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 text-base">
+              {successMessage || 'Vielen Dank. Ihr Angebot wurde angenommen und wartet jetzt auf unsere finale Bestaetigung.'}
+            </div>
+            <p className="text-sm text-slate-600">
+              Wir melden uns schnellstmoeglich mit der finalen Bestaetigung bei Ihnen.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
