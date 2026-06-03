@@ -6,7 +6,11 @@ import WebsiteVisit from '../models/WebsiteVisit.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
 import { sendBookingConfirmation, sendOfferEmail, sendMissingDataEmail } from '../services/emailService.js';
-import { runInquiryEmailImportOnce } from '../services/inquiryEmailImportService.js';
+import {
+  importInquiryEmailsByUid,
+  listInquiryEmailCandidates,
+  runInquiryEmailImportOnce
+} from '../services/inquiryEmailImportService.js';
 import {
   hasConfiguredAdminCredentials,
   validateAdminBasicAuthHeader
@@ -428,6 +432,27 @@ router.get('/inquiries', async (req, res) => {
 router.post('/inquiries/import-email', async (req, res) => {
   try {
     const result = await runInquiryEmailImportOnce();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/inquiries/email-candidates', async (req, res) => {
+  try {
+    const rawLimit = Number(req.query.limit || 25);
+    const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(100, rawLimit)) : 25;
+    const seen = String(req.query.seen || 'true').toLowerCase() !== 'false';
+    const result = await listInquiryEmailCandidates({ seen, limit });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/inquiries/import-selected-emails', async (req, res) => {
+  try {
+    const result = await importInquiryEmailsByUid(req.body?.uids || [], { markSeen: true });
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -9,6 +9,10 @@ const DEFAULT_WOHNUNG_LABEL = 'Wohnung (Mailimport - bitte pruefen)';
 let workerStarted = false;
 let importInProgress = false;
 
+function isEmailImportEnabled() {
+  return String(process.env.EMAIL_IMPORT_ENABLED || 'false').toLowerCase() === 'true';
+}
+
 function parseDateInput(input) {
   const raw = String(input || '').trim();
   if (!raw) return null;
@@ -179,18 +183,257 @@ function getImapConfig() {
   };
 }
 
+function hasImapConfig(config = getImapConfig()) {
+  return Boolean(config.host && config.user && config.pass);
+}
+
+async function fetchParsedMessage(client, uid) {
+  const message = await client.fetchOne(uid, {
+    envelope: true,
+    source: true,
+    flags: true,
+    internalDate: true
+  });
+
+  if (!message?.source) {
+    return null;
+  }
+
+  const parsedMail = await simpleParser(message.source);
+  const text = String(parsedMail.text || parsedMail.html || '').trim();
+  const fromAddress = parsedMail.from?.value?.[0]?.address || '';
+  const subject = parsedMail.subject || message.envelope?.subject || '';
+  const messageId = parsedMail.messageId || message.envelope?.messageId || null;
+
+  return {
+    uid,
+    text,
+    fromAddress,
+    subject,
+    messageId,
+    seen: Array.isArray(message.flags) ? message.flags.includes('\\Seen') : false,
+    date: parsedMail.date || message.internalDate || message.envelope?.date || null
+  };
+}
+
+async function importMessageFromParsedMail(client, parsedMessage, { markSeen = true } = {}) {
+  const { uid, text, fromAddress, subject, messageId } = parsedMessage;
+
+  if (messageId) {
+    const duplicate = await Booking.findOne({ 'emailImport.messageId': messageId }).select('_id');
+    if (duplicate) {
+      if (markSeen) {
+        await client.messageFlagsAdd(uid, ['\\Seen']);
+      }
+
+      return {
+        status: 'skipped',
+        reason: 'duplicate-message-id',
+        uid,
+        messageId,
+        inquiryId: String(duplicate._id)
+      };
+    }
+  }
+
+  const aiParsed = await extractWithAI(text, subject);
+  const regexParsed = extractWithRegex(text);
+  const merged = {
+    ...regexParsed,
+    ...(aiParsed || {})
+  };
+
+  const payload = buildInquiryPayload(merged, {
+    messageId,
+    fromAddress,
+    subject,
+    text
+  });
+
+  const booking = new Booking(payload);
+  await booking.save();
+
+  if (markSeen) {
+    await client.messageFlagsAdd(uid, ['\\Seen']);
+  }
+
+  return {
+    status: 'created',
+    uid,
+    messageId,
+    inquiryId: String(booking._id)
+  };
+}
+
+export async function listInquiryEmailCandidates({ seen = true, limit = 25 } = {}) {
+  const config = getImapConfig();
+  if (!hasImapConfig(config)) {
+    return { status: 'skipped', reason: 'imap-config-missing', emails: [] };
+  }
+
+  const client = new ImapFlow({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: {
+      user: config.user,
+      pass: config.pass
+    }
+  });
+
+  try {
+    await client.connect();
+    const lock = await client.getMailboxLock('INBOX');
+
+    try {
+      const searchCriteria = typeof seen === 'boolean' ? { seen } : {};
+      const uids = await client.search(searchCriteria);
+      const limitedUids = uids.slice(-Math.max(1, Math.min(100, Number(limit) || 25))).reverse();
+      const emails = [];
+
+      for (const uid of limitedUids) {
+        try {
+          const parsedMessage = await fetchParsedMessage(client, uid);
+          if (!parsedMessage) continue;
+
+          let existingInquiryId = null;
+          if (parsedMessage.messageId) {
+            const existing = await Booking.findOne({ 'emailImport.messageId': parsedMessage.messageId }).select('_id');
+            existingInquiryId = existing ? String(existing._id) : null;
+          }
+
+          emails.push({
+            uid,
+            messageId: parsedMessage.messageId,
+            fromAddress: parsedMessage.fromAddress,
+            subject: parsedMessage.subject,
+            date: parsedMessage.date,
+            seen: parsedMessage.seen,
+            alreadyImported: Boolean(existingInquiryId),
+            existingInquiryId,
+            preview: parsedMessage.text.replace(/\s+/g, ' ').trim().slice(0, 240)
+          });
+        } catch (err) {
+          emails.push({
+            uid,
+            fromAddress: '',
+            subject: 'Mail konnte nicht gelesen werden',
+            date: null,
+            seen: Boolean(seen),
+            alreadyImported: false,
+            existingInquiryId: null,
+            preview: err.message
+          });
+        }
+      }
+
+      return { status: 'ok', emails };
+    } finally {
+      lock.release();
+    }
+  } finally {
+    if (client.usable) {
+      try {
+        await client.logout();
+      } catch {
+        // noop
+      }
+    }
+  }
+}
+
+export async function importInquiryEmailsByUid(uids, { markSeen = true } = {}) {
+  if (importInProgress) {
+    return { status: 'skipped', reason: 'import-already-running', results: [] };
+  }
+
+  const config = getImapConfig();
+  if (!hasImapConfig(config)) {
+    return { status: 'skipped', reason: 'imap-config-missing', results: [] };
+  }
+
+  const uniqueUids = [...new Set((Array.isArray(uids) ? uids : []).map((uid) => Number(uid)).filter((uid) => Number.isInteger(uid) && uid > 0))];
+  if (uniqueUids.length === 0) {
+    return { status: 'skipped', reason: 'no-uids-provided', results: [] };
+  }
+
+  importInProgress = true;
+
+  const client = new ImapFlow({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: {
+      user: config.user,
+      pass: config.pass
+    }
+  });
+
+  const stats = {
+    status: 'ok',
+    scanned: uniqueUids.length,
+    created: 0,
+    skipped: 0,
+    errors: 0,
+    results: []
+  };
+
+  try {
+    await client.connect();
+    const lock = await client.getMailboxLock('INBOX');
+
+    try {
+      for (const uid of uniqueUids) {
+        try {
+          const parsedMessage = await fetchParsedMessage(client, uid);
+          if (!parsedMessage) {
+            stats.skipped += 1;
+            stats.results.push({ status: 'skipped', reason: 'message-without-source', uid });
+            continue;
+          }
+
+          const result = await importMessageFromParsedMail(client, parsedMessage, { markSeen });
+          if (result.status === 'created') stats.created += 1;
+          else stats.skipped += 1;
+          stats.results.push(result);
+        } catch (err) {
+          stats.errors += 1;
+          stats.results.push({ status: 'error', uid, error: err.message });
+          console.error('Manual email inquiry import failed for one message:', err.message);
+        }
+      }
+    } finally {
+      lock.release();
+    }
+
+    return stats;
+  } catch (err) {
+    console.error('Manual email inquiry import failed:', err.message);
+    return { ...stats, status: 'error', error: err.message };
+  } finally {
+    importInProgress = false;
+    if (client.usable) {
+      try {
+        await client.logout();
+      } catch {
+        // noop
+      }
+    }
+  }
+}
+
 export async function runInquiryEmailImportOnce() {
   if (importInProgress) {
     return { status: 'skipped', reason: 'import-already-running' };
   }
 
-  const enabled = String(process.env.EMAIL_IMPORT_ENABLED || 'false').toLowerCase() === 'true';
+  const enabled = isEmailImportEnabled();
   if (!enabled) {
     return { status: 'skipped', reason: 'email-import-disabled' };
   }
 
   const config = getImapConfig();
-  if (!config.host || !config.user || !config.pass) {
+  if (!hasImapConfig(config)) {
     return { status: 'skipped', reason: 'imap-config-missing' };
   }
 
@@ -222,48 +465,15 @@ export async function runInquiryEmailImportOnce() {
 
       for (const uid of uids) {
         try {
-          const message = await client.fetchOne(uid, { envelope: true, source: true });
-          if (!message?.source) {
+          const parsedMessage = await fetchParsedMessage(client, uid);
+          if (!parsedMessage) {
             stats.skipped += 1;
             continue;
           }
 
-          const parsedMail = await simpleParser(message.source);
-          const text = String(parsedMail.text || parsedMail.html || '').trim();
-          const fromAddress = parsedMail.from?.value?.[0]?.address || '';
-          const subject = parsedMail.subject || message.envelope?.subject || '';
-          const messageId = parsedMail.messageId || message.envelope?.messageId || null;
-
-          if (messageId) {
-            const duplicate = await Booking.findOne({ 'emailImport.messageId': messageId }).select('_id');
-            if (duplicate) {
-              stats.skipped += 1;
-              if (markSeen) await client.messageFlagsAdd(uid, ['\\Seen']);
-              continue;
-            }
-          }
-
-          const aiParsed = await extractWithAI(text, subject);
-          const regexParsed = extractWithRegex(text);
-          const merged = {
-            ...regexParsed,
-            ...(aiParsed || {})
-          };
-
-          const payload = buildInquiryPayload(merged, {
-            messageId,
-            fromAddress,
-            subject,
-            text
-          });
-
-          const booking = new Booking(payload);
-          await booking.save();
-          stats.created += 1;
-
-          if (markSeen) {
-            await client.messageFlagsAdd(uid, ['\\Seen']);
-          }
+          const result = await importMessageFromParsedMail(client, parsedMessage, { markSeen });
+          if (result.status === 'created') stats.created += 1;
+          else stats.skipped += 1;
         } catch (err) {
           stats.errors += 1;
           console.error('Email inquiry import failed for one message:', err.message);
@@ -294,7 +504,7 @@ export function startInquiryEmailImportWorker() {
   if (workerStarted) return;
   workerStarted = true;
 
-  const enabled = String(process.env.EMAIL_IMPORT_ENABLED || 'false').toLowerCase() === 'true';
+  const enabled = isEmailImportEnabled();
   if (!enabled) {
     console.log('Email inquiry import worker disabled');
     return;

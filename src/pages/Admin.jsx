@@ -102,6 +102,11 @@ export default function Admin() {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [actionMessage, setActionMessage] = useState(null);
   const [isLoginAttempting, setIsLoginAttempting] = useState(false);
+  const [manualEmailCandidates, setManualEmailCandidates] = useState([]);
+  const [manualEmailSelection, setManualEmailSelection] = useState([]);
+  const [manualEmailLoading, setManualEmailLoading] = useState(false);
+  const [manualEmailImporting, setManualEmailImporting] = useState(false);
+  const [manualEmailLoaded, setManualEmailLoaded] = useState(false);
   const messageTimeoutRef = useRef(null);
   const loginAbortRef = useRef(null);
 
@@ -165,6 +170,11 @@ export default function Admin() {
   const awaitingAdminConfirmationInquiries = inquiries.filter(
     (inquiry) => inquiry.inquirySource === 'email' && inquiry.offerStatus === 'awaiting-admin-confirmation'
   );
+  const selectableManualEmailUids = manualEmailCandidates
+    .filter((email) => email.uid && !email.alreadyImported)
+    .map((email) => email.uid);
+  const allSelectableManualEmailsSelected = selectableManualEmailUids.length > 0
+    && selectableManualEmailUids.every((uid) => manualEmailSelection.includes(uid));
   const displayedInquiries = inquirySourceFilter === 'email'
     ? emailInquiries
     : inquirySourceFilter === 'awaiting-admin-confirmation'
@@ -499,6 +509,89 @@ export default function Admin() {
     }
     setActionMessage({ type, text });
     messageTimeoutRef.current = setTimeout(() => setActionMessage(null), 3000);
+  };
+
+  const loadManualEmailCandidates = async () => {
+    try {
+      setManualEmailLoading(true);
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/inquiries/email-candidates?seen=true&limit=30`, {
+        headers: { Authorization: `Basic ${auth}` }
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Gelesene Mails konnten nicht geladen werden');
+      }
+
+      const emails = Array.isArray(data.emails) ? data.emails : [];
+      setManualEmailCandidates(emails);
+      setManualEmailSelection((prev) => prev.filter((uid) => emails.some((email) => email.uid === uid && !email.alreadyImported)));
+      setManualEmailLoaded(true);
+
+      if (data.status === 'skipped' && data.reason === 'imap-config-missing') {
+        showActionMessage('error', 'IMAP ist noch nicht konfiguriert');
+      }
+    } catch (error) {
+      showActionMessage('error', error.message || 'Gelesene Mails konnten nicht geladen werden');
+    } finally {
+      setManualEmailLoading(false);
+    }
+  };
+
+  const toggleManualEmailSelection = (uid) => {
+    setManualEmailSelection((prev) => (
+      prev.includes(uid)
+        ? prev.filter((entry) => entry !== uid)
+        : [...prev, uid]
+    ));
+  };
+
+  const toggleAllManualEmails = () => {
+    if (allSelectableManualEmailsSelected) {
+      setManualEmailSelection([]);
+      return;
+    }
+
+    setManualEmailSelection(selectableManualEmailUids);
+  };
+
+  const handleImportSelectedEmails = async () => {
+    if (manualEmailSelection.length === 0) {
+      showActionMessage('error', 'Bitte zuerst mindestens eine Mail auswaehlen');
+      return;
+    }
+
+    if (!confirm(`${manualEmailSelection.length} gelesene Mail(s) jetzt als Anfrage importieren?`)) return;
+
+    try {
+      setManualEmailImporting(true);
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/inquiries/import-selected-emails`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${auth}`
+        },
+        body: JSON.stringify({ uids: manualEmailSelection })
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Ausgewaehlte Mails konnten nicht importiert werden');
+      }
+
+      const created = Number(data.created || 0);
+      const skipped = Number(data.skipped || 0);
+      const errors = Number(data.errors || 0);
+      showActionMessage('success', `Mail-Import abgeschlossen: ${created} erstellt, ${skipped} uebersprungen, ${errors} Fehler`);
+      setManualEmailSelection([]);
+      await Promise.all([loadData(), loadManualEmailCandidates()]);
+    } catch (error) {
+      showActionMessage('error', error.message || 'Ausgewaehlte Mails konnten nicht importiert werden');
+    } finally {
+      setManualEmailImporting(false);
+    }
   };
 
   useEffect(() => {
@@ -2181,6 +2274,102 @@ export default function Admin() {
 
         {activeTab === 'inquiries' && (
           <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <div className="mx-6 mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Bereits gelesene Mails manuell als Anfrage uebernehmen
+                  </p>
+                  <p className="text-sm text-slate-600">
+                    Laden Sie bereits gelesene Inbox-Mails, waehlen Sie mehrere aus und uebernehmen Sie diese gesammelt ins Anfragesystem.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={loadManualEmailCandidates}
+                    disabled={manualEmailLoading}
+                    className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-sm font-semibold px-4 py-2 rounded-lg"
+                  >
+                    {manualEmailLoading ? 'Mails werden geladen...' : manualEmailLoaded ? 'Liste aktualisieren' : 'Gelesene Mails laden'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleAllManualEmails}
+                    disabled={manualEmailLoading || selectableManualEmailUids.length === 0}
+                    className="bg-white border border-slate-300 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400 text-slate-800 text-sm font-semibold px-4 py-2 rounded-lg"
+                  >
+                    {allSelectableManualEmailsSelected ? 'Auswahl loesen' : 'Alle markieren'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleImportSelectedEmails}
+                    disabled={manualEmailImporting || manualEmailSelection.length === 0}
+                    className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white text-sm font-semibold px-4 py-2 rounded-lg"
+                  >
+                    {manualEmailImporting ? 'Import laeuft...' : `Auswahl importieren (${manualEmailSelection.length})`}
+                  </button>
+                </div>
+              </div>
+
+              {manualEmailLoaded && (
+                <div className="mt-4 space-y-3">
+                  {manualEmailCandidates.length === 0 && (
+                    <div className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">
+                      Keine gelesenen Mails zum manuellen Import gefunden.
+                    </div>
+                  )}
+
+                  {manualEmailCandidates.map((email) => (
+                    <label
+                      key={email.uid}
+                      className={`flex gap-3 rounded-xl border px-4 py-3 ${email.alreadyImported ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4"
+                        checked={manualEmailSelection.includes(email.uid)}
+                        disabled={email.alreadyImported || !email.uid}
+                        onChange={() => toggleManualEmailSelection(email.uid)}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 break-words">
+                              {email.subject || '(ohne Betreff)'}
+                            </p>
+                            <p className="text-sm text-slate-600 break-all">
+                              {email.fromAddress || 'Unbekannter Absender'}
+                            </p>
+                          </div>
+                          <div className="text-xs text-slate-500 whitespace-nowrap">
+                            {email.date ? new Date(email.date).toLocaleString('de-DE') : 'Kein Datum'}
+                          </div>
+                        </div>
+                        <p className="mt-2 text-sm text-slate-700 break-words">
+                          {email.preview || 'Keine Vorschau verfuegbar'}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <span className="inline-block rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold px-2 py-0.5">
+                            UID {email.uid}
+                          </span>
+                          {email.alreadyImported ? (
+                            <span className="inline-block rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold px-2 py-0.5">
+                              Bereits importiert
+                            </span>
+                          ) : (
+                            <span className="inline-block rounded-full bg-amber-100 text-amber-800 text-[11px] font-semibold px-2 py-0.5">
+                              Bereit fuer Import
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {awaitingAdminConfirmationInquiries.length > 0 && (
               <div className="mx-6 mt-5 mb-0 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
