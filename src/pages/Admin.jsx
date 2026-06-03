@@ -663,6 +663,26 @@ export default function Admin() {
     }
   };
 
+  const handleSendOfferList = async (inquiryId, inquiryEmail) => {
+    if (!confirm(`Angebot per E-Mail an ${inquiryEmail} versenden?`)) return;
+
+    try {
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/bookings/${inquiryId}/send-offer`, {
+        method: 'POST',
+        headers: { Authorization: `Basic ${auth}` }
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Angebot konnte nicht versendet werden');
+
+      showActionMessage('success', data.message || 'Angebot versendet');
+      loadData();
+    } catch (error) {
+      showActionMessage('error', error.message || 'Angebot konnte nicht versendet werden');
+    }
+  };
+
   const handleRejectInquiry = async (inquiryId) => {
     if (!confirm('Anfrage wirklich ablehnen?')) return;
 
@@ -2134,6 +2154,9 @@ export default function Admin() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {new Date(inquiry.startDate).toLocaleDateString('de-DE')} - {new Date(inquiry.endDate).toLocaleDateString('de-DE')}
                       <div className="text-gray-500">{inquiry.nights} Nächte</div>
+                      {inquiry.status === 'angebot_gesendet' && (
+                        <div className="text-yellow-600 font-semibold mt-1">Angebot gesendet</div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex gap-2">
@@ -2142,6 +2165,13 @@ export default function Admin() {
                           className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
                         >
                           Details
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSendOfferList(inquiry._id, inquiry.email)}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+                        >
+                          Angebot senden
                         </button>
                         <button
                           type="button"
