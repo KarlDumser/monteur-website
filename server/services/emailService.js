@@ -558,7 +558,7 @@ export async function sendOfferEmail(booking) {
       Messages: [{
         From: { Email: fromAddress, Name: process.env.EMAIL_FROM_NAME || 'Monteurwohnungen Dumser' },
         To: [{ Email: booking.email }],
-        Subject: \`Angebot: \${wohnungName} (\${startDate} - \${endDate})\`,
+        Subject: `Angebot: ${wohnungName} (${startDate} - ${endDate})`,
         HTMLPart: htmlContent,
         Attachments: [
           {
@@ -581,13 +581,13 @@ export async function sendOfferEmail(booking) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Basic ' + Buffer.from(\`\${process.env.MAILJET_API_KEY}:\${process.env.MAILJET_SECRET_KEY}\`).toString('base64')
+        Authorization: 'Basic ' + Buffer.from(`${process.env.MAILJET_API_KEY}:${process.env.MAILJET_SECRET_KEY}`).toString('base64')
       },
       body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
-      throw new Error(\`Mailjet API Request failed with status \${response.status}\`);
+      throw new Error(`Mailjet API Request failed with status ${response.status}`);
     }
 
     return { status: 'sent' };
@@ -604,7 +604,7 @@ export async function sendMissingDataEmail(booking) {
   try {
     const baseUrl = process.env.VITE_URL || process.env.APP_URL || process.env.API_URL || 'http://localhost:5173';
     // Dies löst das Frontend-Formular für fehlende Daten auf, was wir bauen müssen.
-    const formLink = \`\${baseUrl}/daten-vervollstaendigen/\${booking._id}\`;
+    const formLink = `${baseUrl}/daten-vervollstaendigen/${booking._id}`;
     const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
 
     const htmlContent = `
@@ -614,7 +614,7 @@ export async function sendMissingDataEmail(booking) {
         <p>vielen Dank für die Annahme unseres Angebotes! Um Ihre Buchung verbindlich abzuschließen und die korrekte Rechnung für Sie erstellen zu können, benötigen wir noch Ihre vollständige Rechnungsadresse und/oder Telefonnummer.</p>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="\${formLink}" style="background-color: #ea580c; color: white; padding: 15px 30px; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 8px; display: inline-block;">Fehlende Daten eintragen</a>
+          <a href="${formLink}" style="background-color: #ea580c; color: white; padding: 15px 30px; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 8px; display: inline-block;">Fehlende Daten eintragen</a>
         </div>
         
         <p>Sobald Sie die Daten eingegeben haben, erhalten Sie sofort im Anschluss Ihre gültige Buchungsbestätigung inkl. Rechnung per E-Mail.</p>
@@ -640,12 +640,12 @@ export async function sendMissingDataEmail(booking) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Basic ' + Buffer.from(\`\${process.env.MAILJET_API_KEY}:\${process.env.MAILJET_SECRET_KEY}\`).toString('base64')
+        Authorization: 'Basic ' + Buffer.from(`${process.env.MAILJET_API_KEY}:${process.env.MAILJET_SECRET_KEY}`).toString('base64')
       },
       body: JSON.stringify(payload)
     });
 
-    if (!response.ok) throw new Error(\`Mailjet API \${response.status}\`);
+    if (!response.ok) throw new Error(`Mailjet API ${response.status}`);
     return { status: 'sent' };
   } catch (err) {
     console.error('Fehler beim Senden der Daten-Anfrage:', err);
@@ -662,5 +662,5 @@ function formatGermanDate(date) {
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  return \`\${day}.\${month}.\${year}\`;
+  return `${day}.${month}.${year}`;
 }
