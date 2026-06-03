@@ -498,8 +498,6 @@ export async function sendOfferEmail(booking) {
     const baseUrl = getPublicAppUrl();
     const acceptLinkBase = `${baseUrl}/angebot-annehmen/${booking._id}`;
 
-    const { buffer: pdfBuffer, fileName } = await generateInvoice(booking, true);
-
     const offerOptions = normalizeOfferOptions(booking.offerApartmentOptions, booking.wohnung);
     const variants = buildOfferVariantsFromBooking(booking, offerOptions);
     const primaryVariant = variants[0] || null;
@@ -509,6 +507,35 @@ export async function sendOfferEmail(booking) {
     const startDate = formatGermanDate(booking.originalStartDate || booking.startDate);
     const endDate = formatGermanDate(booking.originalEndDate || booking.endDate);
     const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
+
+    const pdfAttachments = [];
+    for (const variant of variants) {
+      const variantBooking = {
+        ...booking,
+        wohnung: variant.option,
+        wohnungLabel: getOfferOptionLabel(variant.option),
+        nights: variant.nights,
+        pricePerNight: variant.pricePerNight,
+        cleaningFee: variant.cleaningFee,
+        subtotal: variant.subtotal,
+        discount: variant.discount,
+        vat: variant.vat,
+        total: variant.total
+      };
+
+      const { buffer, fileName } = await generateInvoice(variantBooking, true);
+      const optionSuffix = variant.option === 'kombi' ? 'kombi-paket' : variant.option;
+      const dotIndex = fileName.lastIndexOf('.');
+      const finalFileName = dotIndex > 0
+        ? `${fileName.slice(0, dotIndex)}-${optionSuffix}${fileName.slice(dotIndex)}`
+        : `${fileName}-${optionSuffix}.pdf`;
+
+      pdfAttachments.push({
+        ContentType: 'application/pdf',
+        Filename: finalFileName,
+        Base64Content: buffer.toString('base64')
+      });
+    }
 
     const variantCardsHtml = variants.map((variant) => {
       const info = getApartmentInfoForOption(variant.option);
@@ -611,13 +638,7 @@ export async function sendOfferEmail(booking) {
         To: [{ Email: booking.email }],
         Subject: `Angebot: ${wohnungName} (${startDate} - ${endDate})`,
         HTMLPart: htmlContent,
-        Attachments: [
-          {
-            ContentType: 'application/pdf',
-            Filename: fileName,
-            Base64Content: pdfBuffer.toString('base64')
-          }
-        ]
+        Attachments: pdfAttachments
       }]
     };
     
@@ -630,13 +651,7 @@ export async function sendOfferEmail(booking) {
         To: [{ Email: ownerInbox, Name: 'Owner Copy' }],
         Subject: `[Kopie] Angebot: ${wohnungName} (${startDate} - ${endDate})`,
         HTMLPart: ownerCopyHtmlContent,
-        Attachments: [
-          {
-            ContentType: 'application/pdf',
-            Filename: fileName,
-            Base64Content: pdfBuffer.toString('base64')
-          }
-        ]
+        Attachments: pdfAttachments
       });
     }
 

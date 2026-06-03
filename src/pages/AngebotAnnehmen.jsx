@@ -30,6 +30,7 @@ export default function AngebotAnnehmen() {
   const [processing, setProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedApartment, setSelectedApartment] = useState('');
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -113,6 +114,26 @@ export default function AngebotAnnehmen() {
   const activeApartmentInfo = getApartmentInfoForOption(activeOption);
   const activeImages = getApartmentPreviewImages(activeOption, 6);
 
+  useEffect(() => {
+    if (selectedImageIndex === null || activeImages.length === 0) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setSelectedImageIndex(null);
+        return;
+      }
+      if (event.key === 'ArrowRight') {
+        setSelectedImageIndex((prev) => ((prev ?? 0) + 1) % activeImages.length);
+      }
+      if (event.key === 'ArrowLeft') {
+        setSelectedImageIndex((prev) => ((prev ?? 0) - 1 + activeImages.length) % activeImages.length);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedImageIndex, activeImages]);
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <div className="bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden">
@@ -188,15 +209,53 @@ export default function AngebotAnnehmen() {
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h2 className="text-lg font-bold text-slate-900 mb-3">Bildergalerie</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {activeImages.map((entry) => (
+                {activeImages.map((entry, index) => (
                   <img
                     key={`${entry.folder}-${entry.image}`}
                     src={`/${entry.folder}/${entry.image}?v=${APP_VERSION}`}
                     alt={entry.apartmentLabel}
-                    className="h-28 md:h-32 w-full object-cover rounded-lg border border-slate-200"
+                    className="h-28 md:h-32 w-full object-cover rounded-lg border border-slate-200 cursor-zoom-in"
                     loading="lazy"
+                    onClick={() => setSelectedImageIndex(index)}
                   />
                 ))}
+              </div>
+              <p className="text-xs text-slate-500 mt-2">Bild anklicken zum Vergroessern</p>
+            </div>
+          )}
+
+          {selectedImageIndex !== null && activeImages[selectedImageIndex] && (
+            <div
+              className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+              onClick={() => setSelectedImageIndex(null)}
+            >
+              <div className="relative max-w-6xl w-full max-h-[92vh] flex items-center justify-center" onClick={(event) => event.stopPropagation()}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedImageIndex(null)}
+                  className="absolute top-3 right-3 z-10 bg-black/60 text-white rounded-full w-10 h-10 text-xl"
+                >
+                  ×
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedImageIndex((prev) => ((prev ?? 0) - 1 + activeImages.length) % activeImages.length)}
+                  className="absolute left-3 z-10 bg-black/60 text-white rounded-full w-10 h-10 text-xl"
+                >
+                  ←
+                </button>
+                <img
+                  src={`/${activeImages[selectedImageIndex].folder}/${activeImages[selectedImageIndex].image}?v=${APP_VERSION}`}
+                  alt={activeImages[selectedImageIndex].apartmentLabel}
+                  className="max-h-[88vh] max-w-full object-contain rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSelectedImageIndex((prev) => ((prev ?? 0) + 1) % activeImages.length)}
+                  className="absolute right-3 z-10 bg-black/60 text-white rounded-full w-10 h-10 text-xl"
+                >
+                  →
+                </button>
               </div>
             </div>
           )}
