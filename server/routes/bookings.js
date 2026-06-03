@@ -37,14 +37,45 @@ const isLegacySelfOfferBlock = (booking, blockedDate) => {
     return false;
   }
 
-  const bookingEmail = String(booking.email || '').trim().toLowerCase();
-  const blockCreator = String(blockedDate?.createdBy || '').trim().toLowerCase();
-
-  if (!bookingEmail || !blockCreator || bookingEmail !== blockCreator) {
+  const sameRange = isSameUtcDay(booking.startDate, blockedDate.startDate) && isSameUtcDay(booking.endDate, blockedDate.endDate);
+  if (!sameRange) {
     return false;
   }
 
-  return isSameUtcDay(booking.startDate, blockedDate.startDate) && isSameUtcDay(booking.endDate, blockedDate.endDate);
+  const bookingEmail = String(booking.email || '').trim().toLowerCase();
+  const blockCreator = String(blockedDate?.createdBy || '').trim().toLowerCase();
+
+  if (bookingEmail && blockCreator && bookingEmail === blockCreator) {
+    return true;
+  }
+
+  const bookingCreated = new Date(booking.createdAt);
+  const blockCreated = new Date(blockedDate?.createdAt);
+  if (Number.isNaN(bookingCreated.getTime()) || Number.isNaN(blockCreated.getTime())) {
+    return false;
+  }
+
+  // Legacy safety: old inquiry flows occasionally created booking-like blocks at the same time.
+  const createdDiffMs = Math.abs(blockCreated.getTime() - bookingCreated.getTime());
+  return createdDiffMs <= 24 * 60 * 60 * 1000;
+};
+
+const buildConflictMeta = (conflict) => {
+  if (!conflict) {
+    return null;
+  }
+
+  const startDate = conflict.item?.startDate ? new Date(conflict.item.startDate).toISOString().slice(0, 10) : null;
+  const endDate = conflict.item?.endDate ? new Date(conflict.item.endDate).toISOString().slice(0, 10) : null;
+
+  return {
+    type: conflict.type,
+    apartment: conflict.apartmentKey,
+    reason: String(conflict.item?.reason || ''),
+    startDate,
+    endDate,
+    id: String(conflict.item?._id || '')
+  };
 };
 
 const getCleaningBufferDays = (value) => {
@@ -644,8 +675,16 @@ router.post('/:id/accept-offer', async (req, res) => {
       booking.updatedAt = new Date();
       await booking.save();
 
+      const conflictMeta = buildConflictMeta(blockingConflict);
+      console.warn('Offer accept blocked by conflict', {
+        bookingId: String(booking._id),
+        selectedOption,
+        conflict: conflictMeta
+      });
+
       return res.status(409).json({
-        error: 'Das Angebot ist leider nicht mehr verfuegbar, da der Zeitraum inzwischen anderweitig vergeben wurde.'
+        error: 'Das Angebot ist leider nicht mehr verfuegbar, da der Zeitraum inzwischen anderweitig vergeben wurde.',
+        conflict: conflictMeta
       });
     }
 
@@ -715,8 +754,16 @@ router.post('/:id/complete-data', async (req, res) => {
         booking.updatedAt = new Date();
         await booking.save();
 
+        const conflictMeta = buildConflictMeta(blockingConflict);
+        console.warn('Offer complete-data blocked by conflict', {
+          bookingId: String(booking._id),
+          selectedOption: booking.selectedOfferApartment || booking.wohnung,
+          conflict: conflictMeta
+        });
+
         return res.status(409).json({
-          error: 'Das Angebot ist leider nicht mehr verfuegbar, da der Zeitraum inzwischen vergeben wurde.'
+          error: 'Das Angebot ist leider nicht mehr verfuegbar, da der Zeitraum inzwischen vergeben wurde.',
+          conflict: conflictMeta
         });
       }
 
