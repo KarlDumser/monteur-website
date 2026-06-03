@@ -46,7 +46,8 @@ const parseAddressString = (address) => {
   };
 };
 
-export default function NewBookingForm({ auth, customers = [], onClose, onSuccess }) {
+export default function NewBookingForm({ auth, customers = [], onClose, onSuccess, mode = 'booking' }) {
+  const isOfferMode = mode === 'offer';
   const [formData, setFormData] = useState({
     customerId: '',
     name: '',
@@ -75,7 +76,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
     total: 0,
     bookingStatus: 'confirmed',
     paymentStatus: 'pending',
-    sendConfirmationEmail: true,
+    sendConfirmationEmail: !isOfferMode,
     checkInTime: '16:00',
     checkOutTime: '10:00'
   });
@@ -311,7 +312,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       return;
     }
 
-    const payload = {
+      const payload = {
       ...formData,
       customerId: formData.customerId || null,
       people,
@@ -324,6 +325,15 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
       vat: Number(formData.vat) || 0,
       total: Number(formData.total) || 0
     };
+
+      if (isOfferMode) {
+        payload.bookingMode = 'inquiry';
+        payload.isInquiry = true;
+        payload.inquiryStatus = 'pending';
+        payload.offerStatus = 'none';
+        payload.inquirySource = 'website';
+        payload.sendConfirmationEmail = false;
+      }
 
     try {
       const apiUrl = getApiUrl();
@@ -338,11 +348,11 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
 
       if (!response.ok) {
         const errData = await response.json();
-        throw new Error(errData.error || 'Fehler beim Erstellen der Buchung');
+        throw new Error(errData.error || (isOfferMode ? 'Fehler beim Erstellen der Anfrage' : 'Fehler beim Erstellen der Buchung'));
       }
 
       const newBooking = await response.json();
-      onSuccess(newBooking);
+      onSuccess(newBooking, { openOfferEditor: isOfferMode });
       onClose();
     } catch (err) {
       setError(err.message);
@@ -389,7 +399,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Neue Buchung erstellen</h2>
+          <h2 className="text-2xl font-bold">{isOfferMode ? 'Neues Angebot manuell vorbereiten' : 'Neue Buchung erstellen'}</h2>
           <button onClick={() => { cancelSaveCountdown(); onClose(); }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
         </div>
 
@@ -681,7 +691,8 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
               </div>
             </div>
 
-            <div className="col-span-2 bg-gray-50 border border-gray-200 rounded p-3">
+            {!isOfferMode && (
+              <div className="col-span-2 bg-gray-50 border border-gray-200 rounded p-3">
               <label className="flex items-start gap-3 text-sm text-gray-700 cursor-pointer">
                 <input
                   type="checkbox"
@@ -694,7 +705,8 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
                   Buchungsbestätigung per E-Mail automatisch versenden
                 </span>
               </label>
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -723,8 +735,10 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
             disabled={saving}
           >
             {saving
-              ? 'Erstellt...'
-              : formData.sendConfirmationEmail
+              ? (isOfferMode ? 'Anfrage wird erstellt...' : 'Erstellt...')
+              : isOfferMode
+                ? 'Anfrage speichern und Angebot erstellen'
+                : formData.sendConfirmationEmail
                 ? 'Jetzt Buchung speichern und E-Mail versenden'
                 : 'Jetzt Buchung ohne E-Mail speichern'}
           </button>
@@ -736,12 +750,12 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
           <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
             <h3 className="text-xl font-bold mb-2">Sicherheits-Countdown</h3>
             <p className="text-gray-700 mb-3">
-              Die Buchung wird in <strong>{countdown} Sekunden</strong> gespeichert
-              {formData.sendConfirmationEmail ? ' und die Buchungsbestätigung per E-Mail versendet.' : ', ohne E-Mail-Versand.'}
+              Die {isOfferMode ? 'Anfrage' : 'Buchung'} wird in <strong>{countdown} Sekunden</strong> gespeichert
+              {!isOfferMode && formData.sendConfirmationEmail ? ' und die Buchungsbestätigung per E-Mail versendet.' : '.'}
             </p>
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3 mb-4">
-              Falls ein Fehler vorliegt, jetzt abbrechen. Nach Ausführung wird die Buchung sofort erstellt
-              {formData.sendConfirmationEmail ? ' und die E-Mail gesendet.' : '.'}
+              Falls ein Fehler vorliegt, jetzt abbrechen. Nach Ausführung wird die {isOfferMode ? 'Anfrage' : 'Buchung'} sofort erstellt
+              {!isOfferMode && formData.sendConfirmationEmail ? ' und die E-Mail gesendet.' : '.'}
             </p>
             <div className="flex gap-3">
               <button

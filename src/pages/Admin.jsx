@@ -120,6 +120,7 @@ export default function Admin() {
   const [editingBooking, setEditingBooking] = useState(null);
   const [bookingEditorMode, setBookingEditorMode] = useState('edit');
   const [showNewBookingForm, setShowNewBookingForm] = useState(false);
+  const [newBookingFormMode, setNewBookingFormMode] = useState('booking');
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [followUpDraft, setFollowUpDraft] = useState(null);
   const [followUpBusy, setFollowUpBusy] = useState(false);
@@ -1625,9 +1626,19 @@ export default function Admin() {
         {showNewBookingForm && (
           <NewBookingForm
             auth={auth}
+            mode={newBookingFormMode}
             customers={customers}
             onClose={() => setShowNewBookingForm(false)}
-            onSuccess={(newBooking) => {
+            onSuccess={(newBooking, meta) => {
+              if (meta?.openOfferEditor) {
+                setInquiries((prev) => [newBooking, ...prev]);
+                setShowNewBookingForm(false);
+                setBookingEditorMode('offer');
+                setEditingBooking(newBooking);
+                showActionMessage('success', 'Anfrage erstellt. Bitte jetzt Angebot vervollstaendigen und senden.');
+                return;
+              }
+
               setBookings((prev) => sortBookingsByCreatedAndStart([newBooking, ...prev]));
               setShowNewBookingForm(false);
               showActionMessage('success', 'Buchung erfolgreich erstellt');
@@ -2284,7 +2295,10 @@ export default function Admin() {
                 📋 Folgebuchung erstellen
               </button>
               <button
-                onClick={() => setShowNewBookingForm(true)}
+                onClick={() => {
+                  setNewBookingFormMode('booking');
+                  setShowNewBookingForm(true);
+                }}
                 className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition"
               >
                 ➕ Neue Buchung erstellen
@@ -2638,6 +2652,16 @@ export default function Admin() {
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold ${inquirySourceFilter === 'website' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
               >
                 Anfrage ueber Website ({websiteInquiries.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewBookingFormMode('offer');
+                  setShowNewBookingForm(true);
+                }}
+                className="ml-auto bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-semibold px-3 py-1.5 rounded-md"
+              >
+                Angebot erstellen
               </button>
             </div>
             <table className="w-full">

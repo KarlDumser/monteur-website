@@ -85,6 +85,17 @@ const bookingSchema = new mongoose.Schema({
     enum: ['none', 'sent', 'accepted', 'missing-data', 'awaiting-admin-confirmation', 'unavailable'],
     default: 'none'
   },
+  offerApartmentOptions: {
+    type: [String],
+    enum: ['hackerberg', 'neubau', 'kombi'],
+    default: []
+  },
+  selectedOfferApartment: {
+    type: String,
+    enum: ['hackerberg', 'neubau', 'kombi', ''],
+    default: ''
+  },
+  offerApartmentSelectionAt: { type: Date, default: null },
   inquirySource: {
     type: String,
     enum: ['website', 'email'],

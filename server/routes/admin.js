@@ -16,6 +16,7 @@ import {
   hasConfiguredAdminCredentials,
   validateAdminBasicAuthHeader
 } from '../utils/adminAuth.js';
+import { getBookedApartmentKeysForOption, normalizeOfferOptions } from '../../shared/apartmentCatalog.js';
 
 const router = express.Router();
 
@@ -252,46 +253,56 @@ const buildBlockedDateDeleteFilters = (booking) => {
 };
 
 const createBookingBlocksForBooking = async (booking) => {
-  await BlockedDate.create({
-    wohnung: booking.wohnung,
-    startDate: booking.startDate,
-    endDate: booking.endDate,
-    reason: 'Buchung',
-    createdBy: booking.email || 'admin'
-  });
+  const apartmentKeys = getBookedApartmentKeysForOption(booking.wohnung);
+
+  for (const apartmentKey of apartmentKeys) {
+    await BlockedDate.create({
+      wohnung: apartmentKey,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      reason: 'Buchung',
+      createdBy: booking.email || 'admin'
+    });
+  }
 
   if (booking.isPartialBooking && booking.paidThroughDate && booking.originalEndDate) {
     const secondPeriodStart = addDays(booking.paidThroughDate, 1);
 
-    await BlockedDate.create({
-      wohnung: booking.wohnung,
-      startDate: secondPeriodStart,
-      endDate: booking.originalEndDate,
-      reason: 'Reservierung',
-      createdBy: booking.email || 'admin'
-    });
+    for (const apartmentKey of apartmentKeys) {
+      await BlockedDate.create({
+        wohnung: apartmentKey,
+        startDate: secondPeriodStart,
+        endDate: booking.originalEndDate,
+        reason: 'Reservierung',
+        createdBy: booking.email || 'admin'
+      });
+    }
 
     if (booking.cleaningBufferDays > 0) {
-      await BlockedDate.create({
-        wohnung: booking.wohnung,
-        startDate: addDays(booking.originalEndDate, 1),
-        endDate: addDays(booking.originalEndDate, booking.cleaningBufferDays),
-        reason: 'Reinigung',
-        createdBy: 'system-cleaning-buffer'
-      });
+      for (const apartmentKey of apartmentKeys) {
+        await BlockedDate.create({
+          wohnung: apartmentKey,
+          startDate: addDays(booking.originalEndDate, 1),
+          endDate: addDays(booking.originalEndDate, booking.cleaningBufferDays),
+          reason: 'Reinigung',
+          createdBy: 'system-cleaning-buffer'
+        });
+      }
     }
 
     return;
   }
 
   if (booking.cleaningBufferDays > 0) {
-    await BlockedDate.create({
-      wohnung: booking.wohnung,
-      startDate: addDays(booking.endDate, 1),
-      endDate: addDays(booking.endDate, booking.cleaningBufferDays),
-      reason: 'Reinigung',
-      createdBy: 'system-cleaning-buffer'
-    });
+    for (const apartmentKey of apartmentKeys) {
+      await BlockedDate.create({
+        wohnung: apartmentKey,
+        startDate: addDays(booking.endDate, 1),
+        endDate: addDays(booking.endDate, booking.cleaningBufferDays),
+        reason: 'Reinigung',
+        createdBy: 'system-cleaning-buffer'
+      });
+    }
   }
 };
 
@@ -501,26 +512,29 @@ router.patch('/inquiries/:id/approve', async (req, res) => {
       return res.status(404).json({ error: 'Anfrage nicht gefunden' });
     }
 
-    const overlap = await Booking.findOne({
-      ...activeBookableFilter,
-      _id: { $ne: inquiry._id },
-      wohnung: inquiry.wohnung,
-      startDate: { $lte: inquiry.endDate },
-      endDate: { $gte: inquiry.startDate }
-    });
+    const apartmentKeys = getBookedApartmentKeysForOption(inquiry.wohnung);
+    for (const apartmentKey of apartmentKeys) {
+      const overlap = await Booking.findOne({
+        ...activeBookableFilter,
+        _id: { $ne: inquiry._id },
+        wohnung: apartmentKey,
+        startDate: { $lte: inquiry.endDate },
+        endDate: { $gte: inquiry.startDate }
+      });
 
-    if (overlap) {
-      return res.status(409).json({ error: 'Zeitraum inzwischen nicht mehr verfügbar.' });
-    }
+      if (overlap) {
+        return res.status(409).json({ error: 'Zeitraum inzwischen nicht mehr verfügbar.' });
+      }
 
-    const blockedOverlap = await BlockedDate.findOne({
-      wohnung: inquiry.wohnung,
-      startDate: { $lte: inquiry.endDate },
-      endDate: { $gte: inquiry.startDate }
-    });
+      const blockedOverlap = await BlockedDate.findOne({
+        wohnung: apartmentKey,
+        startDate: { $lte: inquiry.endDate },
+        endDate: { $gte: inquiry.startDate }
+      });
 
-    if (blockedOverlap) {
-      return res.status(409).json({ error: 'Zeitraum ist blockiert.' });
+      if (blockedOverlap) {
+        return res.status(409).json({ error: 'Zeitraum ist blockiert.' });
+      }
     }
 
     inquiry.isInquiry = false;
@@ -589,6 +603,14 @@ router.post('/bookings', async (req, res) => {
 
     const isFollowUpInvoice = Boolean(bookingPayload.isFollowUpInvoice);
     const isInquiryBooking = Boolean(bookingPayload.isInquiry) || bookingPayload.bookingMode === 'inquiry';
+
+    if (isInquiryBooking) {
+      bookingPayload.isInquiry = true;
+      bookingPayload.inquiryStatus = bookingPayload.inquiryStatus || 'pending';
+      bookingPayload.offerStatus = bookingPayload.offerStatus || 'none';
+      bookingPayload.inquirySource = bookingPayload.inquirySource || 'website';
+    }
+
     const shouldAutoSplit =
       !isFollowUpInvoice &&
       !isInquiryBooking &&
@@ -647,7 +669,9 @@ router.post('/bookings', async (req, res) => {
     }
     await booking.save();
 
-    await createBookingBlocksForBooking(booking);
+    if (!isInquiryBooking) {
+      await createBookingBlocksForBooking(booking);
+    }
 
     // ========== AUTO-EMAIL: Admin-erstellte Buchungen ==========
     console.log('\n╔═══════════════════════════════════════════════════════╗');
@@ -658,7 +682,7 @@ router.post('/bookings', async (req, res) => {
     console.log('👤 Kundenname:', booking.name);
     console.log('🏠 Wohnung:', booking.wohnung);
     
-    if (sendConfirmationEmail && booking.email) {
+    if (!isInquiryBooking && sendConfirmationEmail && booking.email) {
       console.log('\n🚀 STARTE AUTO-EMAIL-VERSAND...');
       console.log('   Ziel:', booking.email);
       console.log('   Buchungs-ID:', booking._id);
@@ -704,7 +728,9 @@ router.post('/bookings', async (req, res) => {
           console.error('╚═══════════════════════════════════════════════════════╝\n');
         });
     } else {
-      if (!sendConfirmationEmail) {
+      if (isInquiryBooking) {
+        console.log('⏭️  ÜBERSPRINGE Email-Versand (Anfrage-Modus fuer manuelles Angebot)');
+      } else if (!sendConfirmationEmail) {
         console.log('⏭️  ÜBERSPRINGE Email-Versand (manuell deaktiviert)');
       } else {
         console.log('⏭️  ÜBERSPRINGE Email-Versand (keine Email-Adresse vorhanden)');
@@ -1794,6 +1820,13 @@ router.post('/bookings/:id/send-offer', async (req, res) => {
     if (!booking) {
       return res.status(404).json({ error: 'Buchung nicht gefunden' });
     }
+
+    booking.offerApartmentOptions = normalizeOfferOptions(booking.offerApartmentOptions, booking.wohnung);
+    if (booking.selectedOfferApartment && !booking.offerApartmentOptions.includes(booking.selectedOfferApartment)) {
+      booking.selectedOfferApartment = '';
+      booking.offerApartmentSelectionAt = null;
+    }
+    await booking.save();
 
     const result = await sendOfferEmail(booking);
 

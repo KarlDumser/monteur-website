@@ -1,4 +1,11 @@
 import { generateInvoice } from './invoiceGenerator.js';
+import {
+  buildOfferVariantsFromBooking,
+  getApartmentInfoForOption,
+  getApartmentPreviewImages,
+  getOfferOptionLabel,
+  normalizeOfferOptions
+} from '../../shared/apartmentCatalog.js';
 
 /**
  * Sendet Buchungsbestätigung mit Rechnung als PDF-Anhang via Mailjet HTTP API
@@ -489,25 +496,59 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
 export async function sendOfferEmail(booking) {
   try {
     const baseUrl = getPublicAppUrl();
-    const acceptLink = `${baseUrl}/angebot-annehmen/${booking._id}`;
+    const acceptLinkBase = `${baseUrl}/angebot-annehmen/${booking._id}`;
 
     const { buffer: pdfBuffer, fileName } = await generateInvoice(booking, true);
-    
-    let wohnungName = booking.wohnungLabel || booking.wohnung;
-    if (booking.wohnung === 'kombi') wohnungName = 'Monteurwohnungen in Krailling';
-    if (booking.wohnung === 'neubau') wohnungName = 'Monteurwohnung (Fruehlingstr.)';
-    if (booking.wohnung === 'hackerberg') wohnungName = 'Monteurwohnung (Hackerberg 4)';
 
-    let wohnungAddress = 'Hackerberg 4, D-82152 Krailling';
-    if (booking.wohnung === 'neubau') wohnungAddress = 'Fruehlingstrasse 8, D-82152 Krailling';
-    if (booking.wohnung === 'kombi') wohnungAddress = 'Fruehlingstrasse 8 und Hackerberg 4, D-82152 Krailling';
+    const offerOptions = normalizeOfferOptions(booking.offerApartmentOptions, booking.wohnung);
+    const variants = buildOfferVariantsFromBooking(booking, offerOptions);
+    const primaryVariant = variants[0] || null;
+
+    let wohnungName = getOfferOptionLabel(primaryVariant?.option || booking.wohnung || 'hackerberg');
 
     const startDate = formatGermanDate(booking.originalStartDate || booking.startDate);
     const endDate = formatGermanDate(booking.originalEndDate || booking.endDate);
     const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
 
-    const nights = Number(booking.totalNights || booking.nights || 0);
-    const total = Number(booking.total || 0);
+    const variantCardsHtml = variants.map((variant) => {
+      const info = getApartmentInfoForOption(variant.option);
+      const acceptLink = `${acceptLinkBase}?option=${encodeURIComponent(variant.option)}`;
+      const previewImages = getApartmentPreviewImages(variant.option, 4);
+      const imageHtml = previewImages.length > 0
+        ? `<div style="margin-top: 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">${previewImages
+          .map((entry) => `<img src="${baseUrl}/${entry.folder}/${entry.image}" alt="${entry.apartmentLabel}" style="width: 100%; max-width: 260px; height: 110px; object-fit: cover; border-radius: 8px; border: 1px solid #e5e7eb;"/>`)
+          .join('')}</div>`
+        : '';
+
+      const featuresHtml = (info?.features || []).slice(0, 6).map((feature) => `<li style="margin-bottom: 4px;">${feature}</li>`).join('');
+
+      return `
+        <div style="border: 1px solid #dbeafe; border-radius: 12px; padding: 16px; margin-top: 14px; background: #f8fbff;">
+          <h3 style="margin: 0 0 8px 0; color: #1d4ed8;">${variant.label}</h3>
+          <div style="font-size: 14px; color: #1f2937; line-height: 1.5;">
+            <p style="margin: 0 0 6px 0;"><strong>Adresse:</strong> ${info?.address || '-'}</p>
+            <p style="margin: 0 0 6px 0;"><strong>Zimmer/Flaeche:</strong> ${(info?.rooms || '-')}${info?.area ? `, ${info.area}` : ''}</p>
+            <p style="margin: 0 0 6px 0;"><strong>Beschreibung:</strong> ${info?.description || '-'}</p>
+            <p style="margin: 0 0 6px 0;"><strong>Details:</strong> ${info?.details || '-'}</p>
+          </div>
+          ${featuresHtml ? `<ul style="margin: 10px 0 0 18px; padding: 0; color: #374151; font-size: 13px;">${featuresHtml}</ul>` : ''}
+          ${imageHtml}
+          <div style="margin-top: 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px;">
+            <p style="margin: 0 0 6px 0;"><strong>Preis pro Nacht:</strong> ${Number(variant.pricePerNight || 0).toFixed(2)} EUR</p>
+            <p style="margin: 0 0 6px 0;"><strong>Naechte:</strong> ${Number(variant.nights || 0)}</p>
+            <p style="margin: 0 0 6px 0;"><strong>Reinigung:</strong> ${Number(variant.cleaningFee || 0).toFixed(2)} EUR</p>
+            <p style="margin: 0; font-size: 17px; color: #1d4ed8;"><strong>Gesamtpreis: ${Number(variant.total || 0).toFixed(2)} EUR</strong></p>
+          </div>
+          <div style="text-align: center; margin-top: 14px;">
+            <a href="${acceptLink}" style="background-color: #10b981; color: white; padding: 12px 18px; text-decoration: none; font-size: 15px; font-weight: bold; border-radius: 8px; display: inline-block;">${variant.label} jetzt annehmen</a>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const optionHint = variants.length > 1
+      ? '<p style="margin-top: 8px; color: #0f766e;"><strong>Hinweis:</strong> Sie koennen zwischen den angebotenen Wohnungsoptionen waehlen - auch erst auf der Angebotsseite nach Klick auf einen Annahme-Button.</p>'
+      : '';
     
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -516,39 +557,29 @@ export async function sendOfferEmail(booking) {
         <p>vielen Dank für Ihre Anfrage. Wir freuen uns, Ihnen hiermit ein Angebot für Ihren gewünschten Aufenthalt unterbreiten zu können.</p>
         
         <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0; color: #374151;">Angebotsdetails</h3>
+          <h3 style="margin-top: 0; color: #374151;">Rahmendaten Ihres Angebots</h3>
           <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px 0; width: 35%;"><strong>Wohnung:</strong></td>
-              <td>${wohnungName}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0;"><strong>Wohnungsadresse:</strong></td>
-              <td>${wohnungAddress}</td>
-            </tr>
             <tr>
               <td style="padding: 8px 0;"><strong>Zeitraum:</strong></td>
               <td>${startDate} bis ${endDate}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0;"><strong>Nächte:</strong></td>
-              <td>${nights}</td>
+              <td>${Number(booking.totalNights || booking.nights || 0)}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0;"><strong>Personen:</strong></td>
               <td>${booking.people}</td>
             </tr>
-            <tr>
-              <td style="padding: 8px 0; border-top: 2px solid #ccc; font-size: 16px;"><strong>Gesamtpreis:</strong></td>
-              <td style="border-top: 2px solid #ccc; font-size: 16px; color: #2563eb;"><strong>${total.toFixed(2)} €</strong></td>
-            </tr>
           </table>
+          ${optionHint}
           <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Wichtiger Hinweis:</strong> Die genaue Aufschluesselung aller Preispositionen finden Sie im angehaengten PDF-Angebot.</p>
         </div>
+
+        <h3 style="color: #1f2937; margin: 24px 0 8px 0;">Wohnungsdetails und Auswahl</h3>
+        ${variantCardsHtml}
         
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${acceptLink}" style="background-color: #10b981; color: white; padding: 15px 30px; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; display: inline-block;">Angebot jetzt verbindlich annehmen</a>
-        </div>
+        <p style="margin: 16px 0; font-size: 12px; color: #6b7280;">Falls Ihr Mailprogramm Bilder blockiert, sehen Sie alle Inhalte auch direkt hier: <a href="${acceptLinkBase}">${acceptLinkBase}</a></p>
         
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
         <p>Bei Fragen melden Sie sich bitte direkt bei Karl Dumser unter 015221557400.</p>

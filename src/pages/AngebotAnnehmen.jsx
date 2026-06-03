@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { APP_VERSION } from '../config';
+import {
+  buildOfferVariantFromBooking,
+  getApartmentInfoForOption,
+  getApartmentPreviewImages,
+  normalizeOfferOptions
+} from '../../shared/apartmentCatalog.js';
 
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
@@ -22,6 +29,7 @@ export default function AngebotAnnehmen() {
   const [booking, setBooking] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [selectedApartment, setSelectedApartment] = useState('');
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -32,6 +40,12 @@ export default function AngebotAnnehmen() {
           throw new Error(data.error || 'Angebot konnte nicht geladen werden.');
         }
         setBooking(data);
+
+        const url = new URL(window.location.href);
+        const requestedOption = String(url.searchParams.get('option') || '').trim().toLowerCase();
+        const availableOptions = normalizeOfferOptions(data.offerApartmentOptions, data.wohnung);
+        const fallbackOption = availableOptions[0] || data.wohnung || '';
+        setSelectedApartment(availableOptions.includes(requestedOption) ? requestedOption : fallbackOption);
       } catch (err) {
         setError(err.message || 'Angebot konnte nicht geladen werden.');
       } finally {
@@ -50,7 +64,9 @@ export default function AngebotAnnehmen() {
       setError('');
 
       const response = await fetch(`${getApiBaseUrl()}/bookings/${id}/accept-offer`, {
-        method: 'POST'
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedApartment })
       });
       const data = await response.json().catch(() => ({}));
 
@@ -91,6 +107,12 @@ export default function AngebotAnnehmen() {
     return null;
   }
 
+  const offerOptions = normalizeOfferOptions(booking.offerApartmentOptions, booking.wohnung);
+  const activeOption = selectedApartment || offerOptions[0] || booking.wohnung;
+  const activeVariant = buildOfferVariantFromBooking(booking, activeOption);
+  const activeApartmentInfo = getApartmentInfoForOption(activeOption);
+  const activeImages = getApartmentPreviewImages(activeOption, 6);
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <div className="bg-white shadow-xl rounded-2xl border border-gray-100 overflow-hidden">
@@ -111,16 +133,78 @@ export default function AngebotAnnehmen() {
             <div><span className="font-semibold">Kontaktperson:</span> {booking.name}</div>
             <div><span className="font-semibold">E-Mail:</span> {booking.email}</div>
             <div><span className="font-semibold">Telefon:</span> {booking.phone || '-'}</div>
-            <div><span className="font-semibold">Wohnung:</span> {booking.wohnungLabel || booking.wohnung}</div>
+            <div><span className="font-semibold">Gewaehlte Option:</span> {activeApartmentInfo?.label || booking.wohnungLabel || booking.wohnung}</div>
             <div><span className="font-semibold">Personen:</span> {booking.people}</div>
             <div><span className="font-semibold">Zeitraum:</span> {new Date(booking.startDate).toLocaleDateString('de-DE')} - {new Date(booking.endDate).toLocaleDateString('de-DE')}</div>
             <div><span className="font-semibold">Naechte:</span> {booking.totalNights || booking.nights}</div>
           </div>
 
+          {offerOptions.length > 1 && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-5 space-y-3">
+              <h2 className="text-lg font-bold text-blue-900">Wohnungsoption waehlen</h2>
+              <p className="text-sm text-blue-800">Sie koennen zwischen den angebotenen Wohnungen waehlen. Ihre Auswahl wird mit der Annahme verbindlich gespeichert.</p>
+              <div className="space-y-2">
+                {offerOptions.map((option) => {
+                  const variant = buildOfferVariantFromBooking(booking, option);
+                  const info = getApartmentInfoForOption(option);
+                  return (
+                    <label key={option} className="flex items-start gap-3 rounded-lg border border-blue-200 bg-white px-3 py-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="selectedApartment"
+                        value={option}
+                        checked={selectedApartment === option}
+                        onChange={(e) => setSelectedApartment(e.target.value)}
+                        className="mt-1"
+                      />
+                      <span>
+                        <span className="block font-semibold text-slate-900">{info?.label || option}</span>
+                        <span className="block text-xs text-slate-600">{info?.address || '-'}</span>
+                        <span className="block text-sm text-blue-800 mt-1">Gesamtpreis: {Number(variant.total || 0).toFixed(2)} EUR</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 space-y-2">
+            <h2 className="text-lg font-bold text-slate-900">Details zur Wohnung</h2>
+            <p className="text-sm"><span className="font-semibold">Adresse:</span> {activeApartmentInfo?.address || '-'}</p>
+            <p className="text-sm"><span className="font-semibold">Zimmer / Flaeche:</span> {activeApartmentInfo?.rooms || '-'}{activeApartmentInfo?.area ? `, ${activeApartmentInfo.area}` : ''}</p>
+            <p className="text-sm"><span className="font-semibold">Beschreibung:</span> {activeApartmentInfo?.description || '-'}</p>
+            <p className="text-sm"><span className="font-semibold">Ausstattung:</span> {activeApartmentInfo?.details || '-'}</p>
+            {Array.isArray(activeApartmentInfo?.features) && activeApartmentInfo.features.length > 0 && (
+              <ul className="list-disc pl-5 text-sm text-slate-700 space-y-1">
+                {activeApartmentInfo.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {activeImages.length > 0 && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <h2 className="text-lg font-bold text-slate-900 mb-3">Bildergalerie</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {activeImages.map((entry) => (
+                  <img
+                    key={`${entry.folder}-${entry.image}`}
+                    src={`/${entry.folder}/${entry.image}?v=${APP_VERSION}`}
+                    alt={entry.apartmentLabel}
+                    className="h-28 md:h-32 w-full object-cover rounded-lg border border-slate-200"
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="rounded-xl bg-gray-50 border border-gray-200 p-5">
             <div className="flex justify-between items-center text-lg font-semibold">
               <span>Gesamtpreis</span>
-              <span>{Number(booking.total || 0).toFixed(2)} €</span>
+              <span>{Number(activeVariant.total || 0).toFixed(2)} EUR</span>
             </div>
             <p className="text-xs text-gray-500 mt-2">Die detaillierte Preisaufstellung finden Sie im uebermittelten PDF-Angebot.</p>
           </div>

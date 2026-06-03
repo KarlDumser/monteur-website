@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getApiUrl } from '../utils/api';
 import { EU_COUNTRIES, getCountryDisplayName } from '../utils/addressSchemas';
+import { normalizeOfferOptions } from '../../shared/apartmentCatalog.js';
 
 const getAutoPriceByPeople = (peopleValue) => {
   const people = Number(peopleValue) || 0;
@@ -10,11 +11,13 @@ const getAutoPriceByPeople = (peopleValue) => {
 };
 
 export default function BookingEditor({ booking, auth, onClose, onSave, mode = 'edit', onOfferReady }) {
+  const initialOfferOptions = normalizeOfferOptions(booking.offerApartmentOptions, booking.wohnung);
   const [formData, setFormData] = useState({
     ...booking,
     country: booking.country || 'DE',
     countryLabel: booking.countryLabel || getCountryDisplayName(booking.country || 'DE', 'de'),
-    addressLine2: booking.addressLine2 || ''
+    addressLine2: booking.addressLine2 || '',
+    offerApartmentOptions: initialOfferOptions
   });
   const [saving, setSaving] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -124,6 +127,24 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
     setDiscountPercent(percent);
   };
 
+  const toggleOfferApartmentOption = (option) => {
+    setFormData((prev) => {
+      const existing = normalizeOfferOptions(prev.offerApartmentOptions, prev.wohnung);
+      const next = existing.includes(option)
+        ? existing.filter((entry) => entry !== option)
+        : [...existing, option];
+
+      const normalizedNext = normalizeOfferOptions(next, prev.wohnung);
+      const fallbackWohnung = normalizedNext[0] || prev.wohnung;
+
+      return {
+        ...prev,
+        offerApartmentOptions: normalizedNext,
+        wohnung: normalizedNext.includes(prev.wohnung) ? prev.wohnung : fallbackWohnung
+      };
+    });
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setError('');
@@ -147,6 +168,15 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
       vat: Number(formData.vat) || 0,
       total: Number(formData.total) || 0
     };
+
+    if (mode === 'offer') {
+      payload.offerApartmentOptions = normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung);
+      if (payload.offerApartmentOptions.length === 0) {
+        setError('Bitte mindestens eine Wohnungsoption fuer das Angebot waehlen.');
+        setSaving(false);
+        return;
+      }
+    }
 
     payload.cleaningBufferDays = Number.isFinite(Number(formData.cleaningBufferDays))
       ? Number(formData.cleaningBufferDays)
@@ -376,6 +406,38 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
                 <option value="kombi">Kombi (beide)</option>
               </select>
             </div>
+            {mode === 'offer' && (
+              <div className="col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+                <p className="text-sm font-semibold text-amber-900 mb-2">Angebotsoptionen fuer Kundenwahl</p>
+                <p className="text-xs text-amber-800 mb-3">Wenn mehrere Optionen aktiv sind, kann der Kunde beim Annehmen zwischen den Wohnungen waehlen.</p>
+                <div className="flex flex-wrap gap-4 text-sm text-amber-900">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung).includes('hackerberg')}
+                      onChange={() => toggleOfferApartmentOption('hackerberg')}
+                    />
+                    Hackerberg
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung).includes('neubau')}
+                      onChange={() => toggleOfferApartmentOption('neubau')}
+                    />
+                    Fruehlingstrasse
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung).includes('kombi')}
+                      onChange={() => toggleOfferApartmentOption('kombi')}
+                    />
+                    Beide zusammen (Kombi)
+                  </label>
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium mb-1">Personen * (1-11)</label>
               <input

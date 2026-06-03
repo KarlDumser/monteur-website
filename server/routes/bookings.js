@@ -7,6 +7,12 @@ import { sendBookingConfirmation, sendOfferEmail, sendMissingDataEmail } from '.
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 import { sendBookingPushNotification, sendPushNotification } from '../services/pushoverService.js';
 import { validateAdminBasicAuthHeader } from '../utils/adminAuth.js';
+import {
+  buildOfferVariantFromBooking,
+  getBookedApartmentKeysForOption,
+  getOfferOptionLabel,
+  normalizeOfferOptions
+} from '../../shared/apartmentCatalog.js';
 
 const router = express.Router();
 
@@ -77,73 +83,104 @@ const getPublicAppBaseUrl = () => {
 };
 
 const findBlockingConflict = async (booking) => {
-  const overlap = await Booking.findOne({
-    ...activeBookingFilter,
-    _id: { $ne: booking._id },
-    wohnung: booking.wohnung,
-    startDate: { $lte: booking.endDate },
-    endDate: { $gte: booking.startDate }
-  });
+  const apartmentKeys = getBookedApartmentKeysForOption(booking.wohnung);
 
-  if (overlap) {
-    return { type: 'booking', item: overlap };
-  }
+  for (const apartmentKey of apartmentKeys) {
+    const overlap = await Booking.findOne({
+      ...activeBookingFilter,
+      _id: { $ne: booking._id },
+      wohnung: apartmentKey,
+      startDate: { $lte: booking.endDate },
+      endDate: { $gte: booking.startDate }
+    });
 
-  const blockedOverlap = await BlockedDate.findOne({
-    wohnung: booking.wohnung,
-    startDate: { $lte: booking.endDate },
-    endDate: { $gte: booking.startDate }
-  });
+    if (overlap) {
+      return { type: 'booking', item: overlap, apartmentKey };
+    }
 
-  if (blockedOverlap) {
-    return { type: 'blocked', item: blockedOverlap };
+    const blockedOverlap = await BlockedDate.findOne({
+      wohnung: apartmentKey,
+      startDate: { $lte: booking.endDate },
+      endDate: { $gte: booking.startDate }
+    });
+
+    if (blockedOverlap) {
+      return { type: 'blocked', item: blockedOverlap, apartmentKey };
+    }
   }
 
   return null;
 };
 
 const createBookingBlocksForBooking = async (booking) => {
-  await BlockedDate.create({
-    wohnung: booking.wohnung,
-    startDate: booking.startDate,
-    endDate: booking.endDate,
-    reason: 'Buchung',
-    createdBy: booking.email || 'admin'
-  });
+  const apartmentKeys = getBookedApartmentKeysForOption(booking.wohnung);
+
+  for (const apartmentKey of apartmentKeys) {
+    await BlockedDate.create({
+      wohnung: apartmentKey,
+      startDate: booking.startDate,
+      endDate: booking.endDate,
+      reason: 'Buchung',
+      createdBy: booking.email || 'admin'
+    });
+  }
 
   if (booking.isPartialBooking && booking.paidThroughDate && booking.originalEndDate) {
     const secondPeriodStart = addDays(booking.paidThroughDate, 1);
 
-    await BlockedDate.create({
-      wohnung: booking.wohnung,
-      startDate: secondPeriodStart,
-      endDate: booking.originalEndDate,
-      reason: 'Reservierung',
-      createdBy: booking.email || 'admin'
-    });
+    for (const apartmentKey of apartmentKeys) {
+      await BlockedDate.create({
+        wohnung: apartmentKey,
+        startDate: secondPeriodStart,
+        endDate: booking.originalEndDate,
+        reason: 'Reservierung',
+        createdBy: booking.email || 'admin'
+      });
+    }
 
     if (booking.cleaningBufferDays > 0) {
-      await BlockedDate.create({
-        wohnung: booking.wohnung,
-        startDate: addDays(booking.originalEndDate, 1),
-        endDate: addDays(booking.originalEndDate, booking.cleaningBufferDays),
-        reason: 'Reinigung',
-        createdBy: 'system-cleaning-buffer'
-      });
+      for (const apartmentKey of apartmentKeys) {
+        await BlockedDate.create({
+          wohnung: apartmentKey,
+          startDate: addDays(booking.originalEndDate, 1),
+          endDate: addDays(booking.originalEndDate, booking.cleaningBufferDays),
+          reason: 'Reinigung',
+          createdBy: 'system-cleaning-buffer'
+        });
+      }
     }
 
     return;
   }
 
   if (booking.cleaningBufferDays > 0) {
-    await BlockedDate.create({
-      wohnung: booking.wohnung,
-      startDate: addDays(booking.endDate, 1),
-      endDate: addDays(booking.endDate, booking.cleaningBufferDays),
-      reason: 'Reinigung',
-      createdBy: 'system-cleaning-buffer'
-    });
+    for (const apartmentKey of apartmentKeys) {
+      await BlockedDate.create({
+        wohnung: apartmentKey,
+        startDate: addDays(booking.endDate, 1),
+        endDate: addDays(booking.endDate, booking.cleaningBufferDays),
+        reason: 'Reinigung',
+        createdBy: 'system-cleaning-buffer'
+      });
+    }
   }
+};
+
+const applySelectedOfferOptionToBooking = (booking, selectedOption) => {
+  const variant = buildOfferVariantFromBooking(booking, selectedOption);
+
+  booking.wohnung = selectedOption;
+  booking.wohnungLabel = getOfferOptionLabel(selectedOption);
+  booking.selectedOfferApartment = selectedOption;
+  booking.offerApartmentSelectionAt = new Date();
+
+  booking.pricePerNight = variant.pricePerNight;
+  booking.cleaningFee = variant.cleaningFee;
+  booking.nights = variant.nights;
+  booking.subtotal = variant.subtotal;
+  booking.discount = variant.discount;
+  booking.vat = variant.vat;
+  booking.total = variant.total;
 };
 
 const notifyAdminOfferAccepted = async (booking) => {
@@ -561,6 +598,19 @@ router.post('/:id/accept-offer', async (req, res) => {
     if (!booking.isInquiry || booking.inquiryStatus !== 'pending') {
       return res.status(400).json({ error: 'Dieses Angebot wurde bereits bearbeitet.' });
     }
+
+    const offerOptions = normalizeOfferOptions(booking.offerApartmentOptions, booking.wohnung);
+    const requestedOption = String(req.body?.selectedApartment || req.query?.option || '').trim().toLowerCase();
+    let selectedOption = offerOptions[0];
+
+    if (requestedOption) {
+      if (!offerOptions.includes(requestedOption)) {
+        return res.status(400).json({ error: 'Die gewaehlte Wohnungsoption ist fuer dieses Angebot nicht verfuegbar.' });
+      }
+      selectedOption = requestedOption;
+    }
+
+    applySelectedOfferOptionToBooking(booking, selectedOption);
 
     const blockingConflict = await findBlockingConflict(booking);
     if (blockingConflict) {
