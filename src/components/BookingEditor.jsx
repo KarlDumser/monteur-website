@@ -12,6 +12,9 @@ const getAutoPriceByPeople = (peopleValue) => {
 
 export default function BookingEditor({ booking, auth, onClose, onSave, mode = 'edit', onOfferReady }) {
   const initialOfferOptions = normalizeOfferOptions(booking.offerApartmentOptions, booking.wohnung);
+  const [offerBothSeparately, setOfferBothSeparately] = useState(
+    initialOfferOptions.includes('hackerberg') && initialOfferOptions.includes('neubau')
+  );
   const [formData, setFormData] = useState({
     ...booking,
     country: booking.country || 'DE',
@@ -82,23 +85,10 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
     }
 
     if (name === 'wohnung' && mode === 'offer') {
-      setFormData((prev) => {
-        const existingOptions = normalizeOfferOptions(prev.offerApartmentOptions, prev.wohnung);
-        let nextOptions = [...existingOptions];
-
-        if (value === 'kombi') {
-          // Kombi soll als eigenes Paket angeboten werden, plus beide Wohnungen separat.
-          nextOptions = normalizeOfferOptions(['hackerberg', 'neubau', 'kombi'], value);
-        } else if (!existingOptions.includes(value)) {
-          nextOptions = normalizeOfferOptions([...existingOptions, value], value);
-        }
-
-        return {
-          ...prev,
-          wohnung: value,
-          offerApartmentOptions: nextOptions
-        };
-      });
+      setFormData((prev) => ({
+        ...prev,
+        wohnung: value
+      }));
       return;
     }
 
@@ -148,47 +138,6 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
     setDiscountPercent(percent);
   };
 
-  const toggleOfferApartmentOption = (option) => {
-    setFormData((prev) => {
-      const existing = normalizeOfferOptions(prev.offerApartmentOptions, prev.wohnung);
-      const next = existing.includes(option)
-        ? existing.filter((entry) => entry !== option)
-        : [...existing, option];
-
-      const normalizedNext = normalizeOfferOptions(next, prev.wohnung);
-      const fallbackWohnung = normalizedNext[0] || prev.wohnung;
-
-      return {
-        ...prev,
-        offerApartmentOptions: normalizedNext,
-        wohnung: normalizedNext.includes(prev.wohnung) ? prev.wohnung : fallbackWohnung
-      };
-    });
-  };
-
-  const toggleBothSeparateOptions = () => {
-    setFormData((prev) => {
-      const existing = normalizeOfferOptions(prev.offerApartmentOptions, prev.wohnung);
-      const hasHackerberg = existing.includes('hackerberg');
-      const hasNeubau = existing.includes('neubau');
-      const allSeparateSelected = hasHackerberg && hasNeubau;
-
-      const withoutSeparate = existing.filter((entry) => entry !== 'hackerberg' && entry !== 'neubau');
-      const next = allSeparateSelected
-        ? withoutSeparate
-        : [...withoutSeparate, 'hackerberg', 'neubau'];
-
-      const normalizedNext = normalizeOfferOptions(next, prev.wohnung);
-      const fallbackWohnung = normalizedNext[0] || prev.wohnung;
-
-      return {
-        ...prev,
-        offerApartmentOptions: normalizedNext,
-        wohnung: normalizedNext.includes(prev.wohnung) ? prev.wohnung : fallbackWohnung
-      };
-    });
-  };
-
   const handleSave = async () => {
     setSaving(true);
     setError('');
@@ -214,7 +163,13 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
     };
 
     if (mode === 'offer') {
-      payload.offerApartmentOptions = normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung);
+      const optionBase = formData.wohnung === 'kombi'
+        ? ['kombi']
+        : [formData.wohnung];
+      const options = offerBothSeparately
+        ? [...optionBase, 'hackerberg', 'neubau']
+        : optionBase;
+      payload.offerApartmentOptions = normalizeOfferOptions(options, formData.wohnung);
       if (payload.offerApartmentOptions.length === 0) {
         setError('Bitte mindestens eine Wohnungsoption fuer das Angebot waehlen.');
         setSaving(false);
@@ -452,51 +407,18 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
             </div>
             {mode === 'offer' && (
               <div className="col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
-                {(() => {
-                  const selectedOptions = normalizeOfferOptions(formData.offerApartmentOptions, formData.wohnung);
-                  const bothSeparateSelected = selectedOptions.includes('hackerberg') && selectedOptions.includes('neubau');
-
-                  return (
-                    <>
-                <p className="text-sm font-semibold text-amber-900 mb-2">Angebotsoptionen fuer Kundenwahl</p>
-                <p className="text-xs text-amber-800 mb-3">Wenn mehrere Optionen aktiv sind, kann der Kunde beim Annehmen zwischen den Wohnungen waehlen.</p>
-                <div className="flex flex-wrap gap-4 text-sm text-amber-900">
-                  <label className="inline-flex items-center gap-2 font-semibold">
-                    <input
-                      type="checkbox"
-                      checked={bothSeparateSelected}
-                      onChange={toggleBothSeparateOptions}
-                    />
-                    Beide Wohnungen anbieten (separat)
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedOptions.includes('hackerberg')}
-                      onChange={() => toggleOfferApartmentOption('hackerberg')}
-                    />
-                    Hackerberg
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedOptions.includes('neubau')}
-                      onChange={() => toggleOfferApartmentOption('neubau')}
-                    />
-                    Fruehlingstrasse
-                  </label>
-                  <label className="inline-flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedOptions.includes('kombi')}
-                      onChange={() => toggleOfferApartmentOption('kombi')}
-                    />
-                    Kombi als eigenes Paket
-                  </label>
-                </div>
-                    </>
-                  );
-                })()}
+                <p className="text-sm font-semibold text-amber-900 mb-2">Angebot erweitern</p>
+                <label className="inline-flex items-center gap-2 text-sm text-amber-900">
+                  <input
+                    type="checkbox"
+                    checked={offerBothSeparately}
+                    onChange={(e) => setOfferBothSeparately(e.target.checked)}
+                  />
+                  Beide Wohnungen anbieten (separat)
+                </label>
+                <p className="text-xs text-amber-800 mt-2">
+                  Die gewaehlte Wohnung bleibt das Hauptangebot. Mit dieser Option werden Hackerberg und Fruehlingstrasse separat zusaetzlich angeboten. Kombi bleibt ein eigenes Paket, wenn bei Wohnung "Kombi" gewaehlt ist.
+                </p>
               </div>
             )}
             <div>
