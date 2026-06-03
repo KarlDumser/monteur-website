@@ -507,6 +507,13 @@ export async function sendOfferEmail(booking) {
     const startDate = formatGermanDate(booking.originalStartDate || booking.startDate);
     const endDate = formatGermanDate(booking.originalEndDate || booking.endDate);
     const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
+    const offerNumberBase = String(booking?._id || booking?.id || Date.now()).trim();
+    const offerNumber = `A-${offerNumberBase.substring(0, 8).toUpperCase()}`;
+    const customerName = String(booking.company || booking.name || 'Kunde')
+      .replace(/[^a-zA-Z0-9\-_ ]+/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .substring(0, 40) || 'Kunde';
 
     const pdfAttachments = [];
     for (const variant of variants) {
@@ -525,10 +532,7 @@ export async function sendOfferEmail(booking) {
 
       const { buffer, fileName } = await generateInvoice(variantBooking, true);
       const optionSuffix = variant.option === 'kombi' ? 'kombi-paket' : variant.option;
-      const dotIndex = fileName.lastIndexOf('.');
-      const finalFileName = dotIndex > 0
-        ? `${fileName.slice(0, dotIndex)}-${optionSuffix}${fileName.slice(dotIndex)}`
-        : `${fileName}-${optionSuffix}.pdf`;
+      const finalFileName = `Angebot-${offerNumber}-${customerName}-${optionSuffix}.pdf`;
 
       pdfAttachments.push({
         ContentType: 'application/pdf',
@@ -606,6 +610,7 @@ export async function sendOfferEmail(booking) {
         <h3 style="color: #1f2937; margin: 24px 0 8px 0;">Wohnungsdetails und Auswahl</h3>
         ${variantCardsHtml}
         
+        <p style="margin: 8px 0 0 0; font-size: 12px; color: #6b7280;">Weitere Fotos und alle Details finden Sie auch auf unserer Website: <a href="https://monteurwohnung-dumser.de/">https://monteurwohnung-dumser.de/</a></p>
         <p style="margin: 16px 0; font-size: 12px; color: #6b7280;">Falls Ihr Mailprogramm Bilder blockiert, sehen Sie alle Inhalte auch direkt hier: <a href="${acceptLinkBase}">${acceptLinkBase}</a></p>
         
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">

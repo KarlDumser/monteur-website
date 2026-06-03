@@ -31,6 +31,11 @@ export default function AngebotAnnehmen() {
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedApartment, setSelectedApartment] = useState('');
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+  const offerOptions = normalizeOfferOptions(booking?.offerApartmentOptions, booking?.wohnung);
+  const activeOption = selectedApartment || offerOptions[0] || booking?.wohnung;
+  const activeVariant = booking ? buildOfferVariantFromBooking(booking, activeOption) : null;
+  const activeApartmentInfo = getApartmentInfoForOption(activeOption);
+  const activeImages = getApartmentPreviewImages(activeOption, 6);
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -89,31 +94,6 @@ export default function AngebotAnnehmen() {
     }
   };
 
-  if (loading) {
-    return <div className="container mx-auto px-4 py-12 text-center">Angebot wird geladen...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-12 max-w-2xl">
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-6 text-center">
-          <h1 className="text-2xl font-bold mb-3">Fehler</h1>
-          <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!booking) {
-    return null;
-  }
-
-  const offerOptions = normalizeOfferOptions(booking.offerApartmentOptions, booking.wohnung);
-  const activeOption = selectedApartment || offerOptions[0] || booking.wohnung;
-  const activeVariant = buildOfferVariantFromBooking(booking, activeOption);
-  const activeApartmentInfo = getApartmentInfoForOption(activeOption);
-  const activeImages = getApartmentPreviewImages(activeOption, 6);
-
   useEffect(() => {
     if (selectedImageIndex === null || activeImages.length === 0) return;
 
@@ -133,6 +113,25 @@ export default function AngebotAnnehmen() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedImageIndex, activeImages]);
+
+  if (loading) {
+    return <div className="container mx-auto px-4 py-12 text-center">Angebot wird geladen...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-2xl">
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-6 text-center">
+          <h1 className="text-2xl font-bold mb-3">Fehler</h1>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!booking) {
+    return null;
+  }
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
@@ -221,6 +220,9 @@ export default function AngebotAnnehmen() {
                 ))}
               </div>
               <p className="text-xs text-slate-500 mt-2">Bild anklicken zum Vergroessern</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Fuer weitere Fotos und alle Details: <a href="https://monteurwohnung-dumser.de/" target="_blank" rel="noreferrer" className="text-blue-600 underline">https://monteurwohnung-dumser.de/</a>
+              </p>
             </div>
           )}
 
@@ -263,7 +265,7 @@ export default function AngebotAnnehmen() {
           <div className="rounded-xl bg-gray-50 border border-gray-200 p-5">
             <div className="flex justify-between items-center text-lg font-semibold">
               <span>Gesamtpreis</span>
-              <span>{Number(activeVariant.total || 0).toFixed(2)} EUR</span>
+              <span>{Number(activeVariant?.total || 0).toFixed(2)} EUR</span>
             </div>
             <p className="text-xs text-gray-500 mt-2">Die detaillierte Preisaufstellung finden Sie im uebermittelten PDF-Angebot.</p>
           </div>
