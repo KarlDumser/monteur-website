@@ -203,10 +203,8 @@ const roundToTwo = (value) => Math.round((Number(value) || 0) * 100) / 100;
 const activeBookableFilter = {
   deletedAt: null,
   bookingStatus: { $ne: 'cancelled' },
-  $or: [
-    { isInquiry: { $ne: true } },
-    { inquiryStatus: 'approved' }
-  ]
+  isInquiry: { $ne: true },
+  inquiryStatus: { $ne: 'pending' }
 };
 
 const buildBlockedDateDeleteFilters = (booking) => {

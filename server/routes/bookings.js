@@ -27,10 +27,8 @@ const getCleaningBufferDays = (value) => {
 const activeBookingFilter = {
   deletedAt: null,
   bookingStatus: { $ne: 'cancelled' },
-  $or: [
-    { isInquiry: { $ne: true } },
-    { inquiryStatus: 'approved' }
-  ]
+  isInquiry: { $ne: true },
+  inquiryStatus: { $ne: 'pending' }
 };
 
 const isAdminRequest = (req) => {
@@ -89,9 +87,8 @@ router.post('/check-availability', async (req, res) => {
     const existingBookings = await Booking.find({
       ...activeBookingFilter,
       wohnung,
-      $or: [
-        { startDate: { $lte: end }, endDate: { $gte: start } }
-      ]
+      startDate: { $lte: end },
+      endDate: { $gte: start }
     });
     
     // Prüfe blockierte Zeiten
@@ -166,9 +163,8 @@ router.post('/', async (req, res) => {
     const overlapping = await Booking.findOne({
       ...activeBookingFilter,
       wohnung,
-      $or: [
-        { startDate: { $lte: end }, endDate: { $gte: start } }
-      ]
+      startDate: { $lte: end },
+      endDate: { $gte: start }
     });
     if (overlapping) {
       return res.status(409).json({ error: 'Für diesen Zeitraum existiert bereits eine Buchung für diese Wohnung.' });
