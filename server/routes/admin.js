@@ -7,6 +7,7 @@ import { findOrCreateCustomerFromBooking } from '../services/customerService.js'
 import { generateInvoice } from '../services/invoiceGenerator.js';
 import { sendBookingConfirmation, sendOfferEmail, sendMissingDataEmail } from '../services/emailService.js';
 import {
+  getInquiryEmailDiagnostics,
   importInquiryEmailsByUid,
   listInquiryEmailCandidates,
   runInquiryEmailImportOnce
@@ -444,6 +445,15 @@ router.get('/inquiries/email-candidates', async (req, res) => {
     const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(100, rawLimit)) : 25;
     const seen = String(req.query.seen || 'true').toLowerCase() !== 'false';
     const result = await listInquiryEmailCandidates({ seen, limit });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/inquiries/email-diagnostics', async (req, res) => {
+  try {
+    const result = await getInquiryEmailDiagnostics();
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });

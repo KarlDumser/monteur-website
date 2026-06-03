@@ -342,6 +342,82 @@ export async function listInquiryEmailCandidates({ seen = true, limit = 25 } = {
   }
 }
 
+export async function getInquiryEmailDiagnostics() {
+  const config = getImapConfig();
+  const enabled = isEmailImportEnabled();
+  const hasConfig = hasImapConfig(config);
+
+  const diagnostics = {
+    status: hasConfig ? 'pending' : 'skipped',
+    enabled,
+    imap: {
+      hostConfigured: Boolean(config.host),
+      port: config.port,
+      secure: config.secure,
+      userConfigured: Boolean(config.user),
+      passwordConfigured: Boolean(config.pass),
+      mailbox: 'INBOX'
+    },
+    openai: {
+      configured: Boolean(String(process.env.OPENAI_API_KEY || '').trim()),
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    },
+    inbox: {
+      seenCount: 0,
+      unseenCount: 0
+    },
+    connection: {
+      ok: false,
+      message: hasConfig ? 'Noch nicht getestet' : 'IMAP-Konfiguration fehlt'
+    }
+  };
+
+  if (!hasConfig) {
+    return diagnostics;
+  }
+
+  const client = new ImapFlow({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: {
+      user: config.user,
+      pass: config.pass
+    }
+  });
+
+  try {
+    await client.connect();
+    const lock = await client.getMailboxLock('INBOX');
+
+    try {
+      const seenUids = await client.search({ seen: true });
+      const unseenUids = await client.search({ seen: false });
+      diagnostics.inbox.seenCount = seenUids.length;
+      diagnostics.inbox.unseenCount = unseenUids.length;
+      diagnostics.connection.ok = true;
+      diagnostics.connection.message = 'IMAP-Verbindung erfolgreich';
+      diagnostics.status = 'ok';
+    } finally {
+      lock.release();
+    }
+  } catch (err) {
+    diagnostics.status = 'error';
+    diagnostics.connection.ok = false;
+    diagnostics.connection.message = err.message;
+  } finally {
+    if (client.usable) {
+      try {
+        await client.logout();
+      } catch {
+        // noop
+      }
+    }
+  }
+
+  return diagnostics;
+}
+
 export async function importInquiryEmailsByUid(uids, { markSeen = true } = {}) {
   if (importInProgress) {
     return { status: 'skipped', reason: 'import-already-running', results: [] };

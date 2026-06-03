@@ -107,6 +107,8 @@ export default function Admin() {
   const [manualEmailLoading, setManualEmailLoading] = useState(false);
   const [manualEmailImporting, setManualEmailImporting] = useState(false);
   const [manualEmailLoaded, setManualEmailLoaded] = useState(false);
+  const [manualEmailDiagnostics, setManualEmailDiagnostics] = useState(null);
+  const [manualEmailDiagnosticsLoading, setManualEmailDiagnosticsLoading] = useState(false);
   const messageTimeoutRef = useRef(null);
   const loginAbortRef = useRef(null);
 
@@ -591,6 +593,27 @@ export default function Admin() {
       showActionMessage('error', error.message || 'Ausgewaehlte Mails konnten nicht importiert werden');
     } finally {
       setManualEmailImporting(false);
+    }
+  };
+
+  const loadManualEmailDiagnostics = async () => {
+    try {
+      setManualEmailDiagnosticsLoading(true);
+      const apiUrl = getApiUrl();
+      const response = await fetch(`${apiUrl}/admin/inquiries/email-diagnostics`, {
+        headers: { Authorization: `Basic ${auth}` }
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || 'Mail-Diagnose konnte nicht geladen werden');
+      }
+
+      setManualEmailDiagnostics(data);
+    } catch (error) {
+      showActionMessage('error', error.message || 'Mail-Diagnose konnte nicht geladen werden');
+    } finally {
+      setManualEmailDiagnosticsLoading(false);
     }
   };
 
@@ -2287,6 +2310,14 @@ export default function Admin() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
+                    onClick={loadManualEmailDiagnostics}
+                    disabled={manualEmailDiagnosticsLoading}
+                    className="bg-white border border-slate-300 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400 text-slate-800 text-sm font-semibold px-4 py-2 rounded-lg"
+                  >
+                    {manualEmailDiagnosticsLoading ? 'Diagnose laeuft...' : 'Mail-Diagnose'}
+                  </button>
+                  <button
+                    type="button"
                     onClick={loadManualEmailCandidates}
                     disabled={manualEmailLoading}
                     className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-sm font-semibold px-4 py-2 rounded-lg"
@@ -2311,6 +2342,50 @@ export default function Admin() {
                   </button>
                 </div>
               </div>
+
+              {manualEmailDiagnostics && (
+                <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm">
+                  <div className="flex flex-wrap gap-2">
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${manualEmailDiagnostics.enabled ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                      Import {manualEmailDiagnostics.enabled ? 'aktiviert' : 'deaktiviert'}
+                    </span>
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${manualEmailDiagnostics.connection?.ok ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                      {manualEmailDiagnostics.connection?.ok ? 'IMAP verbunden' : 'IMAP nicht verbunden'}
+                    </span>
+                    <span className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${manualEmailDiagnostics.openai?.configured ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>
+                      OpenAI {manualEmailDiagnostics.openai?.configured ? 'konfiguriert' : 'optional nicht gesetzt'}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-lg bg-white px-3 py-2 border border-blue-100">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">IMAP Host</p>
+                      <p className="font-semibold text-slate-900">{manualEmailDiagnostics.imap?.hostConfigured ? 'gesetzt' : 'fehlt'}</p>
+                    </div>
+                    <div className="rounded-lg bg-white px-3 py-2 border border-blue-100">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Benutzer / Passwort</p>
+                      <p className="font-semibold text-slate-900">
+                        {manualEmailDiagnostics.imap?.userConfigured && manualEmailDiagnostics.imap?.passwordConfigured ? 'gesetzt' : 'unvollstaendig'}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-white px-3 py-2 border border-blue-100">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Gelesene Mails in INBOX</p>
+                      <p className="font-semibold text-slate-900">{manualEmailDiagnostics.inbox?.seenCount ?? 0}</p>
+                    </div>
+                    <div className="rounded-lg bg-white px-3 py-2 border border-blue-100">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Ungelesene Mails in INBOX</p>
+                      <p className="font-semibold text-slate-900">{manualEmailDiagnostics.inbox?.unseenCount ?? 0}</p>
+                    </div>
+                  </div>
+
+                  <p className="mt-3 text-sm text-slate-700">
+                    Verbindung: {manualEmailDiagnostics.connection?.message || 'Keine Rueckmeldung'}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Aktuell werden nur Mails aus der INBOX gelesen. Archiv, Unterordner oder andere Postfaecher werden noch nicht durchsucht.
+                  </p>
+                </div>
+              )}
 
               {manualEmailLoaded && (
                 <div className="mt-4 space-y-3">
