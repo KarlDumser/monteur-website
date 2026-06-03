@@ -13,6 +13,8 @@ import Widerruf from "./pages/Widerruf";
 import Payment from "./pages/Payment";
 import Admin from "./pages/Admin";
 import AdminInstall from './pages/AdminInstall'
+import AngebotAnnehmen from './pages/AngebotAnnehmen'
+import DatenVervollstaendigen from './pages/DatenVervollstaendigen'
 import { apiCall } from './utils/api'
 
 const VISITOR_ID_KEY = 'mw_visitor_id';
@@ -109,6 +111,8 @@ export default function App() {
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin-install" element={<AdminInstall />} />
           <Route path="/admin-install.html" element={<AdminInstall />} />
+          <Route path="/angebot-annehmen/:id" element={<AngebotAnnehmen />} />
+          <Route path="/daten-vervollstaendigen/:id" element={<DatenVervollstaendigen />} />
         </Routes>
       </Layout>
     </BrowserRouter>

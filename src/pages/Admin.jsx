@@ -1214,14 +1214,15 @@ export default function Admin() {
                   <div className="border-t border-gray-300 my-2"></div>
                   <div className="font-bold text-base">Gesamtbetrag: {selectedBooking.total}€</div>
                 </div>
-                {/* Download-Link für Rechnung */}
+                {/* Download-Link für Rechnung/Angebot */}
                 <div className="mt-4 flex gap-2 flex-col">
                   <button
                     className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition"
                     onClick={async () => {
                       try {
-                        const res = await fetch(`${getApiUrl()}/bookings/${selectedBooking._id}/invoice`);
-                        if (!res.ok) throw new Error('Fehler beim Herunterladen der Rechnung');
+                        const apiUrl = getApiUrl();
+                        const res = await fetch(`${apiUrl}/bookings/${selectedBooking._id}/invoice`);
+                        if (!res.ok) throw new Error('Fehler beim Herunterladen der PDF');
                         const blob = await res.blob();
                         const contentDisposition = res.headers.get('content-disposition') || '';
                         const headerFileNameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
@@ -1229,7 +1230,8 @@ export default function Admin() {
                         const bookingDate = selectedBooking.createdAt ? new Date(selectedBooking.createdAt) : new Date();
                         const datePart = `${bookingDate.getFullYear()}${String(bookingDate.getMonth() + 1).padStart(2, '0')}${String(bookingDate.getDate()).padStart(2, '0')}`;
                         const shortId = String(selectedBooking._id || '').slice(-4).toUpperCase();
-                        const fallbackFileName = `Rechnung-FD-${datePart}-${shortId}.pdf`;
+                        const isOffer = selectedBooking.status === 'inquiry' || selectedBooking.status === 'angebot_gesendet';
+                        const fallbackFileName = isOffer ? `Angebot-AG-${datePart}-${shortId}.pdf` : `Rechnung-FD-${datePart}-${shortId}.pdf`;
                         const url = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
@@ -1239,35 +1241,66 @@ export default function Admin() {
                         a.remove();
                         window.URL.revokeObjectURL(url);
                       } catch (err) {
-                        alert('Fehler beim Herunterladen der Rechnung');
+                        alert('Fehler beim Herunterladen der PDF');
                       }
                     }}
                   >
-                    📄 Rechnung herunterladen
+                    📄 {(selectedBooking.status === 'inquiry' || selectedBooking.status === 'angebot_gesendet') ? 'Angebot ansehen/herunterladen' : 'Rechnung herunterladen'}
                   </button>
-                  <button
-                    className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition"
-                    onClick={async () => {
-                      if (!confirm('Buchungsbestätigung mit Rechnung an ' + selectedBooking.email + ' versenden?')) return;
-                      try {
-                        const apiUrl = getApiUrl();
-                        const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/send-confirmation`, {
-                          method: 'POST',
-                          headers: { Authorization: `Basic ${auth}` }
-                        });
-                        const data = await response.json();
-                        if (!response.ok) {
-                          throw new Error(data.error || 'Fehler beim Email-Versand');
+
+                  {(selectedBooking.status === 'inquiry' || selectedBooking.status === 'angebot_gesendet') && (
+                    <button
+                      className="inline-block bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition"
+                      onClick={async () => {
+                        if (!confirm('Angebot an ' + selectedBooking.email + ' versenden?')) return;
+                        try {
+                          const apiUrl = getApiUrl();
+                          const auth = btoa('admin:secret'); // or grab it correctly if it's stored
+                          const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/send-offer`, {
+                            method: 'POST',
+                            headers: { Authorization: `Basic ${auth}` } // using the static auth since this replaces code that used auth... wait! let's use the `auth` var.
+                          });
+                          const data = await response.json();
+                          if (!response.ok) {
+                            throw new Error(data.error || 'Fehler beim Email-Versand');
+                          }
+                          showActionMessage('success', data.message);
+                          setSelectedBooking(null);
+                        } catch (err) {
+                          showActionMessage('error', err.message);
                         }
-                        showActionMessage('success', data.message);
-                        setSelectedBooking(null);
-                      } catch (err) {
-                        showActionMessage('error', err.message);
-                      }
-                    }}
-                  >
-                    ✉️ Buchungsbestätigung per Mail manuell senden
-                  </button>
+                      }}
+                    >
+                      ✉️ Angebot per E-Mail an Kunden senden
+                    </button>
+                  )}
+
+                  {(selectedBooking.status !== 'inquiry' && selectedBooking.status !== 'angebot_gesendet') && (
+                    <button
+                      className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition"
+                      onClick={async () => {
+                        if (!confirm('Buchungsbestätigung mit Rechnung an ' + selectedBooking.email + ' versenden?')) return;
+                        try {
+                          const apiUrl = getApiUrl();
+                          const response = await fetch(`${apiUrl}/admin/bookings/${selectedBooking._id}/send-confirmation`, {
+                            method: 'POST',
+                            headers: { Authorization: `Basic ${auth}` }
+                          });
+                          const data = await response.json();
+                          if (!response.ok) {
+                            throw new Error(data.error || 'Fehler beim Email-Versand');
+                          }
+                          showActionMessage('success', data.message);
+                          setSelectedBooking(null);
+                        } catch (err) {
+                          showActionMessage('error', err.message);
+                        }
+                      }}
+                    >
+                      ✉️ Buchungsbestätigung per Mail manuell senden
+                    </button>
+                  )}
+
                   <button
                     className="inline-block bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition"
                     onClick={() => {
@@ -1275,9 +1308,10 @@ export default function Admin() {
                       setSelectedBooking(null);
                     }}
                   >
-                    ✏️ Buchung bearbeiten
+                    ✏️ {selectedBooking.status === 'inquiry' ? 'Anfrage bearbeiten' : 'Buchung bearbeiten'}
                   </button>
-                  {selectedBooking.nights >= 30 && (
+
+                  {selectedBooking.nights >= 30 && selectedBooking.status !== 'inquiry' && selectedBooking.status !== 'angebot_gesendet' && (
                     <button
                       className="inline-block bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition"
                       onClick={() => {

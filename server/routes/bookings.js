@@ -3,7 +3,7 @@ import express from 'express';
 import Booking from '../models/Booking.js';
 import BlockedDate from '../models/BlockedDate.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
-import { sendBookingConfirmation } from '../services/emailService.js';
+import { sendBookingConfirmation, sendOfferEmail, sendMissingDataEmail } from '../services/emailService.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 import { sendBookingPushNotification } from '../services/pushoverService.js';
 import { validateAdminBasicAuthHeader } from '../utils/adminAuth.js';
@@ -416,6 +416,83 @@ router.patch('/:id', async (req, res) => {
     
     res.json(booking);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Angebot annehmen
+router.post('/:id/accept-offer', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Angebot nicht gefunden' });
+    
+    if (booking.status !== 'inquiry' && booking.status !== 'angebot_gesendet') {
+      return res.status(400).json({ error: 'Dieses Angebot wurde bereits bearbeitet (Status: ' + booking.status + ')' });
+    }
+
+    if (!booking.address || !booking.phone) {
+      // Missing data -> redirect to complete data page
+      booking.status = 'angebot_angenommen_daten_fehlen';
+      await booking.save();
+      // Send email requesting data
+      await sendMissingDataEmail(booking);
+      
+      return res.json({ 
+        success: true, 
+        message: 'Angebot angenommen. Bitte vervollständigen Sie Ihre Daten.',
+        redirectUrl: `/daten-vervollstaendigen/${booking._id}` 
+      });
+    }
+
+    // Data is complete -> process as normal booking
+    booking.status = 'confirmed';
+    await booking.save();
+    
+    // Customer anlegen / aktualisieren
+    await findOrCreateCustomerFromBooking(booking);
+
+    // Bestätigung & Rechnung sofort rausschicken
+    await sendBookingConfirmation(booking, 'invoice');
+    
+    // Admin Benachrichtigung
+    await sendBookingPushNotification(booking);
+
+    return res.json({ success: true, message: 'Angebot erfolgreich verbindlich gebucht!' });
+
+  } catch (error) {
+    console.error('Fehler bei /accept-offer:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Daten vervollständigen (nach Angebot)
+router.post('/:id/complete-data', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    
+    const { companyName, address, phone } = req.body;
+    
+    if (companyName) booking.companyName = companyName;
+    if (address) booking.address = address;
+    if (phone) booking.phone = phone;
+    
+    // Wenn Daten nun vollständig sind, endgültig bestätigen
+    if (booking.address && booking.phone) {
+      booking.status = 'confirmed';
+      await booking.save();
+
+      await findOrCreateCustomerFromBooking(booking);
+      await sendBookingConfirmation(booking, 'invoice');
+      await sendBookingPushNotification(booking);
+      
+      return res.json({ success: true, message: 'Daten erfolgreich gespeichert und Buchung bestätigt.' });
+    } else {
+      await booking.save();
+      return res.json({ success: true, message: 'Daten aktualisiert, aber noch nicht vollständig.' });
+    }
+  } catch (error) {
+    console.error('Fehler bei /complete-data:', error);
     res.status(500).json({ error: error.message });
   }
 });

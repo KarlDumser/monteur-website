@@ -8,11 +8,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Generiert PDF-Rechnung für Buchung
+ * Generiert PDF-Rechnung oder Angebot für Buchung
  * @param {Object} booking - Buchungsobjekt aus MongoDB
+ * @param {boolean} isOffer - True if generating an offer setup
  * @returns {Buffer} PDF als Buffer
  */
-export async function generateInvoice(booking) {
+export async function generateInvoice(booking, isOffer = false) {
    const resolvedVatId = await resolveCustomerVatId(booking);
 
   return new Promise((resolve, reject) => {
@@ -21,9 +22,10 @@ export async function generateInvoice(booking) {
       const buffers = [];
          const footerY = 740;
       
-             // Rechnungsnummer für Dateinamen und PDF merken
-             const invoiceNumber = buildInvoiceNumber(booking);
-         const pdfFileName = `Rechnung-${invoiceNumber}.pdf`;
+             // Rechnungsnummer/Angebotsnummer für Dateinamen und PDF merken
+             const documentNumber = isOffer ? `A-${booking._id.toString().substring(0, 6).toUpperCase()}` : buildInvoiceNumber(booking);
+             const docTypePrefix = isOffer ? 'Angebot' : 'Rechnung';
+         const pdfFileName = `${docTypePrefix}-${documentNumber}.pdf`;
          doc.on('data', buffers.push.bind(buffers));
          doc.on('end', () => {
             const pdfBuffer = Buffer.concat(buffers);
@@ -71,14 +73,15 @@ export async function generateInvoice(booking) {
       const invoiceDate = formatGermanDate(new Date());
       doc.fontSize(14)
          .font('Helvetica-Bold');
+      const docTitleWord = isOffer ? 'Angebot' : 'Rechnung';
       const rechnungTitel = booking.wohnung === 'kombi'
-        ? 'Rechnung für Ihre Monteurwohnungen in Krailling'
-        : 'Rechnung für Ihre Monteurwohnung in Krailling';
+        ? `${docTitleWord} für Ihre Monteurwohnungen in Krailling`
+        : `${docTitleWord} für Ihre Monteurwohnung in Krailling`;
       doc.text(rechnungTitel, 50, 280)
          .fontSize(10)
          .font('Helvetica')
-         .text(`Rechnungsnummer: ${invoiceNumber}`, 50, 300)
-         .text(`Rechnungsdatum: ${invoiceDate}`, 50, 315);
+         .text(`${docTitleWord}snummer: ${documentNumber}`, 50, 300)
+         .text(`${docTitleWord}sdatum: ${invoiceDate}`, 50, 315);
 
       // Leistungen Tabelle
       doc.fontSize(9)
@@ -228,10 +231,14 @@ export async function generateInvoice(booking) {
          const finalCheckoutLine = 'Buchungsende (Check-out): bis 10:00 Uhr.';
          const finalKeyLine = 'Bitte lassen Sie den Schlüssel beim Check-out auf dem Tisch liegen.';
          const paymentHeader = 'Zahlungsbedingungen:';
-         const paymentLine1 = '• Die Rechnung muss innerhalb von 7 Tagen nach Rechnungsdatum bezahlt sein, um die Wohnung verbindlich zu reservieren.';
-         const paymentLine2 = isFollowUpInvoice
-            ? '• Der Zahlungseingang muss VOR Beginn des neuen Buchungszeitraumes erfolgen.'
-            : '• Der Zahlungseingang muss VOR dem Check-In erfolgen.';
+         const paymentLine1 = isOffer 
+            ? '• Bitte bestätigen Sie das Angebot über den Link in Ihrer E-Mail.'
+            : '• Die Rechnung muss innerhalb von 7 Tagen nach Rechnungsdatum bezahlt sein, um die Wohnung verbindlich zu reservieren.';
+         const paymentLine2 = isOffer
+            ? '• Danach erhalten Sie die offizielle Buchungsbestätigung und Rechnung.'
+            : (isFollowUpInvoice
+               ? '• Der Zahlungseingang muss VOR Beginn des neuen Buchungszeitraumes erfolgen.'
+               : '• Der Zahlungseingang muss VOR dem Check-In erfolgen.');
 
          const measure = (text, fontSize = 9, font = 'Helvetica') => {
             doc.font(font).fontSize(fontSize);

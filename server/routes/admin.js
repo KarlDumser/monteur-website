@@ -5,7 +5,7 @@ import Customer from '../models/Customer.js';
 import WebsiteVisit from '../models/WebsiteVisit.js';
 import { findOrCreateCustomerFromBooking } from '../services/customerService.js';
 import { generateInvoice } from '../services/invoiceGenerator.js';
-import { sendBookingConfirmation } from '../services/emailService.js';
+import { sendBookingConfirmation, sendOfferEmail, sendMissingDataEmail } from '../services/emailService.js';
 import {
   hasConfiguredAdminCredentials,
   validateAdminBasicAuthHeader
@@ -1721,6 +1721,36 @@ router.get('/customers/:id/bookings', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Angebot Email versenden (Manueller Button)
+router.post('/bookings/:id/send-offer', async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ error: 'Buchung nicht gefunden' });
+    }
+
+    const result = await sendOfferEmail(booking);
+
+    if (result.status === 'sent') {
+      booking.status = 'angebot_gesendet';
+      await booking.save();
+      return res.json({ 
+        success: true, 
+        message: 'Angebot erfolgreich an ' + booking.email + ' versendet!',
+        booking
+      });
+    } else {
+      return res.status(500).json({ 
+        error: 'Fehler beim Email-Versand: ' + (result.reason || result.error || 'Unbekannter Fehler'),
+        result
+      });
+    }
+  } catch (error) {
+    console.error('Fehler beim Senden des Angebots:', error);
+    res.status(500).json({ error: 'Serverfehler beim Senden des Angebots', details: error.message });
   }
 });
 

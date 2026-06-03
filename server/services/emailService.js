@@ -483,6 +483,177 @@ export async function sendBookingConfirmation(booking, type = 'confirmation') {
 }
 
 /**
+ * Sendet ein standardisiertes Angebot per E-Mail an den Kunden.
+ * Enthält Preise und einen "Angebot annehmen" Link.
+ */
+export async function sendOfferEmail(booking) {
+  try {
+    const baseUrl = process.env.API_URL || 'http://localhost:3000';
+    const acceptLink = `${baseUrl}/angebot-annehmen/${booking._id}`;
+
+    const { buffer: pdfBuffer, fileName } = await generateInvoice(booking, true);
+    
+    let wohnungName = booking.wohnungLabel || booking.wohnung;
+    if (booking.wohnung === 'kombi') wohnungName = 'Monteurwohnungen in Krailling';
+    if (booking.wohnung === 'neubau') wohnungName = 'Monteurwohnung (Fruehlingstr.)';
+    if (booking.wohnung === 'hackerberg') wohnungName = 'Monteurwohnung (Hackerberg 4)';
+
+    const startDate = formatGermanDate(booking.originalStartDate || booking.startDate);
+    const endDate = formatGermanDate(booking.originalEndDate || booking.endDate);
+    const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
+    
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">Ihr Angebot für eine Monteurwohnung</h2>
+        <p>Sehr geehrte Damen und Herren${booking.company ? ' von ' + booking.company : ''},</p>
+        <p>vielen Dank für Ihre Anfrage. Wir freuen uns, Ihnen hiermit ein Angebot für Ihren gewünschten Aufenthalt unterbreiten zu können.</p>
+        
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #374151;">Angebotsdetails</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 8px 0; width: 35%;"><strong>Wohnung:</strong></td>
+              <td>${wohnungName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Zeitraum:</strong></td>
+              <td>${startDate} bis ${endDate}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Nächte:</strong></td>
+              <td>${booking.totalNights || booking.nights}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Personen:</strong></td>
+              <td>${booking.people}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-top: 2px solid #ccc; font-size: 16px;"><strong>Gesamtpreis:</strong></td>
+              <td style="border-top: 2px solid #ccc; font-size: 16px; color: #2563eb;"><strong>${booking.total.toFixed(2)} €</strong></td>
+            </tr>
+          </table>
+          <p style="margin-top: 10px; font-size: 12px; color: #666;">(Der Gesamtpreis versteht sich als Festpreis inklusive Endreinigung und der gesetzlichen MwSt. Alle Details entnehmen Sie bitte dem angehängten PDF-Angebot.)</p>
+        </div>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${acceptLink}" style="background-color: #10b981; color: white; padding: 15px 30px; text-decoration: none; font-size: 18px; font-weight: bold; border-radius: 8px; display: inline-block;">Angebot jetzt verbindlich annehmen</a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p>Sollten Sie noch Fragen haben, antworten Sie einfach auf diese E-Mail.</p>
+        <p>
+          Mit freundlichen Grüßen<br>
+          <strong>Christine Dumser</strong><br>
+          Ferienwohnungen Christine Dumser<br>
+          Frühlingstr. 8<br>
+          82152 Krailling b. München<br>
+          Tel: +49(0)89 8571174<br>
+          Email: ${fromAddress}
+        </p>
+      </div>
+    `;
+
+    // Mailjet Payload (vereinfacht, wie in sendBookingConfirmation)
+    const payload = {
+      Messages: [{
+        From: { Email: fromAddress, Name: process.env.EMAIL_FROM_NAME || 'Monteurwohnungen Dumser' },
+        To: [{ Email: booking.email }],
+        Subject: \`Angebot: \${wohnungName} (\${startDate} - \${endDate})\`,
+        HTMLPart: htmlContent,
+        Attachments: [
+          {
+            ContentType: 'application/pdf',
+            Filename: fileName,
+            Base64Content: pdfBuffer.toString('base64')
+          }
+        ]
+      }]
+    };
+    
+    // Configured Owner Inbox for BCC
+    const configuredOwnerInbox = String(process.env.BOOKING_OWNER_EMAIL || '').trim().toLowerCase();
+    const ownerInbox = (!configuredOwnerInbox || configuredOwnerInbox === 'karl658@hotmail.de' || configuredOwnerInbox === 'karl658@hotamil.de') ? 'monteur-wohnung@dumser.net' : configuredOwnerInbox;
+    if (ownerInbox && ownerInbox.toLowerCase() !== booking.email.toLowerCase()) {
+      payload.Messages[0].Bcc = [{ Email: ownerInbox }];
+    }
+
+    const response = await fetch('https://api.mailjet.com/v3.1/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Basic ' + Buffer.from(\`\${process.env.MAILJET_API_KEY}:\${process.env.MAILJET_SECRET_KEY}\`).toString('base64')
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(\`Mailjet API Request failed with status \${response.status}\`);
+    }
+
+    return { status: 'sent' };
+  } catch (err) {
+    console.error('Fehler beim Senden der Angebots-Email:', err);
+    return { status: 'failed', error: err.message };
+  }
+}
+
+/**
+ * Sendet eine E-Mail an den Kunden, um fehlende Daten nachzufordern.
+ */
+export async function sendMissingDataEmail(booking) {
+  try {
+    const baseUrl = process.env.VITE_URL || process.env.APP_URL || process.env.API_URL || 'http://localhost:5173';
+    // Dies löst das Frontend-Formular für fehlende Daten auf, was wir bauen müssen.
+    const formLink = \`\${baseUrl}/daten-vervollstaendigen/\${booking._id}\`;
+    const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
+
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #ea580c;">Wichtige Daten für Ihre Buchung fehlen</h2>
+        <p>Sehr geehrte Damen und Herren${booking.company ? ' von ' + booking.company : ''},</p>
+        <p>vielen Dank für die Annahme unseres Angebotes! Um Ihre Buchung verbindlich abzuschließen und die korrekte Rechnung für Sie erstellen zu können, benötigen wir noch Ihre vollständige Rechnungsadresse und/oder Telefonnummer.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="\${formLink}" style="background-color: #ea580c; color: white; padding: 15px 30px; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 8px; display: inline-block;">Fehlende Daten eintragen</a>
+        </div>
+        
+        <p>Sobald Sie die Daten eingegeben haben, erhalten Sie sofort im Anschluss Ihre gültige Buchungsbestätigung inkl. Rechnung per E-Mail.</p>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+        <p>
+          Mit freundlichen Grüßen<br>
+          <strong>Christine Dumser</strong><br>
+        </p>
+      </div>
+    `;
+
+    const payload = {
+      Messages: [{
+        From: { Email: fromAddress, Name: process.env.EMAIL_FROM_NAME || 'Monteurwohnungen Dumser' },
+        To: [{ Email: booking.email }],
+        Subject: 'Wichtig: Rechnungsdaten vervollständigen',
+        HTMLPart: htmlContent
+      }]
+    };
+
+    const response = await fetch('https://api.mailjet.com/v3.1/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Basic ' + Buffer.from(\`\${process.env.MAILJET_API_KEY}:\${process.env.MAILJET_SECRET_KEY}\`).toString('base64')
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error(\`Mailjet API \${response.status}\`);
+    return { status: 'sent' };
+  } catch (err) {
+    console.error('Fehler beim Senden der Daten-Anfrage:', err);
+    return { status: 'failed' };
+  }
+}
+
+/**
  * Formatiert Date Object zu deutschem Datumsformat DD.MM.YYYY
  */
 function formatGermanDate(date) {
@@ -491,5 +662,5 @@ function formatGermanDate(date) {
   const day = String(d.getDate()).padStart(2, '0');
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const year = d.getFullYear();
-  return `${day}.${month}.${year}`;
+  return \`\${day}.\${month}.\${year}\`;
 }
