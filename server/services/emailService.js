@@ -507,13 +507,7 @@ export async function sendOfferEmail(booking) {
     const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
 
     const nights = Number(booking.totalNights || booking.nights || 0);
-    const pricePerNight = Number(booking.pricePerNight || 0);
-    const cleaningFee = Number(booking.cleaningFee || 0);
-    const subtotal = Number(booking.subtotal || (nights * pricePerNight + cleaningFee));
-    const discount = Number(booking.discount || 0);
-    const vat = Number(booking.vat || ((subtotal - discount) * 0.07));
-    const total = Number(booking.total || (subtotal - discount + vat));
-    const lodgingTotal = Number((nights * pricePerNight).toFixed(2));
+    const total = Number(booking.total || 0);
     
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -545,35 +539,11 @@ export async function sendOfferEmail(booking) {
               <td>${booking.people}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0; border-top: 1px solid #d1d5db;"><strong>Preis/Nacht:</strong></td>
-              <td style="border-top: 1px solid #d1d5db;">${pricePerNight.toFixed(2)} €</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0;"><strong>Unterkunft (${nights} Naechte):</strong></td>
-              <td>${lodgingTotal.toFixed(2)} €</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0;"><strong>Reinigung:</strong></td>
-              <td>${cleaningFee.toFixed(2)} €</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0;"><strong>Zwischensumme:</strong></td>
-              <td>${subtotal.toFixed(2)} €</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0;"><strong>Rabatt:</strong></td>
-              <td>-${discount.toFixed(2)} €</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0;"><strong>MwSt. (7%):</strong></td>
-              <td>${vat.toFixed(2)} €</td>
-            </tr>
-            <tr>
               <td style="padding: 8px 0; border-top: 2px solid #ccc; font-size: 16px;"><strong>Gesamtpreis:</strong></td>
               <td style="border-top: 2px solid #ccc; font-size: 16px; color: #2563eb;"><strong>${total.toFixed(2)} €</strong></td>
             </tr>
           </table>
-          <p style="margin-top: 10px; font-size: 12px; color: #666;">(Alle Positionen finden Sie ebenfalls im angehängten PDF-Angebot.)</p>
+          <p style="margin-top: 10px; font-size: 12px; color: #666;"><strong>Wichtiger Hinweis:</strong> Die genaue Aufschluesselung aller Preispositionen finden Sie im angehaengten PDF-Angebot.</p>
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
