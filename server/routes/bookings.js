@@ -22,6 +22,31 @@ const addDays = (date, days) => {
   return result;
 };
 
+const isSameUtcDay = (left, right) => {
+  const a = new Date(left);
+  const b = new Date(right);
+  return (
+    a.getUTCFullYear() === b.getUTCFullYear() &&
+    a.getUTCMonth() === b.getUTCMonth() &&
+    a.getUTCDate() === b.getUTCDate()
+  );
+};
+
+const isLegacySelfOfferBlock = (booking, blockedDate) => {
+  if (!booking?.isInquiry || booking?.inquiryStatus !== 'pending') {
+    return false;
+  }
+
+  const bookingEmail = String(booking.email || '').trim().toLowerCase();
+  const blockCreator = String(blockedDate?.createdBy || '').trim().toLowerCase();
+
+  if (!bookingEmail || !blockCreator || bookingEmail !== blockCreator) {
+    return false;
+  }
+
+  return isSameUtcDay(booking.startDate, blockedDate.startDate) && isSameUtcDay(booking.endDate, blockedDate.endDate);
+};
+
 const getCleaningBufferDays = (value) => {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed) || parsed < 0) {
@@ -98,14 +123,15 @@ const findBlockingConflict = async (booking) => {
       return { type: 'booking', item: overlap, apartmentKey };
     }
 
-    const blockedOverlap = await BlockedDate.findOne({
+    const blockedOverlaps = await BlockedDate.find({
       wohnung: apartmentKey,
       startDate: { $lte: booking.endDate },
       endDate: { $gte: booking.startDate }
-    });
+    }).sort({ createdAt: 1 });
 
-    if (blockedOverlap) {
-      return { type: 'blocked', item: blockedOverlap, apartmentKey };
+    const externalBlockedOverlap = blockedOverlaps.find((entry) => !isLegacySelfOfferBlock(booking, entry));
+    if (externalBlockedOverlap) {
+      return { type: 'blocked', item: externalBlockedOverlap, apartmentKey };
     }
   }
 
