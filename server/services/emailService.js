@@ -498,9 +498,22 @@ export async function sendOfferEmail(booking) {
     if (booking.wohnung === 'neubau') wohnungName = 'Monteurwohnung (Fruehlingstr.)';
     if (booking.wohnung === 'hackerberg') wohnungName = 'Monteurwohnung (Hackerberg 4)';
 
+    let wohnungAddress = 'Hackerberg 4, D-82152 Krailling';
+    if (booking.wohnung === 'neubau') wohnungAddress = 'Fruehlingstrasse 8, D-82152 Krailling';
+    if (booking.wohnung === 'kombi') wohnungAddress = 'Fruehlingstrasse 8 und Hackerberg 4, D-82152 Krailling';
+
     const startDate = formatGermanDate(booking.originalStartDate || booking.startDate);
     const endDate = formatGermanDate(booking.originalEndDate || booking.endDate);
     const fromAddress = process.env.EMAIL_FROM || 'karl658@hotmail.de';
+
+    const nights = Number(booking.totalNights || booking.nights || 0);
+    const pricePerNight = Number(booking.pricePerNight || 0);
+    const cleaningFee = Number(booking.cleaningFee || 0);
+    const subtotal = Number(booking.subtotal || (nights * pricePerNight + cleaningFee));
+    const discount = Number(booking.discount || 0);
+    const vat = Number(booking.vat || ((subtotal - discount) * 0.07));
+    const total = Number(booking.total || (subtotal - discount + vat));
+    const lodgingTotal = Number((nights * pricePerNight).toFixed(2));
     
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -516,23 +529,51 @@ export async function sendOfferEmail(booking) {
               <td>${wohnungName}</td>
             </tr>
             <tr>
+              <td style="padding: 8px 0;"><strong>Wohnungsadresse:</strong></td>
+              <td>${wohnungAddress}</td>
+            </tr>
+            <tr>
               <td style="padding: 8px 0;"><strong>Zeitraum:</strong></td>
               <td>${startDate} bis ${endDate}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0;"><strong>Nächte:</strong></td>
-              <td>${booking.totalNights || booking.nights}</td>
+              <td>${nights}</td>
             </tr>
             <tr>
               <td style="padding: 8px 0;"><strong>Personen:</strong></td>
               <td>${booking.people}</td>
             </tr>
             <tr>
+              <td style="padding: 8px 0; border-top: 1px solid #d1d5db;"><strong>Preis/Nacht:</strong></td>
+              <td style="border-top: 1px solid #d1d5db;">${pricePerNight.toFixed(2)} €</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Unterkunft (${nights} Naechte):</strong></td>
+              <td>${lodgingTotal.toFixed(2)} €</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Reinigung:</strong></td>
+              <td>${cleaningFee.toFixed(2)} €</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Zwischensumme:</strong></td>
+              <td>${subtotal.toFixed(2)} €</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Rabatt:</strong></td>
+              <td>-${discount.toFixed(2)} €</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>MwSt. (7%):</strong></td>
+              <td>${vat.toFixed(2)} €</td>
+            </tr>
+            <tr>
               <td style="padding: 8px 0; border-top: 2px solid #ccc; font-size: 16px;"><strong>Gesamtpreis:</strong></td>
-              <td style="border-top: 2px solid #ccc; font-size: 16px; color: #2563eb;"><strong>${booking.total.toFixed(2)} €</strong></td>
+              <td style="border-top: 2px solid #ccc; font-size: 16px; color: #2563eb;"><strong>${total.toFixed(2)} €</strong></td>
             </tr>
           </table>
-          <p style="margin-top: 10px; font-size: 12px; color: #666;">(Der Gesamtpreis versteht sich als Festpreis inklusive Endreinigung und der gesetzlichen MwSt. Alle Details entnehmen Sie bitte dem angehängten PDF-Angebot.)</p>
+          <p style="margin-top: 10px; font-size: 12px; color: #666;">(Alle Positionen finden Sie ebenfalls im angehängten PDF-Angebot.)</p>
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
