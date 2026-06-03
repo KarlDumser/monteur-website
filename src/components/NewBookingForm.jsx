@@ -594,6 +594,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
               <input
                 type="date"
                 name="startDate"
+                lang="de-DE"
                 value={formData.startDate}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
@@ -604,6 +605,7 @@ export default function NewBookingForm({ auth, customers = [], onClose, onSucces
               <input
                 type="date"
                 name="endDate"
+                lang="de-DE"
                 value={formData.endDate}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"

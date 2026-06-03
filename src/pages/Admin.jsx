@@ -1793,11 +1793,11 @@ export default function Admin() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Startdatum</label>
-                      <input type="date" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.startDate} onChange={(e) => updateFollowUpDraft('startDate', e.target.value)} />
+                      <input type="date" lang="de-DE" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.startDate} onChange={(e) => updateFollowUpDraft('startDate', e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Enddatum</label>
-                      <input type="date" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.endDate} onChange={(e) => updateFollowUpDraft('endDate', e.target.value)} />
+                      <input type="date" lang="de-DE" className="w-full border rounded-lg px-3 py-2" value={followUpDraft.endDate} onChange={(e) => updateFollowUpDraft('endDate', e.target.value)} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold mb-1">Wohnung</label>
@@ -2433,6 +2433,7 @@ export default function Admin() {
                 <div className="flex flex-wrap gap-2">
                   <input
                     type="date"
+                    lang="de-DE"
                     value={emailCandidatesSince}
                     onChange={(e) => setEmailCandidatesSince(e.target.value)}
                     className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-800 bg-white"
@@ -2440,6 +2441,7 @@ export default function Admin() {
                   />
                   <input
                     type="date"
+                    lang="de-DE"
                     value={emailCandidatesBefore}
                     onChange={(e) => setEmailCandidatesBefore(e.target.value)}
                     className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-800 bg-white"
@@ -2910,6 +2912,7 @@ export default function Admin() {
                   <label className="block text-sm font-semibold mb-2">Von</label>
                   <input
                     type="date"
+                    lang="de-DE"
                     value={blockForm.startDate}
                     onChange={(e) => setBlockForm({...blockForm, startDate: e.target.value})}
                     className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"
@@ -2920,6 +2923,7 @@ export default function Admin() {
                   <label className="block text-sm font-semibold mb-2">Bis</label>
                   <input
                     type="date"
+                    lang="de-DE"
                     value={blockForm.endDate}
                     onChange={(e) => setBlockForm({...blockForm, endDate: e.target.value})}
                     className="w-full border-2 border-gray-300 rounded-lg px-4 py-3"

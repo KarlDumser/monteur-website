@@ -454,6 +454,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
               <input
                 type="date"
                 name="createdAt"
+                lang="de-DE"
                 value={formData.createdAt ? new Date(formData.createdAt).toISOString().slice(0, 10) : ''}
                 onChange={(e) => {
                   if (e.target.value) {
@@ -473,6 +474,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
               <input
                 type="date"
                 name="startDate"
+                lang="de-DE"
                 value={formData.startDate ? new Date(formData.startDate).toISOString().slice(0, 10) : ''}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
@@ -483,6 +485,7 @@ export default function BookingEditor({ booking, auth, onClose, onSave, mode = '
               <input
                 type="date"
                 name="endDate"
+                lang="de-DE"
                 value={formData.endDate ? new Date(formData.endDate).toISOString().slice(0, 10) : ''}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
