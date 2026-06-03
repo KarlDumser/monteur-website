@@ -2067,6 +2067,22 @@ export default function Admin() {
                       <div className="font-medium">{booking.company || booking.name}</div>
                       <div className="text-sm text-gray-500">{booking.name}</div>
                       <div className="text-sm text-gray-500">{booking.email}</div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {(booking.inquiryStatus === 'approved' || booking.offerStatus === 'accepted') ? (
+                          <span className="inline-block rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold px-2 py-0.5">
+                            Als Buchung uebernommen
+                          </span>
+                        ) : (
+                          <span className="inline-block rounded-full bg-gray-100 text-gray-700 text-[11px] font-semibold px-2 py-0.5">
+                            Direkte Buchung
+                          </span>
+                        )}
+                        {booking.inquirySource === 'email' && (
+                          <span className="inline-block rounded-full bg-amber-100 text-amber-800 text-[11px] font-semibold px-2 py-0.5">
+                            Ursprung: Mail
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {booking.wohnungLabel || (booking.wohnung === 'hackerberg' ? 'Hackerberg' : booking.wohnung === 'neubau' ? 'Fruehlingstr.' : 'Kombi')}
@@ -2088,11 +2104,18 @@ export default function Admin() {
                       {Number(booking.total).toFixed(2).replace('.', ',')}€
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {booking.paymentStatus === 'paid' ? '✓ Bezahlt' : 'Ausstehend'}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`px-2 py-1 text-xs rounded-full w-fit ${
+                          booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {booking.paymentStatus === 'paid' ? '✓ Bezahlt' : 'Ausstehend'}
+                        </span>
+                        {(booking.inquiryStatus === 'approved' || booking.offerStatus === 'accepted') && (
+                          <span className="px-2 py-1 text-xs rounded-full w-fit bg-blue-100 text-blue-800">
+                            Angebot angenommen
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex gap-2 flex-wrap">
@@ -2180,7 +2203,12 @@ export default function Admin() {
                       <div className="font-medium">{inquiry.company || inquiry.name}</div>
                       <div className="text-sm text-gray-500">{inquiry.name}</div>
                       <div className="text-sm text-gray-500">{inquiry.email}</div>
-                      <div className="mt-1">
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        <span className={`inline-block rounded-full text-[11px] font-semibold px-2 py-0.5 ${
+                          inquiry.offerStatus === 'sent' ? 'bg-yellow-100 text-yellow-800' : 'bg-sky-100 text-sky-800'
+                        }`}>
+                          {inquiry.offerStatus === 'sent' ? 'Angebot gesendet' : 'Offene Anfrage'}
+                        </span>
                         {inquiry.inquirySource === 'email' ? (
                           <span className="inline-block rounded-full bg-amber-100 text-amber-800 text-[11px] font-semibold px-2 py-0.5">
                             Anfrage aus Mail {inquiry.inquiryProvider ? `(${inquiry.inquiryProvider})` : ''}
