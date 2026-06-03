@@ -439,12 +439,31 @@ router.post('/inquiries/import-email', async (req, res) => {
   }
 });
 
+router.delete('/inquiries/email-imports', async (req, res) => {
+  try {
+    const since = req.query.since ? new Date(req.query.since) : null;
+    const before = req.query.before ? new Date(req.query.before) : null;
+    const filter = { deletedAt: null, isInquiry: true, inquirySource: 'email' };
+    if (since || before) {
+      filter.createdAt = {};
+      if (since) filter.createdAt.$gte = since;
+      if (before) filter.createdAt.$lt = before;
+    }
+    const result = await Booking.updateMany(filter, { $set: { deletedAt: new Date(), deletedBy: req.adminUser } });
+    res.json({ deleted: result.modifiedCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/inquiries/email-candidates', async (req, res) => {
   try {
     const rawLimit = Number(req.query.limit || 25);
     const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(100, rawLimit)) : 25;
     const seen = String(req.query.seen || 'true').toLowerCase() !== 'false';
-    const result = await listInquiryEmailCandidates({ seen, limit });
+    const since = req.query.since ? new Date(req.query.since) : null;
+    const before = req.query.before ? new Date(req.query.before) : null;
+    const result = await listInquiryEmailCandidates({ seen, limit, since, before });
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });

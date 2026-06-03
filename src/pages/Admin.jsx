@@ -109,6 +109,9 @@ export default function Admin() {
   const [manualEmailLoaded, setManualEmailLoaded] = useState(false);
   const [manualEmailDiagnostics, setManualEmailDiagnostics] = useState(null);
   const [manualEmailDiagnosticsLoading, setManualEmailDiagnosticsLoading] = useState(false);
+  const [deleteEmailImportsLoading, setDeleteEmailImportsLoading] = useState(false);
+  const [emailCandidatesSince, setEmailCandidatesSince] = useState('2025-05-01');
+  const [emailCandidatesBefore, setEmailCandidatesBefore] = useState('2026-07-01');
   const messageTimeoutRef = useRef(null);
   const loginAbortRef = useRef(null);
 
@@ -171,7 +174,8 @@ export default function Admin() {
   const wohnungen = {
     hackerberg: 'Wohnung Hackerberg',
     neubau: 'Wohnung Frühlingstraße',
-    kombi: 'Kombi (beide)'
+    kombi: 'Kombi (beide)',
+    unbekannt: 'Noch keine Wohnung ausgewählt'
   };
 
   const emailInquiries = inquiries.filter((inquiry) => inquiry.inquirySource === 'email');
@@ -590,11 +594,37 @@ export default function Admin() {
     messageTimeoutRef.current = setTimeout(() => setActionMessage(null), 3000);
   };
 
+  const handleDeleteEmailImports = async () => {
+    if (!confirm('Alle importierten E-Mail-Anfragen endgültig löschen? (Damit können sie erneut importiert werden)')) return;
+    try {
+      setDeleteEmailImportsLoading(true);
+      const apiUrl = getApiUrl();
+      const params = new URLSearchParams();
+      if (emailCandidatesSince) params.set('since', emailCandidatesSince);
+      if (emailCandidatesBefore) params.set('before', emailCandidatesBefore);
+      const response = await fetch(`${apiUrl}/admin/inquiries/email-imports?${params}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Basic ${auth}` }
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Löschen fehlgeschlagen');
+      showActionMessage('success', `${data.deleted} E-Mail-Anfragen gelöscht`);
+      await loadData();
+    } catch (error) {
+      showActionMessage('error', error.message || 'Löschen fehlgeschlagen');
+    } finally {
+      setDeleteEmailImportsLoading(false);
+    }
+  };
+
   const loadManualEmailCandidates = async () => {
     try {
       setManualEmailLoading(true);
       const apiUrl = getApiUrl();
-      const response = await fetch(`${apiUrl}/admin/inquiries/email-candidates?seen=true&limit=30`, {
+      const params = new URLSearchParams({ seen: 'true', limit: '50' });
+      if (emailCandidatesSince) params.set('since', emailCandidatesSince);
+      if (emailCandidatesBefore) params.set('before', emailCandidatesBefore);
+      const response = await fetch(`${apiUrl}/admin/inquiries/email-candidates?${params}`, {
         headers: { Authorization: `Basic ${auth}` }
       });
 
@@ -2385,16 +2415,28 @@ export default function Admin() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <input
+                    type="date"
+                    value={emailCandidatesSince}
+                    onChange={(e) => setEmailCandidatesSince(e.target.value)}
+                    className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-800 bg-white"
+                    title="Mails ab diesem Datum"
+                  />
+                  <input
+                    type="date"
+                    value={emailCandidatesBefore}
+                    onChange={(e) => setEmailCandidatesBefore(e.target.value)}
+                    className="border border-slate-300 rounded-lg text-sm px-3 py-2 text-slate-800 bg-white"
+                    title="Mails bis zu diesem Datum"
+                  />
                   <button
                     type="button"
-                    onClick={loadManualEmailDiagnostics}
-                    disabled={manualEmailDiagnosticsLoading}
-                    className="bg-white border border-slate-300 hover:bg-slate-100 disabled:bg-slate-100 disabled:text-slate-400 text-slate-800 text-sm font-semibold px-4 py-2 rounded-lg"
+                    onClick={handleDeleteEmailImports}
+                    disabled={deleteEmailImportsLoading}
+                    className="bg-white border border-red-300 hover:bg-red-50 disabled:bg-slate-100 disabled:text-slate-400 text-red-700 text-sm font-semibold px-4 py-2 rounded-lg"
                   >
-                    {manualEmailDiagnosticsLoading ? 'Diagnose laeuft...' : 'Mail-Diagnose'}
+                    {deleteEmailImportsLoading ? 'Wird gelöscht...' : 'Email-Anfragen löschen'}
                   </button>
-                  <button
-                    type="button"
                     onClick={loadManualEmailCandidates}
                     disabled={manualEmailLoading}
                     className="bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white text-sm font-semibold px-4 py-2 rounded-lg"
@@ -2505,6 +2547,15 @@ export default function Admin() {
                           <span className="inline-block rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold px-2 py-0.5">
                             UID {email.uid}
                           </span>
+                          {email.fromAddress && (
+                            <a
+                              href={`mailto:${email.fromAddress}?subject=Re: ${encodeURIComponent(email.subject || '')}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-block rounded-full bg-blue-100 text-blue-700 text-[11px] font-semibold px-2 py-0.5 hover:bg-blue-200"
+                            >
+                              Antworten
+                            </a>
+                          )}
                           {email.alreadyImported ? (
                             <span className="inline-block rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-semibold px-2 py-0.5">
                               Bereits importiert

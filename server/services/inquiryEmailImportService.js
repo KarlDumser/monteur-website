@@ -62,7 +62,7 @@ function inferWohnung(text) {
   if (raw.includes('hackerberg') || raw.includes('penthouse')) {
     return { wohnung: 'hackerberg', wohnungLabel: 'Wohnung Hackerberg' };
   }
-  return { wohnung: DEFAULT_WOHNUNG, wohnungLabel: DEFAULT_WOHNUNG_LABEL };
+  return { wohnung: 'unbekannt', wohnungLabel: 'Noch keine Wohnung ausgewaehlt' };
 }
 
 const ALLOWED_SENDER_PATTERNS = [
@@ -176,11 +176,13 @@ function buildInquiryPayload(parsed, emailMeta) {
     inquirySource: 'email',
     inquiryProvider: detectProvider(emailMeta.fromAddress, emailMeta.subject),
     adminNote: parsed.notes ? String(parsed.notes).slice(0, 2000) : null,
+    createdAt: emailMeta.emailDate || new Date(),
     emailImport: {
       messageId: emailMeta.messageId || null,
       fromAddress: emailMeta.fromAddress || '',
       subject: emailMeta.subject || '',
       importedAt: new Date(),
+      receivedAt: emailMeta.emailDate || null,
       rawTextPreview: previewText
     }
   };
@@ -270,7 +272,8 @@ async function importMessageFromParsedMail(client, parsedMessage, { markSeen = t
     messageId,
     fromAddress,
     subject,
-    text
+    text,
+    emailDate: parsedMessage.date || null
   });
 
   const booking = new Booking(payload);
@@ -288,7 +291,7 @@ async function importMessageFromParsedMail(client, parsedMessage, { markSeen = t
   };
 }
 
-export async function listInquiryEmailCandidates({ seen = true, limit = 25 } = {}) {
+export async function listInquiryEmailCandidates({ seen = true, limit = 25, since = null, before = null } = {}) {
   const config = getImapConfig();
   if (!hasImapConfig(config)) {
     return { status: 'skipped', reason: 'imap-config-missing', emails: [] };
@@ -310,6 +313,8 @@ export async function listInquiryEmailCandidates({ seen = true, limit = 25 } = {
 
     try {
       const searchCriteria = typeof seen === 'boolean' ? { seen } : {};
+      if (since instanceof Date && !Number.isNaN(since.getTime())) searchCriteria.since = since;
+      if (before instanceof Date && !Number.isNaN(before.getTime())) searchCriteria.before = before;
       const uids = await client.search(searchCriteria);
       const limitedUids = uids.slice(-Math.max(1, Math.min(100, Number(limit) || 25))).reverse();
       const emails = [];

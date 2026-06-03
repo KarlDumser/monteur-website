@@ -21,7 +21,7 @@ const bookingSchema = new mongoose.Schema({
   region: { type: String, default: '' },
   
   // Buchungsdetails
-  wohnung: { type: String, required: true, enum: ['neubau', 'hackerberg', 'kombi'] },
+  wohnung: { type: String, required: true, enum: ['neubau', 'hackerberg', 'kombi', 'unbekannt'] },
   wohnungLabel: { type: String },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
@@ -96,6 +96,7 @@ const bookingSchema = new mongoose.Schema({
     fromAddress: { type: String, default: '' },
     subject: { type: String, default: '' },
     importedAt: { type: Date, default: null },
+    receivedAt: { type: Date, default: null },
     rawTextPreview: { type: String, default: '' }
   },
 
