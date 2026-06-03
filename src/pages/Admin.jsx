@@ -794,7 +794,7 @@ export default function Admin() {
       const bookingsData = await bookingsRes.json();
       setBookings(
         sortBookingsByCreatedAndStart(
-          bookingsData.filter((booking) => !(booking.isInquiry && booking.inquiryStatus === 'pending'))
+          bookingsData.filter((booking) => !booking.isInquiry)
         )
       );
 
