@@ -203,6 +203,18 @@ function hasImapConfig(config = getImapConfig()) {
   return Boolean(config.host && config.user && config.pass);
 }
 
+function normalizeUidList(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value && typeof value[Symbol.iterator] === 'function') {
+    return Array.from(value);
+  }
+
+  return [];
+}
+
 async function fetchParsedMessage(client, uid) {
   const message = await client.fetchOne(uid, {
     envelope: true,
@@ -316,7 +328,8 @@ export async function listInquiryEmailCandidates({ seen = true, limit = 25, sinc
       const searchCriteria = typeof seen === 'boolean' ? { seen } : {};
       if (since instanceof Date && !Number.isNaN(since.getTime())) searchCriteria.since = since;
       if (before instanceof Date && !Number.isNaN(before.getTime())) searchCriteria.before = before;
-      const uids = await client.search(searchCriteria);
+      const searchedUids = await client.search(searchCriteria);
+      const uids = normalizeUidList(searchedUids);
       const limitedUids = uids.slice(-Math.max(1, Math.min(100, Number(limit) || 25))).reverse();
       const emails = [];
 
@@ -421,8 +434,8 @@ export async function getInquiryEmailDiagnostics() {
     const lock = await client.getMailboxLock('INBOX');
 
     try {
-      const seenUids = await client.search({ seen: true });
-      const unseenUids = await client.search({ seen: false });
+      const seenUids = normalizeUidList(await client.search({ seen: true }));
+      const unseenUids = normalizeUidList(await client.search({ seen: false }));
       diagnostics.inbox.seenCount = seenUids.length;
       diagnostics.inbox.unseenCount = unseenUids.length;
       diagnostics.connection.ok = true;
@@ -565,7 +578,7 @@ export async function runInquiryEmailImportOnce() {
     const lock = await client.getMailboxLock('INBOX');
 
     try {
-      const unseen = await client.search({ seen: false });
+      const unseen = normalizeUidList(await client.search({ seen: false }));
       const uids = unseen.slice(0, maxPerRun);
       stats.scanned = uids.length;
 
