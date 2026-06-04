@@ -895,15 +895,16 @@ export default function Admin() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Anfrage konnte nicht bestaetigt werden');
 
-      if (data.emailResult?.status && data.emailResult.status !== 'sent') {
-        showActionMessage(
-          'error',
-          `Anfrage bestaetigt, aber die E-Mail wurde nicht gesendet: ${data.emailResult.reason || data.emailResult.error || data.emailResult.status}`
-        );
-      } else {
-        showActionMessage('success', 'Anfrage bestaetigt und als Buchung uebernommen');
+      const updatedBooking = data.booking || null;
+      if (updatedBooking) {
+        setInquiries((prev) => prev.filter((entry) => entry._id !== updatedBooking._id));
+        setBookings((prev) => sortBookingsByCreatedAndStart([
+          updatedBooking,
+          ...prev.filter((entry) => entry._id !== updatedBooking._id)
+        ]));
       }
 
+      showActionMessage('success', 'Anfrage bestaetigt und als Buchung uebernommen');
       setActiveTab('bookings');
       loadData();
     } catch (error) {

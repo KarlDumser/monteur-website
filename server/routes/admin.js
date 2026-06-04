@@ -578,16 +578,20 @@ router.patch('/inquiries/:id/approve', async (req, res) => {
 
     await createBookingBlocksForBooking(inquiry);
 
-    const emailResult = await sendBookingConfirmation(inquiry, 'confirmation');
-
-    if (emailResult?.status && emailResult.status !== 'sent') {
-      console.warn('Inquiry approval email not sent cleanly:', emailResult);
-    }
+    sendBookingConfirmation(inquiry, 'confirmation')
+      .then((emailResult) => {
+        if (emailResult?.status && emailResult.status !== 'sent') {
+          console.warn('Inquiry approval email not sent cleanly:', emailResult);
+        }
+      })
+      .catch((err) => {
+        console.error('Inquiry approval email failed:', err.message);
+      });
 
     res.json({
       success: true,
       booking: inquiry,
-      emailResult
+      emailQueued: true
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
