@@ -895,7 +895,16 @@ export default function Admin() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Anfrage konnte nicht bestaetigt werden');
 
-      showActionMessage('success', 'Anfrage bestaetigt und als Buchung uebernommen');
+      if (data.emailResult?.status && data.emailResult.status !== 'sent') {
+        showActionMessage(
+          'error',
+          `Anfrage bestaetigt, aber die E-Mail wurde nicht gesendet: ${data.emailResult.reason || data.emailResult.error || data.emailResult.status}`
+        );
+      } else {
+        showActionMessage('success', 'Anfrage bestaetigt und als Buchung uebernommen');
+      }
+
+      setActiveTab('bookings');
       loadData();
     } catch (error) {
       showActionMessage('error', error.message || 'Anfrage konnte nicht bestaetigt werden');
