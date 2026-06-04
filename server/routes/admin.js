@@ -196,6 +196,32 @@ const addDays = (date, days) => {
   return result;
 };
 
+const parseEmailCandidateDate = (value, mode = 'since') => {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  // Date-only values from <input type="date"> need explicit day boundaries.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    if (mode === 'before') {
+      // Keep compatibility with exclusive "before" filters by moving to next day start.
+      parsed.setDate(parsed.getDate() + 1);
+      parsed.setHours(0, 0, 0, 0);
+      return parsed;
+    }
+
+    parsed.setHours(0, 0, 0, 0);
+  }
+
+  return parsed;
+};
+
 const getCleaningBufferDays = (value) => {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed) || parsed < 0) {
@@ -472,8 +498,13 @@ router.get('/inquiries/email-candidates', async (req, res) => {
     const rawLimit = Number(req.query.limit || 25);
     const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(100, rawLimit)) : 25;
     const seen = String(req.query.seen || 'true').toLowerCase() !== 'false';
-    const since = req.query.since ? new Date(req.query.since) : null;
-    const before = req.query.before ? new Date(req.query.before) : null;
+    let since = parseEmailCandidateDate(req.query.since, 'since');
+    let before = parseEmailCandidateDate(req.query.before, 'before');
+
+    if (since && before && since >= before) {
+      before = null;
+    }
+
     const result = await listInquiryEmailCandidates({ seen, limit, since, before });
     res.json(result);
   } catch (error) {
