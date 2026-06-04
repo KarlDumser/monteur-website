@@ -530,7 +530,7 @@ export async function sendOfferEmail(booking) {
         total: variant.total
       };
 
-      const { buffer, fileName } = await generateInvoice(variantBooking, true);
+      const { buffer } = await generateInvoice(variantBooking, true, offerNumber);
       const optionSuffix = variant.option === 'kombi' ? 'kombi-paket' : variant.option;
       const finalFileName = `Angebot-${offerNumber}-${customerName}-${optionSuffix}.pdf`;
 

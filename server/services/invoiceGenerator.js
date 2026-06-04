@@ -13,10 +13,11 @@ const __dirname = path.dirname(__filename);
  * @param {boolean} isOffer - True if generating an offer setup
  * @returns {Buffer} PDF als Buffer
  */
-export async function generateInvoice(booking, isOffer = false) {
+export async function generateInvoice(booking, isOffer = false, providedDocumentNumber = '') {
    const resolvedVatId = await resolveCustomerVatId(booking);
    const rawDocumentId = booking?._id || booking?.id || '';
    const safeDocumentId = String(rawDocumentId || 'MANUAL').trim() || 'MANUAL';
+   const recipientAddress = buildRecipientAddressLines(booking);
 
   return new Promise((resolve, reject) => {
     try {
@@ -25,7 +26,7 @@ export async function generateInvoice(booking, isOffer = false) {
          const footerY = 740;
       
              // Rechnungsnummer/Angebotsnummer für Dateinamen und PDF merken
-             const documentNumber = isOffer ? `A-${safeDocumentId.substring(0, 6).toUpperCase()}` : buildInvoiceNumber(booking);
+             const documentNumber = String(providedDocumentNumber || '').trim() || (isOffer ? `A-${safeDocumentId.substring(0, 8).toUpperCase()}` : buildInvoiceNumber(booking));
              const docTypePrefix = isOffer ? 'Angebot' : 'Rechnung';
          const pdfFileName = `${docTypePrefix}-${documentNumber}.pdf`;
          doc.on('data', buffers.push.bind(buffers));
@@ -59,12 +60,12 @@ export async function generateInvoice(booking, isOffer = false) {
       doc.fontSize(11)
          .text('An:', 50, 180)
          .font('Helvetica-Bold')
-         .text(booking.company, 50, 195)
+          .text(recipientAddress.nameLine, 50, 195)
          .font('Helvetica')
-         .text(booking.street, 50, 210)
-             .text(`${booking.zip} ${booking.city}`, 50, 225);
+          .text(recipientAddress.streetLine, 50, 210)
+             .text(recipientAddress.zipCityLine, 50, 225);
 
-         const invoiceCountry = booking.countryLabel || booking.country || 'Deutschland';
+          const invoiceCountry = recipientAddress.countryLine;
          doc.text(invoiceCountry, 50, 240);
 
          if (resolvedVatId) {
@@ -219,7 +220,9 @@ export async function generateInvoice(booking, isOffer = false) {
          const maxContentY = footerY - 12;
          const contentWidth = 500;
 
-         const periodLine = isFollowUpInvoice
+         const periodLine = isOffer
+            ? ''
+            : isFollowUpInvoice
             ? `Buchungsbeginn: ${startDateStr}`
             : isSplitBooking
                ? `Anreise: ${startDateStr}`
@@ -251,7 +254,7 @@ export async function generateInvoice(booking, isOffer = false) {
          };
 
          const estimatedTailHeight =
-            measure(periodLine, 9) +
+            (periodLine ? measure(periodLine, 9) : 0) +
             (isFollowUpInvoice ? measure(bookingEndLine, 9) : measure(addressLine, 9) + measure(checkInOutLine, 9)) +
             (isFollowUpInvoice ? measure(followUpHintLine, 9, 'Helvetica-Bold') : 0) +
             (isFinalFollowUpInvoice ? measure(finalCheckoutLine, 9) + measure(finalKeyLine, 9) : 0) +
@@ -278,7 +281,9 @@ export async function generateInvoice(booking, isOffer = false) {
             cursorY += doc.heightOfString(text, { width }) + gap;
          };
 
-         writeLine(periodLine, { fontSize: 9, gap: 3 });
+         if (periodLine) {
+            writeLine(periodLine, { fontSize: 9, gap: 3 });
+         }
 
          if (isFollowUpInvoice) {
             writeLine(bookingEndLine, { fontSize: 9, gap: 3 });
@@ -329,6 +334,45 @@ function buildInvoiceNumber(booking) {
    const day = String(createdAt.getDate()).padStart(2, '0');
    const shortId = String(booking?._id || '').slice(-4).toUpperCase();
    return `FD-${year}${month}${day}-${shortId}`;
+}
+
+function toSafeText(value, fallback = '-') {
+   const text = String(value ?? '').trim();
+   if (!text || text.toLowerCase() === 'undefined' || text.toLowerCase() === 'null') {
+      return fallback;
+   }
+   return text;
+}
+
+function parseLegacyAddress(address) {
+   const raw = String(address || '').trim();
+   if (!raw) {
+      return { street: '', zipCity: '' };
+   }
+
+   const lines = raw.split(/\r?\n|,/).map((entry) => entry.trim()).filter(Boolean);
+   return {
+      street: lines[0] || '',
+      zipCity: lines[1] || ''
+   };
+}
+
+function buildRecipientAddressLines(booking) {
+   const legacyAddress = parseLegacyAddress(booking?.address);
+   const nameLine = toSafeText(booking?.company || booking?.name, 'Kunde');
+   const streetLine = toSafeText(booking?.street || legacyAddress.street);
+
+   const rawZip = String(booking?.zip ?? '').trim();
+   const rawCity = String(booking?.city ?? '').trim();
+   const combinedZipCity = `${rawZip} ${rawCity}`.trim();
+   const zipCityLine = toSafeText(combinedZipCity || legacyAddress.zipCity);
+
+   return {
+      nameLine,
+      streetLine,
+      zipCityLine,
+      countryLine: toSafeText(booking?.countryLabel || booking?.country, 'Deutschland')
+   };
 }
 
 async function resolveCustomerVatId(booking) {
