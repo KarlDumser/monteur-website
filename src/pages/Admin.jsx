@@ -185,7 +185,7 @@ export default function Admin() {
     (inquiry) => inquiry.offerStatus === 'awaiting-admin-confirmation'
   );
   const selectableManualEmailUids = manualEmailCandidates
-    .filter((email) => email.uid && !email.alreadyImported && email.senderAllowed !== false)
+    .filter((email) => email.uid && !email.alreadyImported)
     .map((email) => email.uid);
   const allSelectableManualEmailsSelected = selectableManualEmailUids.length > 0
     && selectableManualEmailUids.every((uid) => manualEmailSelection.includes(uid));

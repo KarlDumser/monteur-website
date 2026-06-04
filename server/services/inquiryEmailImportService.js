@@ -65,19 +65,6 @@ function inferWohnung(text) {
   return { wohnung: 'unbekannt', wohnungLabel: 'Noch keine Wohnung ausgewaehlt' };
 }
 
-const ALLOWED_SENDER_PATTERNS = [
-  'dmz',
-  'mein-monteurzimmer',
-  'monteurzimmer',
-  'monteurunterkunft',
-  'monteurzimmerguru'
-];
-
-function isSenderAllowed(fromAddress) {
-  const addr = String(fromAddress || '').toLowerCase();
-  return ALLOWED_SENDER_PATTERNS.some((pattern) => addr.includes(pattern));
-}
-
 function detectProvider(fromAddress, subject) {
   const source = `${String(fromAddress || '').toLowerCase()} ${String(subject || '').toLowerCase()}`;
   if (source.includes('booking.com')) return 'booking.com';
@@ -102,9 +89,10 @@ async function extractWithAI(text, subject) {
   const prompt = [
     'Extract booking inquiry data from this email text.',
     'Return JSON only with keys:',
-    'name,email,phone,company,street,zip,city,country,wohnung,startDate,endDate,nights,people,total,notes,confidence',
+    'name,email,phone,company,street,zip,city,country,wohnung,startDate,endDate,nights,people,total,notes,confidence,isInquiry',
     'Dates must be in YYYY-MM-DD when available.',
-    'wohnung must be one of: neubau,hackerberg,kombi when confidently known.'
+    'wohnung must be one of: neubau,hackerberg,kombi when confidently known.',
+    'isInquiry must be true only if this is clearly an accommodation booking inquiry for requested dates or stay details.'
   ].join('\n');
 
   const completion = await client.chat.completions.create({
@@ -215,6 +203,60 @@ function normalizeUidList(value) {
   return [];
 }
 
+function toBoolOrNull(value) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  return null;
+}
+
+function isLikelyInquiryByHeuristics(text, subject, parsed) {
+  const source = `${String(subject || '')}\n${String(text || '')}`.toLowerCase();
+  const positiveKeywords = [
+    'anfrage',
+    'buchung',
+    'verfugbarkeit',
+    'verfuegbarkeit',
+    'angebot',
+    'aufenthalt',
+    'anreise',
+    'abreise',
+    'nacht',
+    'person',
+    'monteur',
+    'wohnung'
+  ];
+  const negativeKeywords = ['newsletter', 'unsubscribe', 'abmelden', 'werbung'];
+
+  const positiveHits = positiveKeywords.filter((keyword) => source.includes(keyword)).length;
+  const negativeHits = negativeKeywords.filter((keyword) => source.includes(keyword)).length;
+  const hasDates = Boolean(parseDateInput(parsed?.startDate) || parseDateInput(parsed?.endDate));
+  const hasStayMeta = safeNumber(parsed?.people, 0) > 0 || safeNumber(parsed?.nights, 0) > 0;
+  const hasContact = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(source)
+    || /(\+?[0-9][0-9\s\-/()]{6,})/.test(source);
+
+  if (negativeHits > 0 && !hasDates && !hasStayMeta && positiveHits < 2) {
+    return false;
+  }
+
+  return hasDates || hasStayMeta || (positiveHits > 0 && hasContact);
+}
+
+function shouldImportAsInquiry({ aiParsed, regexParsed, text, subject }) {
+  const aiDecision = toBoolOrNull(aiParsed?.isInquiry);
+  if (aiDecision !== null) {
+    return aiDecision;
+  }
+
+  return isLikelyInquiryByHeuristics(text, subject, {
+    ...(regexParsed || {}),
+    ...(aiParsed || {})
+  });
+}
+
 async function fetchParsedMessage(client, uid) {
   const message = await client.fetchOne(uid, {
     envelope: true,
@@ -247,16 +289,6 @@ async function fetchParsedMessage(client, uid) {
 async function importMessageFromParsedMail(client, parsedMessage, { markSeen = true } = {}) {
   const { uid, text, fromAddress, subject, messageId } = parsedMessage;
 
-  if (!isSenderAllowed(fromAddress)) {
-    return {
-      status: 'skipped',
-      reason: 'sender-not-in-allowlist',
-      uid,
-      messageId,
-      fromAddress
-    };
-  }
-
   if (messageId) {
     const duplicate = await Booking.findOne({ 'emailImport.messageId': messageId }).select('_id');
     if (duplicate) {
@@ -280,6 +312,21 @@ async function importMessageFromParsedMail(client, parsedMessage, { markSeen = t
     ...regexParsed,
     ...(aiParsed || {})
   };
+
+  const shouldImport = shouldImportAsInquiry({ aiParsed, regexParsed, text, subject });
+  if (!shouldImport) {
+    if (markSeen) {
+      await client.messageFlagsAdd(uid, ['\\Seen']);
+    }
+
+    return {
+      status: 'skipped',
+      reason: 'classified-not-inquiry',
+      uid,
+      messageId,
+      fromAddress
+    };
+  }
 
   const payload = buildInquiryPayload(merged, {
     messageId,
@@ -351,7 +398,7 @@ export async function listInquiryEmailCandidates({ seen = true, limit = 25, sinc
             subject: parsedMessage.subject,
             date: parsedMessage.date,
             seen: parsedMessage.seen,
-            senderAllowed: isSenderAllowed(parsedMessage.fromAddress),
+            senderAllowed: true,
             alreadyImported: Boolean(existingInquiryId),
             existingInquiryId,
             preview: parsedMessage.text.replace(/\s+/g, ' ').trim().slice(0, 240)
